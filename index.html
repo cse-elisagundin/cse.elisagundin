@@ -100,10 +100,10 @@
             <div class="flex-1 overflow-y-auto">
                 <div v-for="s in filteredList" :key="s.id" @click="selectStudent(s)"
                     class="p-4 border-b hover:bg-blue-50 cursor-pointer transition relative"
-                    :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
+                    :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.activo === false ? 'opacity-60 bg-gray-50' : '']">
                     <div class="flex justify-between items-start">
-                        <div class="font-bold text-base" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'">{{ s.apellidos }}, {{ s.nombre }}</div>
-                        <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">BAJA</span>
+                        <div class="font-bold text-base" :class="s.activo === false ? 'text-gray-500 line-through' : 'text-[#243c7a]'">{{ s.apellidos }}, {{ s.nombre }}</div>
+                        <span v-if="s.activo === false" class="bg-gray-200 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">BAJA</span>
                     </div>
                     <div class="text-xs text-gray-500 mt-1 flex justify-between uppercase">
                         <span>{{ s.curso }}</span><span>{{ s.dni }}</span>
@@ -125,7 +125,7 @@
                     <!-- CABECERA DE LA FICHA -->
                     <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                         <div class="flex items-center gap-4">
-                            <h2 class="text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
+                            <h2 class="text-2xl font-extrabold" :class="!form.activo ? 'text-gray-400' : 'text-[#243c7a]'">
                                 {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
                             </h2>
                         </div>
@@ -138,21 +138,119 @@
                         </div>
                     </div>
 
-                    <!-- FORMULARIO BÁSICO DE DATOS -->
+                    <!-- FORMULARIO COMPLETO DE DATOS -->
                     <form @submit.prevent class="p-8 space-y-8 flex-1">
+                        
+                        <!-- DATOS PERSONALES -->
                         <section class="grid grid-cols-4 gap-6">
-                            <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
-                            <input v-model="form.nombre" placeholder="Nombre" class="p-3 rounded-lg border bg-gray-50 outline-none">
-                            <input v-model="form.apellidos" placeholder="Apellidos" class="p-3 rounded-lg border bg-gray-50 outline-none">
-                            <input v-model="form.dni" placeholder="DNI/NIE" class="p-3 rounded-lg border bg-gray-50 outline-none">
-                            <input type="date" v-model="form.nacimiento" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                            <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2 flex justify-between items-center">
+                                <span>DATOS PERSONALES</span>
+                                <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                                    <input type="checkbox" v-model="form.activo" class="rounded text-[#fa65c3] focus:ring-[#fa65c3]">
+                                    Alumno Activo
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Nombre</label>
+                                <input v-model="form.nombre" placeholder="Nombre" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Apellidos</label>
+                                <input v-model="form.apellidos" placeholder="Apellidos" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">DNI/NIE</label>
+                                <input v-model="form.dni" placeholder="DNI/NIE" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Fecha Nacimiento</label>
+                                <input type="date" v-model="form.nacimiento" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
                         </section>
                         
+                        <!-- DIRECCIÓN Y UBICACIÓN -->
+                        <section class="grid grid-cols-4 gap-6">
+                            <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2">DOMICILIO</div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Dirección</label>
+                                <input v-model="form.direccion" placeholder="Calle, número, piso..." class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Código Postal (CP)</label>
+                                <input v-model="form.cp" placeholder="CP" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Población</label>
+                                <input v-model="form.poblacion" placeholder="Población" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Provincia</label>
+                                <input v-model="form.provincia" placeholder="Provincia" class="w-full p-3 rounded-lg border bg-gray-50 outline-none">
+                            </div>
+                        </section>
+
+                        <!-- ACADÉMICO Y CONTACTO -->
                         <section class="grid grid-cols-3 gap-6">
                             <div class="col-span-3 font-bold text-[#243c7a] border-b pb-2">ACADÉMICO Y CONTACTO</div>
-                            <input v-model="form.colegio" placeholder="Colegio" class="p-3 rounded-lg border bg-gray-50">
-                            <input v-model="form.curso" placeholder="Curso" class="p-3 rounded-lg border bg-gray-50">
-                            <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Colegio</label>
+                                <input v-model="form.colegio" placeholder="Colegio" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Curso</label>
+                                <input v-model="form.curso" placeholder="Curso" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Teléfono Alumno</label>
+                                <input v-model="form.tlf" placeholder="Teléfono" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                        </section>
+
+                        <!-- FAMILIAR 1 -->
+                        <section class="grid grid-cols-3 gap-6">
+                            <div class="col-span-3 font-bold text-[#243c7a] border-b pb-2">FAMILIAR 1</div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Nombre Familiar 1</label>
+                                <input v-model="form.fam1_nombre" placeholder="Nombre" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Relación</label>
+                                <input v-model="form.fam1_relacion" placeholder="Madre, Padre..." class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Teléfono Familiar 1</label>
+                                <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                        </section>
+
+                        <!-- FAMILIAR 2 -->
+                        <section class="grid grid-cols-3 gap-6">
+                            <div class="col-span-3 font-bold text-[#243c7a] border-b pb-2">FAMILIAR 2</div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Nombre Familiar 2</label>
+                                <input v-model="form.fam2_nombre" placeholder="Nombre" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Relación</label>
+                                <input v-model="form.fam2_relacion" placeholder="Tutor, Padre..." class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Teléfono Familiar 2</label>
+                                <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                        </section>
+
+                        <!-- ACCESOS AULES -->
+                        <section class="grid grid-cols-2 gap-6">
+                            <div class="col-span-2 font-bold text-[#243c7a] border-b pb-2">ACCESOS AULES</div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Usuario Aules</label>
+                                <input v-model="form.usuario_aules" placeholder="Usuario" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">Contraseña Aules</label>
+                                <input v-model="form.pass_aules" placeholder="Contraseña" class="w-full p-3 rounded-lg border bg-gray-50">
+                            </div>
                         </section>
                     </form>
                 </div>
@@ -202,7 +300,7 @@
             filteredList() {
                 const t = this.search.toLowerCase();
                 return this.list.filter(s => {
-                    if (!this.showInactive && s.baja) return false;
+                    if (!this.showInactive && s.activo === false) return false;
                     const fullName = `${s.nombre || ""} ${s.apellidos || ""}`.toLowerCase();
                     return fullName.includes(t) || (s.dni || "").toLowerCase().includes(t);
                 });
@@ -214,7 +312,6 @@
                 this.loading = true;
                 this.loginError = false;
 
-                // Autenticación nativa segura con Supabase
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: this.emailInput,
                     password: this.passwordInput
@@ -255,7 +352,14 @@
             },
             createNew() {
                 this.isNew = true;
-                this.form = { nombre: '', apellidos: '', dni: '', nacimiento: '', colegio: '', curso: '', tlf: '', baja: false };
+                this.form = { 
+                    nombre: '', apellidos: '', dni: '', nacimiento: '', 
+                    direccion: '', cp: '', poblacion: '', provincia: '',
+                    colegio: '', curso: '', tlf: '', 
+                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '', 
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: '', 
+                    activo: true, usuario_aules: '', pass_aules: '' 
+                };
                 this.selected = { id: 'TEMP' };
             },
             cerrarFicha() {
@@ -264,7 +368,6 @@
             async saveData() {
                 this.saving = true;
                 if (this.isNew) {
-                    // Insertar nuevo alumno en Supabase
                     const { error } = await supabaseClient
                         .from('alumnos')
                         .insert([this.form]);
@@ -279,7 +382,6 @@
                         this.saving = false;
                     }
                 } else {
-                    // Actualizar alumno existente
                     const { error } = await supabaseClient
                         .from('alumnos')
                         .update(this.form)
@@ -298,7 +400,6 @@
             }
         },
         async mounted() {
-            // Comprobar si ya hay una sesión activa guardada en el navegador
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 this.authenticated = true;
