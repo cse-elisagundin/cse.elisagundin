@@ -337,7 +337,7 @@
             },
             async fetchAlumnos() {
                 const { data, error } = await supabaseClient
-                    .from('alumnos')
+                    .from('listado_alumnos')
                     .select('*')
                     .order('apellidos', { ascending: true });
 
@@ -369,7 +369,7 @@
                 this.saving = true;
                 if (this.isNew) {
                     const { error } = await supabaseClient
-                        .from('alumnos')
+                        .from('listado_alumnos')
                         .insert([this.form]);
 
                     if (!error) {
@@ -383,7 +383,7 @@
                     }
                 } else {
                     const { error } = await supabaseClient
-                        .from('alumnos')
+                        .from('listado_alumnos')
                         .update(this.form)
                         .eq('id', this.form.id);
 
