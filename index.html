@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CSE Elisa Gundín</title>
+    
+    <meta name="theme-color" content="#243c7a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="https://github.com/cse-elisagundin/horarios_alumnos/blob/main/image.png?raw=true">
+    
+    <style>
+        :root { 
+            --c-primary: #243c7a;
+            --c-secondary: #2b94cc;
+            --c-pink: #fa65c3;
+            --c-whatsapp: #25D366;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #365299 0%, var(--c-primary) 100%);
+            margin: 0;
+            padding: 0;
+            
+            /* CONFIGURACIÓN SIN SCROLL (APP MODE) */
+            height: 100vh;      /* Altura exacta de la pantalla */
+            width: 100vw;       /* Ancho exacto */
+            overflow: hidden;   /* Prohibido hacer scroll */
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .main-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+            height: 100%; /* Para centrar verticalmente mejor */
+            animation: fadeIn 1.2s ease-out;
+            box-sizing: border-box;
+        }
+
+        /* LOGO */
+        .logo-img {
+            width: 280px;
+            height: 280px;
+            object-fit: contain;
+            background: white; 
+            border-radius: 50%;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            transition: all 0.3s ease; /* Transición suave si cambia de tamaño */
+        }
+
+        /* TEXTOS */
+        .text-group {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .h1-highlight {
+            color: var(--c-secondary);
+            display: block;
+            margin-top: 10px;
+        }
+
+        .special-i { position: relative; display: inline-block; }
+        .special-i::after {
+            content: '´'; position: absolute; left: 50%; top: -0.15em;
+            transform: translateX(-50%); color: var(--c-pink); font-weight: 800;
+        }
+
+        p.subtitle {
+            margin: 20px 0 30px 5px;
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 15px;
+            display: inline-block;
+        }
+
+        /* --- BOTONERA --- */
+        .button-container {
+            display: flex;
+            gap: 15px;
+            margin-left: 5px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-whatsapp { background-color: var(--c-whatsapp); }
+        .btn-call { background-color: var(--c-secondary); }
+        .btn-icon { margin-right: 8px; font-size: 1.2rem; }
+
+        /* --- VERSIÓN MÓVIL (COMPACTA) --- */
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                text-align: center;
+                /* Espaciado dinámico: usa % de la altura para no pasarse */
+                gap: 3vh; 
+            }
+
+            .logo-img {
+                /* El logo se adapta: nunca ocupará más del 25% de la altura de la pantalla */
+                width: 130px; 
+                height: 130px;
+                padding: 10px;
+                
+                /* Truco para móviles muy bajitos: si falta sitio, el logo encoge */
+                max-height: 20vh; 
+                max-width: 20vh;
+            }
+
+            h1 { 
+                /* Texto un poco más pequeño para asegurar que cabe */
+                font-size: 2.6rem; 
+            }
+
+            .h1-highlight { margin-top: 5px; }
+
+            p.subtitle {
+                font-size: 0.8rem;
+                letter-spacing: 2px;
+                margin-top: 10px;
+                margin-bottom: 20px;
+            }
+
+            /* Botones uno al lado del otro */
+            .button-container {
+                flex-direction: row;
+                justify-content: center;
+                gap: 10px;
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .btn {
+                padding: 12px 15px; /* Un poco menos de relleno lateral */
+                font-size: 0.95rem; /* Letra ajustada */
+                flex: 1; /* Los botones se reparten el espacio */
+                max-width: 160px; /* Pero no se hacen gigantes */
+            }
+        }
+        
+        /* Ajuste para móviles MUY pequeños (iPhone SE, etc) */
+        @media (max-height: 600px) {
+            .logo-img { width: 100px; height: 100px; }
+            h1 { font-size: 2.2rem; }
+            p.subtitle { margin-bottom: 15px; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <img src="https://github.com/cse-elisagundin/horarios_alumnos/blob/main/image.png?raw=true" alt="Logo CSE" class="logo-img">
+        
+        <div class="text-group">
+            <h1>
+                CSE <br>
+                <span class="h1-highlight">
+                    Elisa Gund<span class="special-i">&#305;</span>n
+                </span>
+            </h1>
+            <p class="subtitle">Centre d'Estudis i Suport Educatiu</p>
+
+            <div class="button-container">
+                <a href="https://wa.me/34693067214?text=Hola,%20quisiera%20informaci%C3%B3n%20sobre%20las%20clases" target="_blank" class="btn btn-whatsapp">
+                    <span class="btn-icon">💬</span> WhatsApp
+                </a>
+                
+                <a href="tel:+34693067214" class="btn btn-call">
+                    <span class="btn-icon">📞</span> Llamar
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
