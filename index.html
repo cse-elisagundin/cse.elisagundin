@@ -11,6 +11,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería html2pdf para generar el PDF nativo en el navegador y subirlo a Supabase Storage -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -590,7 +592,7 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: REGISTRAR PAGO Y RECIBO PDF -->
+                            <!-- SECCIÓN: REGISTRAR PAGO Y SUBIDA AUTOMÁTICA A SUPABASE STORAGE -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
                                 <div class="border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
@@ -647,25 +649,15 @@
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
-                                    <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-                                        <div class="flex flex-col text-center sm:text-left">
-                                            <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
-                                            <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
-                                        </div>
-                                        <!-- CHECKBOX "Imprimir Factura" -->
-                                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border shadow-sm select-none">
-                                            <input type="checkbox" v-model="imprimirAlGuardar" id="checkImprimir" class="w-4 h-4 accent-[#fa65c3] rounded cursor-pointer">
-                                            <label for="checkImprimir" class="text-xs font-extrabold text-[#243c7a] cursor-pointer">Imprimir Factura</label>
-                                        </div>
+                                    <div class="flex flex-col text-center sm:text-left">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
+                                        <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
                                     
-                                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                        <button @click="registrarPago" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#2b94cc] text-white px-6 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
-                                            <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
-                                            {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
-                                        </button>
-                                        <button @click="registrarYGenerarPDF" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-5 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
-                                            <i class="fas fa-file-pdf"></i> Recibo PDF (Drive)
+                                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                                        <button @click="registrarPagoYSubirNube" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-8 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition">
+                                            <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-cloud-upload-alt"></i>
+                                            {{ savingPago ? 'Procesando...' : 'GUARDAR PAGO Y FACTURA' }}
                                         </button>
                                     </div>
                                 </div>
@@ -719,9 +711,6 @@
     const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // URL DE WEB APP DE GOOGLE APPS SCRIPT ACTUALIZADA
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOxeZb3MZ-cmVdnF20DFkW7EkzoZyuK6ZwlLiJimmglb5iMrCWsBAgFbwWMrF7ncky/exec';
 
     const monthOrder = {
         'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
@@ -737,7 +726,6 @@
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 nuevoPago: this.pagoVacio(),
-                imprimirAlGuardar: false, // Variable para el checkbox de impresión
                 examenesList: [],
                 ingresosFijosList: [],
                 pagosList: [],
@@ -1205,54 +1193,8 @@
                 this.successMessage = 'Ficha guardada correctamente';
                 setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
-            // REGISTRAR PAGO (Y OPCIONALMENTE IMPRIMIR SI EL CHECKBOX ESTÁ MARCADO)
-            async registrarPago() {
-                if (!this.form || !this.form.nombre || !this.form.apellidos) {
-                    alert("Por favor selecciona un alumno válido.");
-                    return;
-                }
-                this.savingPago = true;
-                const nextId = await this.obtenerSiguienteFacturaIdReal();
-                
-                const { error } = await _supabase.from('pagos').insert([{
-                    factura_id: nextId,
-                    alumno: this.form.nombre + ' ' + this.form.apellidos,
-                    tarifa: this.nuevoPago.tarifa,
-                    extras: this.nuevoPago.extras,
-                    importe: this.importeCalculado,
-                    fecha_pago: this.nuevoPago.fecha,
-                    mes: this.nuevoPago.mes,
-                    metodo_pago: this.nuevoPago.metodo,
-                    registrado: true
-                }]);
-
-                if (error) {
-                    alert("Error al registrar el pago en Supabase: " + error.message);
-                    this.savingPago = false;
-                    return;
-                }
-
-                await this.cargarDatosSupabase();
-
-                // Si la casilla "Imprimir Factura" está marcada, imprimimos tras guardar con el ID correcto
-                if (this.imprimirAlGuardar) {
-                    this.generarReciboHTML({
-                        fecha: this.nuevoPago.fecha,
-                        metodo: this.nuevoPago.metodo,
-                        tarifa: this.nuevoPago.tarifa,
-                        extras: this.nuevoPago.extras,
-                        importe: this.importeCalculado,
-                        id: 'REC-' + nextId
-                    });
-                    setTimeout(() => { window.print(); }, 400);
-                }
-
-                this.showSuccess = true;
-                this.successMessage = '¡Pago registrado correctamente!';
-                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
-            },
-            // REGISTRAR Y GENERAR PDF EN DRIVE (Y OPCIONALMENTE IMPRIMIR SI EL CHECKBOX ESTÁ MARCADO)
-            async registrarYGenerarPDF() {
+            // REGISTRAR PAGO, GENERAR PDF Y SUBIR A SUPABASE STORAGE AUTOMÁTICAMENTE
+            async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre || !this.form.apellidos) {
                     alert("Por favor selecciona un alumno válido.");
                     return;
@@ -1261,6 +1203,7 @@
                 try {
                     const nextId = await this.obtenerSiguienteFacturaIdReal();
                     
+                    // 1. Guardar en tabla pagos de Supabase
                     const { error } = await _supabase.from('pagos').insert([{
                         factura_id: nextId,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
@@ -1279,54 +1222,50 @@
                         return;
                     }
 
-                    let mesDrive = String(this.nuevoPago.mes || '').replace(/'/g, '').trim();
-                    if (/^\w+\s+\d{2}$/.test(mesDrive)) {
-                        mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
-                    }
-
-                    const payload = {
-                        pass: "010523",
-                        device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
-                        action: 'create_pago',
-                        factura_id: nextId,
-                        id_factura: nextId,
-                        alumno: this.form.nombre + ' ' + this.form.apellidos,
-                        tarifa: this.nuevoPago.tarifa,
+                    // 2. Generar HTML del recibo para imprimir y convertir en PDF
+                    this.generarReciboHTML({
                         fecha: this.nuevoPago.fecha,
+                        metodo: this.nuevoPago.metodo,
+                        tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        mes: mesDrive,
-                        metodo: this.nuevoPago.metodo,
-                        generarPDF: true
-                    };
-
-                    await fetch(APPS_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify(payload)
+                        id: 'REC-' + nextId
                     });
 
-                    await this.cargarDatosSupabase();
+                    // 3. Crear PDF Blob mediante html2pdf y subirlo a Supabase Storage
+                    const element = document.getElementById('zona-impresion');
+                    const opt = {
+                        margin: 0,
+                        filename: `REC-${nextId}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
 
-                    // Si la casilla "Imprimir Factura" está marcada, imprimimos tras guardar con el ID correcto
-                    if (this.imprimirAlGuardar) {
-                        this.generarReciboHTML({
-                            fecha: this.nuevoPago.fecha,
-                            metodo: this.nuevoPago.metodo,
-                            tarifa: this.nuevoPago.tarifa,
-                            extras: this.nuevoPago.extras,
-                            importe: this.importeCalculado,
-                            id: 'REC-' + nextId
+                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+
+                    const fechaParts = this.nuevoPago.fecha.split('-');
+                    const anio = fechaParts[0] || '2026';
+                    const mesNum = fechaParts[1] || '08';
+                    const storagePath = `${anio}/${mesNum}/REC-${nextId}.pdf`;
+
+                    await _supabase.storage
+                        .from('facturas')
+                        .upload(storagePath, pdfBlob, {
+                            contentType: 'application/pdf',
+                            upsert: true
                         });
-                        setTimeout(() => { window.print(); }, 400);
-                    }
 
+                    await this.cargarDatosSupabase();
                     this.showSuccess = true;
-                    this.successMessage = '¡Pago guardado y PDF enviado a Google Drive!';
+                    this.successMessage = `¡Pago registrado, factura REC-${nextId} guardada en Supabase Storage e impresa!`;
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
+
+                    // 4. Abrir ventana de impresión automática
+                    setTimeout(() => { window.print(); }, 400);
+
                 } catch (e) {
-                    alert("Error al sincronizar con Google Drive: " + e.toString());
+                    alert("Error en el proceso: " + e.toString());
                     this.savingPago = false;
                 }
             },
