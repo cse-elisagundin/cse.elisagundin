@@ -82,7 +82,6 @@
 
                     <p class="text-gray-600 text-sm font-medium leading-relaxed">{{ modalMessage }}</p>
 
-                    <!-- Input si es modo edición -->
                     <div v-if="modalType === 'edit'" class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-500 uppercase">Nombre del Mes</label>
                         <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 26'">
@@ -278,12 +277,12 @@
                                     <span class="text-xs text-gray-500 text-center px-2">Modificar datos, contactos y familiares.</span>
                                 </button>
 
-                                <button @click="activeTab = 'pagos'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
+                                <button @click="abrirSeccionPagos" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
                                     <div class="bg-pink-50 p-5 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors duration-300">
                                         <i class="fas fa-euro-sign text-4xl px-2"></i>
                                     </div>
                                     <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Cuotas fijas por años, cobros y recibos PDF.</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Cuotas por curso escolar, cobros y recibos PDF.</span>
                                 </button>
 
                                 <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
@@ -369,33 +368,31 @@
                         <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
                             
-                            <!-- SECCIÓN: CUOTAS FIJAS MENSUALES -->
+                            <!-- SECCIÓN: CUOTAS FIJAS POR CURSOS ESCOLARES -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2">
-                                        <i class="fas fa-calendar-alt text-[#fa65c3]"></i> Cuotas Fijas por Años ({{ form.nombre }})
+                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i> Cuotas por Cursos Escolares ({{ form.nombre }})
                                     </h3>
                                     <button @click="generarSiguienteMes" class="bg-pink-50 text-[#fa65c3] border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold text-xs flex items-center gap-2 transition shadow-sm">
                                         <i class="fas fa-plus"></i> Generar Siguiente Mes
                                     </button>
                                 </div>
 
-                                <!-- ACORDEÓN / CARPETAS POR AÑO UNIFICADO -->
+                                <!-- CARPETAS POR CURSO ESCOLAR (SEP - JUL) -->
                                 <div class="space-y-4">
-                                    <div v-for="(mesesAnio, anio) in mesesAgrupadosPorAnio" :key="anio" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                        <!-- Cabecera de la carpeta del año -->
-                                        <div @click="toggleAnio(anio)" class="bg-gray-100 p-4 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
+                                    <div v-for="(mesesCurso, cursoKey) in mesesAgrupadosPorCursoEscolar" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <div @click="toggleCurso(cursoKey)" class="bg-gray-100 p-4 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
                                             <div class="flex items-center gap-3">
-                                                <i class="fas fa-folder-open text-[#fa65c3]" v-if="anioAbierto[anio]"></i>
+                                                <i class="fas fa-folder-open text-[#fa65c3]" v-if="cursoAbierto[cursoKey]"></i>
                                                 <i class="fas fa-folder text-gray-400" v-else></i>
-                                                <span>Año / Carpeta {{ anio }}</span>
-                                                <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesAnio.length }} meses</span>
+                                                <span>Curso Escolar {{ cursoKey }}</span>
+                                                <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }} meses</span>
                                             </div>
-                                            <i class="fas fa-chevron-down transition-transform duration-300" :class="anioAbierto[anio] ? 'rotate-180' : ''"></i>
+                                            <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                         </div>
 
-                                        <!-- Tabla de meses de ese año -->
-                                        <div v-if="anioAbierto[anio]" class="p-3 overflow-x-auto">
+                                        <div v-if="cursoAbierto[cursoKey]" class="p-3 overflow-x-auto">
                                             <table class="w-full border-collapse text-xs">
                                                 <thead>
                                                     <tr class="bg-gray-50 text-gray-600 uppercase">
@@ -406,7 +403,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr v-for="mes in mesesAnio" :key="mes" class="hover:bg-blue-50/40 transition">
+                                                    <tr v-for="mes in mesesCurso" :key="mes" class="hover:bg-blue-50/40 transition">
                                                         <td class="p-2.5 border font-bold text-[#243c7a]">{{ mes }}</td>
                                                         <td class="p-2 border text-center">
                                                             <input type="number" step="0.01" 
@@ -439,7 +436,7 @@
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro y Generar Factura</h3>
                                     <button @click="imprimirTicketRapido" :disabled="importeCalculado === 0" class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg hover:bg-gray-300 font-bold text-xs flex items-center gap-2 disabled:opacity-50">
-                                        <i class="fas fa-print"></i> Imprimir Recibo PDF
+                                        <i class="fas fa-print"></i> Imprimir y Guardar en Drive
                                     </button>
                                 </div>
 
@@ -502,7 +499,7 @@
                                             {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
                                         </button>
                                         <button @click="imprimirTicketRapido" class="bg-[#fa65c3] text-white px-6 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex items-center gap-2">
-                                            <i class="fas fa-file-pdf"></i> Imprimir Recibo
+                                            <i class="fas fa-file-pdf"></i> Imprimir Recibo y Drive
                                         </button>
                                     </div>
                                 </div>
@@ -557,8 +554,8 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const monthOrder = {
-        'ENERO': 1, 'FEBRERO': 2, 'MARZO': 3, 'ABRIL': 4, 'MAYO': 5, 'JUNIO': 6,
-        'JULIO': 7, 'AGOSTO': 8, 'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12
+        'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
+        'ENERO': 5, 'FEBRERO': 6, 'MARZO': 7, 'ABRIL': 8, 'MAYO': 9, 'JUNIO': 10, 'JULIO': 11, 'AGOSTO': 12
     };
 
     createApp({
@@ -572,14 +569,14 @@
                 nuevoPago: this.pagoVacio(),
                 examenesList: [],
                 ingresosFijosList: [],
+                pagosList: [],
                 loadingExamenes: false,
                 savingExamenes: false,
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
-                anioAbierto: {},
-                // Control del Modal Personalizado
+                cursoAbierto: {},
                 showCustomModal: false,
-                modalType: 'edit', // 'edit' o 'delete'
+                modalType: 'edit',
                 modalTitle: '',
                 modalMessage: '',
                 modalInputVal: '',
@@ -626,21 +623,20 @@
                 return todos.sort((a, b) => {
                     const pa = this.parseMonthOrder(a);
                     const pb = this.parseMonthOrder(b);
-                    if (pa.year !== pb.year) return pa.year - pb.year;
+                    if (pa.cursoKey !== pb.cursoKey) return pa.cursoKey.localeCompare(pb.cursoKey);
                     return pa.monthIdx - pb.monthIdx;
                 });
             },
-            mesesAgrupadosPorAnio() {
+            mesesAgrupadosPorCursoEscolar() {
                 const agrupados = {};
                 this.listaMesesDinamicos.forEach(mes => {
-                    let partes = mes.replace(/'/g, "").trim().split(' ');
-                    let anioStr = partes.length > 1 ? partes[1] : '26';
-                    let anioCompleto = '20' + (anioStr.length === 2 ? anioStr : anioStr.slice(-2));
+                    const parsed = this.parseMonthOrder(mes);
+                    const cursoKey = parsed.cursoKey;
                     
-                    if (!agrupados[anioCompleto]) {
-                        agrupados[anioCompleto] = [];
+                    if (!agrupados[cursoKey]) {
+                        agrupados[cursoKey] = [];
                     }
-                    agrupados[anioCompleto].push(mes);
+                    agrupados[cursoKey].push(mes);
                 });
                 return agrupados;
             }
@@ -652,15 +648,29 @@
                 if (parts.length >= 2) {
                     const m_name = parts[0];
                     const y_raw = parts[1];
-                    const year = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
-                    const monthIdx = monthOrder[m_name] || 0;
-                    return { year, monthIdx };
+                    const yearNum = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
+                    const monthIdx = monthOrder[m_name] || 1;
+                    
+                    // Definir curso escolar (Septiembre a Agosto del año siguiente)
+                    // Ej: Septiembre 25 -> Curso 2025/2026. Enero 26 -> Curso 2025/2026. Julio 26 -> Curso 2025/2026.
+                    let startYear = (monthIdx >= 1 && monthIdx <= 4) ? yearNum - 1 : yearNum; // Sep-Dic pertenecen al año de inicio del curso
+                    if (m_name === 'ENERO' || m_name === 'FEBRERO' || m_name === 'MARZO' || m_name === 'ABRIL' || m_name === 'MAYO' || m_name === 'JUNIO' || m_name === 'JULIO' || m_name === 'AGOSTO') {
+                        startYear = yearNum - 1;
+                    }
+                    const cursoKey = `${startYear}/${startYear + 1}`;
+                    return { cursoKey, monthIdx };
                 }
-                return { year: 2026, monthIdx: 1 };
+                return { cursoKey: '2025/2026', monthIdx: 1 };
             },
             pagoVacio() {
-                const hoy = new Date().toISOString().split('T')[0];
-                return { fecha: hoy, mes: 'OCTUBRE 25\'', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
+                return { 
+                    fecha: new Date().toISOString().split('T')[0], 
+                    mes: 'JUNIO 26\'', 
+                    tarifa: 'Opción 4 (85€)', 
+                    extras: '', 
+                    importe: 85, 
+                    metodo: 'Bizum' 
+                };
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -693,6 +703,9 @@
 
                     const resFijos = await _supabase.from('ingresos_fijos').select('*');
                     this.ingresosFijosList = resFijos.data || [];
+
+                    const resPagos = await _supabase.from('pagos').select('*');
+                    this.pagosList = resPagos.data || [];
                 } catch(e) {
                     console.error("Error cargando desde Supabase:", e);
                 }
@@ -701,14 +714,33 @@
                 _supabase.auth.signOut();
                 location.reload();
             },
-            toggleAnio(anio) {
-                this.anioAbierto[anio] = !this.anioAbierto[anio];
+            toggleCurso(cursoKey) {
+                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
             },
             abrirGestorExamenes() {
                 this.selected = null;
                 this.activeTab = 'gestor_examenes';
                 this.gestorExamenes.fecha = new Date().toISOString().split('T')[0];
                 this.searchGestor = '';
+            },
+            abrirSeccionPagos() {
+                this.activeTab = 'pagos';
+                // Autocomlean el último pago registrado de este alumno
+                const nombreCompleto = this.normalizeName(this.form.nombre + " " + this.form.apellidos);
+                const pagosAlumno = this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreCompleto);
+                
+                if (pagosAlumno.length > 0) {
+                    // Ordenar por fecha o ID descendente para obtener el más reciente
+                    const ultimo = pagosAlumno[pagosAlumno.length - 1];
+                    this.nuevoPago.tarifa = ultimo.tarifa || 'Opción 4 (85€)';
+                    this.nuevoPago.importe = ultimo.importe || 85;
+                    this.nuevoPago.mes = ultimo.mes || (this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'JUNIO 26\'');
+                } else {
+                    // Si no tiene pagos previos, poner por defecto el último mes disponible
+                    if (this.listaMesesDinamicos.length > 0) {
+                        this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
+                    }
+                }
             },
             getCuotaValor(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
@@ -768,15 +800,21 @@
                 const parts = ultimoMes.replace(/'/g, "").trim().split(' ');
                 const mName = parts[0];
                 const yRaw = parts[1];
-                const listaNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+                const listaNombres = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
                 
                 let siguienteMesStr = "";
                 try {
                     let idx = listaNombres.indexOf(mName);
+                    let anioNum = Number(yRaw);
                     if (idx === 11) {
-                        siguienteMesStr = `${listaNombres[0]} ${Number(yRaw) + 1}'`;
+                        siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}'`;
                     } else {
-                        siguienteMesStr = `${listaNombres[idx + 1]} ${yRaw}'`;
+                        // Si pasamos de Diciembre a Enero, incrementamos año
+                        if (mName === 'DICIEMBRE') {
+                            siguienteMesStr = `${listaNombres[idx + 1]} ${anioNum + 1}'`;
+                        } else {
+                            siguienteMesStr = `${listaNombres[idx + 1]} ${anioNum}'`;
+                        }
                     }
                 } catch(e) {
                     siguienteMesStr = "JULIO 26'";
@@ -795,7 +833,6 @@
                 this.successMessage = `¡Mes de ${siguienteMesStr} generado correctamente!`;
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
-            // Métodos del Modal Personalizado
             abrirModalEditar(mes) {
                 this.modalType = 'edit';
                 this.modalTitle = 'Modificar Mes';
@@ -865,8 +902,7 @@
                 this.isNew = false;
                 this.activeTab = 'menu';
                 this.selected = s;
-                this.nuevoPago = this.pagoVacio();
-                this.anioAbierto['2026'] = true;
+                this.cursoAbierto['2025/2026'] = true;
             },
             async saveData() {
                 this.saving = true;
@@ -893,6 +929,7 @@
                     metodo_pago: this.nuevoPago.metodo,
                     registrado: true
                 }]);
+                await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = '¡Pago registrado correctamente!';
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
