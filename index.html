@@ -285,7 +285,7 @@
         <div v-if="authenticated" class="flex flex-col md:flex-row h-full animate-opacity duration-700">
             
             <!-- PANEL LATERAL / LISTADO DE ALUMNOS -->
-            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes'}">
+            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos'}">
                 <div class="p-4 sm:p-5 bg-[#243c7a] text-white">
                     <div class="flex items-center gap-3">
                         <div class="bg-white p-1 rounded-lg shadow-sm">
@@ -310,6 +310,9 @@
                     <button @click="abrirGestorExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-lg hover:bg-indigo-100 font-bold flex justify-center gap-2 shadow-sm transition">
                         <i class="fas fa-calendar-alt"></i> Gestor de Exámenes
                     </button>
+                    <button @click="abrirGestorPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2.5 rounded-lg hover:bg-pink-100 font-bold flex justify-center gap-2 shadow-sm transition">
+                        <i class="fas fa-file-invoice-dollar"></i> Historial Global Pagos
+                    </button>
                 </div>
                 <div class="flex-1 overflow-y-auto">
                     <div v-for="s in filteredList" :key="s.id" @click="selectStudent(s)"
@@ -331,14 +334,89 @@
             </div>
 
             <!-- PANEL DE CONTENIDO PRINCIPAL -->
-            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes'}">
+            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos'}">
 
-                <!-- BOTÓN VOLVER EN MÓVIL (CUANDO HAY ALUMNO SELECCIONADO) -->
-                <div v-if="selected || activeTab === 'gestor_examenes'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
+                <!-- BOTÓN VOLVER EN MÓVIL (CUANDO HAY ALUMNO SELECCIONADO O GESTOR ACTIVO) -->
+                <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
                     <button @click="cerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Volver al listado
                     </button>
-                    <span class="text-xs font-semibold truncate max-w-[200px]">{{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}</span>
+                    <span class="text-xs font-semibold truncate max-w-[200px]">{{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : 'Historial Pagos')) }}</span>
+                </div>
+
+                <!-- HISTORIAL GLOBAL DE PAGOS -->
+                <div v-if="activeTab === 'gestor_pagos' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
+                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-pink-100 p-2 rounded-lg text-[#fa65c3]"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
+                                <div>
+                                    <h3 class="text-xl font-extrabold text-[#243c7a]">Historial Global de Pagos</h3>
+                                    <p class="text-xs text-gray-400 font-semibold">Registro de cobros de todos los alumnos</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
+                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                            </div>
+                        </div>
+
+                        <!-- BARRA DE BÚSQUEDA GLOBAL -->
+                        <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between bg-gray-50 p-4 rounded-xl border">
+                            <div class="w-full sm:w-96 relative">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                <input v-model="searchPagosGlobal" type="text" placeholder="Buscar por alumno, mes o ID..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#fa65c3] shadow-sm text-sm">
+                                <button v-if="searchPagosGlobal" @click="searchPagosGlobal = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="text-xs font-bold text-gray-600 bg-white px-4 py-2.5 rounded-lg border shadow-sm">
+                                Total Recaudado: <span class="text-[#243c7a] text-base font-black ml-1">{{ totalRecaudadoGlobal }} €</span>
+                            </div>
+                        </div>
+
+                        <!-- TABLA GLOBAL DE PAGOS -->
+                        <div v-if="pagosFiltradosGlobal.length === 0" class="text-center py-12 text-gray-400 font-semibold">
+                            No se encontraron pagos registrados con ese criterio.
+                        </div>
+                        <div v-else class="overflow-x-auto">
+                            <table class="w-full border-collapse text-xs min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-600 uppercase">
+                                        <th class="p-3 border text-center">ID Recibo</th>
+                                        <th class="p-3 border text-center">Fecha</th>
+                                        <th class="p-3 border text-left">Alumno</th>
+                                        <th class="p-3 border text-left">Mes</th>
+                                        <th class="p-3 border text-left">Concepto</th>
+                                        <th class="p-3 border text-center">Método</th>
+                                        <th class="p-3 border text-center">Importe</th>
+                                        <th class="p-3 border text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="pago in pagosFiltradosGlobal" :key="pago.id" class="hover:bg-blue-50/40 transition">
+                                        <td class="p-3 border text-center font-bold text-gray-500">{{ pago.factura_id || 'S/N' }}</td>
+                                        <td class="p-3 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
+                                        <td class="p-3 border font-extrabold text-[#243c7a]">{{ pago.alumno }}</td>
+                                        <td class="p-3 border font-bold text-[#fa65c3]">{{ formatMesUnificado(pago.mes) }}</td>
+                                        <td class="p-3 border text-gray-600">
+                                            <span class="font-bold">{{ pago.tarifa }}</span>
+                                            <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
+                                        </td>
+                                        <td class="p-3 border text-center">
+                                            <span :class="pago.metodo_pago === 'Bizum' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'" class="px-2 py-1 rounded font-bold text-[10px] uppercase">
+                                                {{ pago.metodo_pago || 'Efectivo' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 border text-center font-black text-base text-[#243c7a]">{{ pago.importe }} €</td>
+                                        <td class="p-3 border text-center space-x-1">
+                                            <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
+                                            <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
+                                            <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- GESTOR MASIVO DE EXÁMENES / CALENDARIO GENERAL -->
@@ -548,7 +626,7 @@
                             </section>
 
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
-                                <div class="col-span-1 sm:col-span-2 md:grid-cols-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
                                 <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
@@ -814,7 +892,7 @@
                 </div>
                 
                 <!-- ESTADO VACÍO (INICIO) -->
-                <div v-else-if="activeTab !== 'gestor_examenes'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
+                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
                     </div>
@@ -870,7 +948,9 @@
                 examenAEliminar: null,
                 // Calendario general de exámenes
                 mesVisualizadoCalendario: new Date(),
-                filtroAlumnoCalendario: 'todos'
+                filtroAlumnoCalendario: 'todos',
+                // Historial global de pagos
+                searchPagosGlobal: ''
             }
         },
         watch: {
@@ -914,6 +994,18 @@
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
                 return this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreLimpio)
                     .sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+            },
+            pagosFiltradosGlobal() {
+                const t = this.normalizeName(this.searchPagosGlobal);
+                return this.pagosList.filter(p => {
+                    const alumnoNorm = this.normalizeName(p.alumno || '');
+                    const mesNorm = this.normalizeName(p.mes || '');
+                    const facturaNorm = this.normalizeName(p.factura_id || '');
+                    return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
+                }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+            },
+            totalRecaudadoGlobal() {
+                return this.pagosFiltradosGlobal.reduce((acc, p) => acc + (Number(p.importe) || 0), 0).toFixed(2);
             },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
@@ -1157,6 +1249,11 @@
                 this.activeTab = 'gestor_examenes';
                 this.gestorExamenes.fecha = new Date().toISOString().split('T')[0];
                 this.searchGestor = '';
+            },
+            abrirGestorPagos() {
+                this.selected = null;
+                this.activeTab = 'gestor_pagos';
+                this.searchPagosGlobal = '';
             },
             cambiarMesCalendario(d) {
                 const nuevoMes = new Date(this.mesVisualizadoCalendario);
@@ -1521,14 +1618,27 @@
                     extras: pago.extras,
                     importe: pago.importe,
                     id: facturaNum
-                });
+                }, pago.alumno);
                 setTimeout(() => { window.print(); }, 400);
             },
-            generarReciboHTML(datos) {
+            reimprimirPagoHistoricoGlobal(pago) {
+                const facturaNum = pago.factura_id || 'S/N';
+                this.generarReciboHTML({
+                    fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
+                    metodo: pago.metodo_pago || 'Efectivo',
+                    tarifa: pago.tarifa,
+                    extras: pago.extras,
+                    importe: pago.importe,
+                    id: facturaNum
+                }, pago.alumno);
+                setTimeout(() => { window.print(); }, 400);
+            },
+            generarReciboHTML(datos, nombreAlumnoFijo = null) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
                 
+                const alumnoImprimir = nombreAlumnoFijo || (this.form.nombre ? `${this.form.nombre} ${this.form.apellidos}` : 'ALUMNO');
                 const importeTotalStr = parseFloat(datos.importe || datos.importeTotal || 0).toFixed(2).replace('.', ',') + " €";
                 let filasHTML = "";
                 
@@ -1563,7 +1673,7 @@
                             </table>
                             <div style="border-bottom:2px solid #000;padding:15px;">
                                 <p style="font-size:10px;margin:0">RECIBÍ DE:</p>
-                                <h3 style="margin:5px 0;text-transform:uppercase">${this.form.nombre} ${this.form.apellidos}</h3>
+                                <h3 style="margin:5px 0;text-transform:uppercase">${alumnoImprimir}</h3>
                             </div>
                             <table style="width:100%;border-collapse:collapse;">
                                 <tr>
