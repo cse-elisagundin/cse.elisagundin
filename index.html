@@ -877,16 +877,33 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            getNextFacturaId() {
-                if (!this.pagosList || this.pagosList.length === 0) return 1;
-                const numeros = this.pagosList
-                    .map(p => p.factura_id)
-                    .filter(id => id !== null && id !== undefined && id !== '')
-                    .map(id => Number(id))
-                    .filter(n => !isNaN(n));
-                
-                if (numeros.length === 0) return 1;
-                return Math.max(...numeros) + 1;
+            // CONSULTA DIRECTA A SUPABASE PARA OBTENER EL SIGUIENTE ID DE FACTURA REAL (ELEM. 107)
+            async getNextFacturaId() {
+                try {
+                    const { data, error } = await _supabase
+                        .from('pagos')
+                        .select('factura_id')
+                        .order('factura_id', { ascending: false })
+                        .limit(1);
+
+                    if (!error && data && data.length > 0) {
+                        const maxId = Number(data[0].factura_id) || 0;
+                        if (maxId > 0) return maxId + 1;
+                    }
+                } catch (e) {
+                    console.error("Error consultando max factura_id:", e);
+                }
+
+                // Respaldo secundario con pagosList local si falla la red
+                if (this.pagosList && this.pagosList.length > 0) {
+                    const numeros = this.pagosList
+                        .map(p => Number(p.factura_id))
+                        .filter(n => !isNaN(n) && n > 0);
+                    if (numeros.length > 0) {
+                        return Math.max(...numeros) + 1;
+                    }
+                }
+                return 1;
             },
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
@@ -1171,8 +1188,12 @@
                 setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
             async registrarPago() {
+                if (!this.form || !this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor selecciona un alumno válido.");
+                    return;
+                }
                 this.savingPago = true;
-                const nextId = this.getNextFacturaId();
+                const nextId = await this.getNextFacturaId();
                 
                 const { error } = await _supabase.from('pagos').insert([{
                     factura_id: nextId,
@@ -1198,9 +1219,13 @@
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
             },
             async registrarYGenerarPDF() {
+                if (!this.form || !this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor selecciona un alumno válido.");
+                    return;
+                }
                 this.savingPago = true;
                 try {
-                    const nextId = this.getNextFacturaId();
+                    const nextId = await this.getNextFacturaId();
                     
                     const { error } = await _supabase.from('pagos').insert([{
                         factura_id: nextId,
@@ -1225,10 +1250,13 @@
                         mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
                     }
 
+                    // ENVÍO EXPLÍCITO DEL ID DE FACTURA AL PAYLOAD DE GOOGLE APPS SCRIPT
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
                         action: 'create_pago',
+                        factura_id: nextId,
+                        id_factura: nextId,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         fecha: this.nuevoPago.fecha,
@@ -1255,8 +1283,8 @@
                     this.savingPago = false;
                 }
             },
-            imprimirTicketRapido() {
-                const nextId = this.getNextFacturaId();
+            async imprimirTicketRapido() {
+                const nextId = await this.getNextFacturaId();
                 this.generarReciboHTML({
                     fecha: this.nuevoPago.fecha,
                     metodo: this.nuevoPago.metodo,
