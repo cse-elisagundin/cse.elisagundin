@@ -452,6 +452,51 @@
                                 </div>
                             </div>
 
+                            <!-- SECCIÓN: HISTORIAL DE PAGOS DEL ALUMNO (NUEVO) -->
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+                                <h3 class="font-extrabold text-[#243c7a] uppercase text-xs sm:text-sm mb-4 flex items-center gap-2 border-b pb-3">
+                                    <i class="fas fa-history text-[#2b94cc]"></i> Historial de Pagos Recientes ({{ form.nombre }})
+                                </h3>
+                                <div v-if="pagosAlumnoActual.length === 0" class="text-xs text-gray-400 italic text-center py-4">
+                                    No hay pagos registrados para este alumno todavía.
+                                </div>
+                                <div v-else class="overflow-x-auto">
+                                    <table class="w-full border-collapse text-xs min-w-[320px]">
+                                        <thead>
+                                            <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                <th class="p-2 border text-center">Fecha</th>
+                                                <th class="p-2 border text-left">Mes</th>
+                                                <th class="p-2 border text-left">Concepto</th>
+                                                <th class="p-2 border text-center">Importe</th>
+                                                <th class="p-2 border text-center">Método</th>
+                                                <th class="p-2 border text-center">Recibo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="pago in pagosAlumnoActual" :key="pago.id" class="hover:bg-blue-50/40 transition">
+                                                <td class="p-2 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
+                                                <td class="p-2 border font-bold text-[#243c7a]">{{ pago.mes || '-' }}</td>
+                                                <td class="p-2 border text-gray-600">
+                                                    <span class="font-bold">{{ pago.tarifa }}</span>
+                                                    <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
+                                                </td>
+                                                <td class="p-2 border text-center font-black text-[#243c7a]">{{ pago.importe }} €</td>
+                                                <td class="p-2 border text-center">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" :class="pago.metodo_pago === 'Bizum' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'">
+                                                        {{ pago.metodo_pago || 'Efectivo' }}
+                                                    </span>
+                                                </td>
+                                                <td class="p-2 border text-center">
+                                                    <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo de este pago" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition text-xs">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             <!-- SECCIÓN: REGISTRAR PAGO Y RECIBO PDF -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
@@ -639,6 +684,12 @@
                 });
                 return grupos;
             },
+            pagosAlumnoActual() {
+                if (!this.selected) return [];
+                const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                return this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreLimpio)
+                    .sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+            },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
                 const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
@@ -667,6 +718,12 @@
         },
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
+            formatearFecha(f) {
+                if (!f) return '';
+                const parts = f.split('-');
+                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                return f;
+            },
             parseMonthOrder(m_str) {
                 const parts = m_str.replace(/'/g, "").trim().split(' ');
                 if (parts.length >= 2) {
@@ -905,23 +962,43 @@
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
             },
             imprimirTicketRapido() {
+                this.generarReciboHTML({
+                    fecha: this.nuevoPago.fecha,
+                    metodo: this.nuevoPago.metodo,
+                    tarifa: this.nuevoPago.tarifa,
+                    extras: this.nuevoPago.extras,
+                    importe: this.importeCalculado
+                });
+                window.print();
+            },
+            reimprimirPagoHistorico(pago) {
+                this.generarReciboHTML({
+                    fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
+                    metodo: pago.metodo_pago || 'Efectivo',
+                    tarifa: pago.tarifa,
+                    extras: pago.extras,
+                    importe: pago.importe
+                });
+                window.print();
+            },
+            generarReciboHTML(datos) {
                 const numRecibo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-                const fechaE = new Date(this.nuevoPago.fecha).toLocaleDateString('es-ES');
+                const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
                 
-                const importeTotalStr = parseFloat(this.importeCalculado || 0).toFixed(2).replace('.', ',') + " €";
+                const importeTotalStr = parseFloat(datos.importe || 0).toFixed(2).replace('.', ',') + " €";
                 let filasHTML = "";
                 
-                if (this.nuevoPago.tarifa && String(this.nuevoPago.tarifa).trim() !== "") {
-                    let matchTarifa = String(this.nuevoPago.tarifa).match(/\(([\d,\.]+)€\)/);
+                if (datos.tarifa && String(datos.tarifa).trim() !== "") {
+                    let matchTarifa = String(datos.tarifa).match(/\(([\d,\.]+)€\)/);
                     let importeTarifaStr = matchTarifa ? matchTarifa[1] + " €" : importeTotalStr;
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTarifaStr}</td></tr>`;
+                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTarifaStr}</td></tr>`;
                 }
                 
-                if (this.nuevoPago.extras && String(this.nuevoPago.extras).trim() !== "") {
-                    let matchExtra = String(this.nuevoPago.extras).match(/\(([\d,\.]+)€\)/);
-                    let importeExtraStr = matchExtra ? matchExtra[1] + " €" : parseFloat(String(this.nuevoPago.extras).replace(/[^\d\.,]/g,'').replace(',','.')||0).toFixed(2).replace('.',',') + " €";
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeExtraStr}</td></tr>`;
+                if (datos.extras && String(datos.extras).trim() !== "") {
+                    let matchExtra = String(datos.extras).match(/\(([\d,\.]+)€\)/);
+                    let importeExtraStr = matchExtra ? matchExtra[1] + " €" : parseFloat(String(datos.extras).replace(/[^\d\.,]/g,'').replace(',','.')||0).toFixed(2).replace('.',',') + " €";
+                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeExtraStr}</td></tr>`;
                 }
 
                 document.getElementById('ticket-data').innerHTML = `
@@ -938,7 +1015,7 @@
                                 <tr>
                                     <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
                                     <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
-                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${this.nuevoPago.metodo.toUpperCase()}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo).toUpperCase()}</span></td>
                                 </tr>
                             </table>
                             <div style="border-bottom:2px solid #000;padding:15px;">
@@ -968,7 +1045,6 @@
                             <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serão tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
                         </div>
                     </div>`;
-                window.print();
             },
             async actualizarExamenes() {
                 this.loadingExamenes = true;
