@@ -558,16 +558,17 @@
                                     <table class="w-full border-collapse text-xs min-w-[360px]">
                                         <thead>
                                             <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                <th class="p-2 border text-center">ID</th>
                                                 <th class="p-2 border text-center">Fecha</th>
                                                 <th class="p-2 border text-left">Mes</th>
                                                 <th class="p-2 border text-left">Concepto</th>
                                                 <th class="p-2 border text-center">Importe</th>
-                                                <th class="p-2 border text-center">Método</th>
                                                 <th class="p-2 border text-center">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="pago in pagosAlumnoActual" :key="pago.id" class="hover:bg-blue-50/40 transition">
+                                                <td class="p-2 border text-center font-bold text-gray-500">{{ pago.factura_id || 'S/N' }}</td>
                                                 <td class="p-2 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
                                                 <td class="p-2 border font-bold text-[#243c7a]">{{ formatMesUnificado(pago.mes) }}</td>
                                                 <td class="p-2 border text-gray-600">
@@ -575,11 +576,6 @@
                                                     <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
                                                 </td>
                                                 <td class="p-2 border text-center font-black text-[#243c7a]">{{ pago.importe }} €</td>
-                                                <td class="p-2 border text-center">
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" :class="pago.metodo_pago === 'Bizum' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'">
-                                                        {{ pago.metodo_pago || 'Efectivo' }}
-                                                    </span>
-                                                </td>
                                                 <td class="p-2 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
@@ -662,7 +658,7 @@
 
                                         <!-- Botón 2: Registrar en Base de Datos + Generar PDF + Subir a Storage -->
                                         <button @click="registrarPagoYSubirNube" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-cloud-upload-alt"></i> GUARDAR PAGO Y SUBIR A LA NUBE
+                                            <i class="fas fa-cloud-upload-alt"></i> GUARDAR Y SUBIR A LA NUBE
                                         </button>
                                     </div>
                                 </div>
@@ -876,34 +872,44 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            // MOTOR DE ID EXACTO: Lee los 'factura_id' existentes, busca el valor numérico más alto y le suma 1
-            async obtenerSiguienteFacturaIdReal() {
-                let maxId = 0;
+
+            // --- LÓGICA DE ID ALFANUMÉRICO (NÚMERO-INICIALES-MES-DÍA) ---
+            generarIdFactura(nombre, apellidos, fecha, mesStr) {
+                // 1. Obtener el número contador (leyendo todos los IDs actuales)
+                let maxNum = 0;
                 if (this.pagosList && this.pagosList.length > 0) {
-                    const ids = this.pagosList
-                        .map(p => Number(p.factura_id))
-                        .filter(n => !isNaN(n));
-                    if (ids.length > 0) {
-                        maxId = Math.max(...ids);
-                    }
-                }
-                try {
-                    const { data } = await _supabase
-                        .from('pagos')
-                        .select('factura_id')
-                        .order('factura_id', { ascending: false })
-                        .limit(1);
-                    if (data && data.length > 0 && data[0].factura_id) {
-                        const dbMax = Number(data[0].factura_id);
-                        if (!isNaN(dbMax) && dbMax > maxId) {
-                            maxId = dbMax;
+                    const numeros = this.pagosList.map(p => {
+                        if (p.factura_id) {
+                            const partes = String(p.factura_id).split('-');
+                            const numeroFrente = parseInt(partes[0]);
+                            return isNaN(numeroFrente) ? 0 : numeroFrente;
                         }
-                    }
-                } catch (e) {
-                    console.error("Error consultando ID máximo:", e);
+                        return 0;
+                    });
+                    maxNum = Math.max(...numeros, 0);
                 }
-                return maxId + 1;
+                const siguienteNum = maxNum + 1; // Ejem: 107
+
+                // 2. Obtener Iniciales Completas (Hasta 3: Nombre + Apellido1 + Apellido2)
+                const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
+                const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
+                // Cogemos las 3 primeras palabras (Lorena, Díaz, Castillo) y su primera letra
+                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join(''); // Ejem: LDC
+
+                // 3. Mes (3 primeras letras del mes de pago)
+                const mesLimpio = String(mesStr || '').trim().split(' ')[0]; // Quitar el año "27'"
+                const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase(); // Ejem: JUL
+
+                // 4. Día (Extraer de la fecha seleccionada YYYY-MM-DD)
+                let dia = "01";
+                if (fecha) {
+                    const partesFecha = fecha.split('-');
+                    if (partesFecha.length === 3) dia = partesFecha[2]; // Ejem: 01
+                }
+
+                return `${siguienteNum}-${iniciales}-${mesLetras}-${dia}`;
             },
+
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
                 const nombreAlumno = this.form.nombre + ' ' + this.form.apellidos;
@@ -1194,10 +1200,11 @@
                 }
                 this.savingPago = true;
                 try {
-                    const nextId = await this.obtenerSiguienteFacturaIdReal();
+                    // Generar el código alfanumérico exacto
+                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     
                     const { error } = await _supabase.from('pagos').insert([{
-                        factura_id: nextId,
+                        factura_id: idFinal,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1220,12 +1227,12 @@
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        id: 'REC-' + nextId
+                        id: idFinal // Se envía directamente al recibo
                     });
 
-                    await this.cargarDatosSupabase();
+                    await this.cargarDatosSupabase(); // Refrescar lista de pagos para el contador
                     this.showSuccess = true;
-                    this.successMessage = `¡Pago REC-${nextId} guardado con éxito!`;
+                    this.successMessage = `¡Pago ${idFinal} guardado con éxito!`;
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
 
                     setTimeout(() => { window.print(); }, 400);
@@ -1243,10 +1250,11 @@
                 }
                 this.savingPago = true;
                 try {
-                    const nextId = await this.obtenerSiguienteFacturaIdReal();
+                    // Generar el código alfanumérico exacto
+                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     
                     const { error } = await _supabase.from('pagos').insert([{
-                        factura_id: nextId,
+                        factura_id: idFinal,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1269,14 +1277,14 @@
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        id: 'REC-' + nextId
+                        id: idFinal // Se envía directamente al recibo
                     });
 
-                    // Generar y subir PDF a Supabase Storage
+                    // Generar y subir PDF a Supabase Storage con el nombre correcto
                     const element = document.getElementById('zona-impresion');
                     const opt = {
                         margin: 0,
-                        filename: `REC-${nextId}.pdf`,
+                        filename: `${idFinal}.pdf`,
                         image: { type: 'jpeg', quality: 0.98 },
                         html2canvas: { scale: 2, useCORS: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -1284,9 +1292,9 @@
 
                     const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                     const fechaParts = this.nuevoPago.fecha.split('-');
-                    const anio = fechaParts[0] || '2026';
+                    const anio = fechaParts[0] || new Date().getFullYear();
                     const mesNum = fechaParts[1] || '08';
-                    const storagePath = `${anio}/${mesNum}/REC-${nextId}.pdf`;
+                    const storagePath = `${anio}/${mesNum}/${idFinal}.pdf`;
 
                     const uploadRes = await _supabase.storage
                         .from('facturas')
@@ -1296,12 +1304,12 @@
                         });
 
                     if (uploadRes.error) {
-                        alert("Aviso: El pago se guardó pero hubo un error al subir el PDF a Storage (revisa que el bucket 'facturas' exista): " + uploadRes.error.message);
+                        alert("Aviso: El pago se guardó pero hubo un error al subir el PDF a Storage (comprueba si aplicaste la política SQL): " + uploadRes.error.message);
                     }
 
-                    await this.cargarDatosSupabase();
+                    await this.cargarDatosSupabase(); // Refrescar lista de pagos para el contador
                     this.showSuccess = true;
-                    this.successMessage = `¡Pago registrado y REC-${nextId}.pdf subido a la nube con éxito!`;
+                    this.successMessage = `¡Pago registrado y ${idFinal}.pdf subido a la nube!`;
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
 
                     setTimeout(() => { window.print(); }, 400);
@@ -1312,19 +1320,19 @@
                 }
             },
             reimprimirPagoHistorico(pago) {
-                const facturaNum = pago.factura_id || pago.id_factura || pago.id || 'S/N';
+                const facturaNum = pago.factura_id || 'S/N';
                 this.generarReciboHTML({
                     fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
                     metodo: pago.metodo_pago || 'Efectivo',
                     tarifa: pago.tarifa,
                     extras: pago.extras,
                     importe: pago.importe,
-                    id: facturaNum !== 'S/N' ? 'REC-' + facturaNum : 'S/N'
+                    id: facturaNum
                 });
                 setTimeout(() => { window.print(); }, 400);
             },
             generarReciboHTML(datos) {
-                const numRecibo = datos.id || `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+                const numRecibo = datos.id || `S/N`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
                 
