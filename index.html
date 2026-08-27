@@ -605,7 +605,7 @@
                                         <input type="date" v-model="nuevoPago.fecha" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3]">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Automático)</label>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Smart / Automático)</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
                                         </select>
@@ -715,7 +715,8 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf3C_V9m8oR9.../exec';
+    // URL DE WEB APP DE GOOGLE APPS SCRIPT ACTUALIZADA
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOxeZb3MZ-cmVdnF20DFkW7EkzoZyuK6ZwlLiJimmglb5iMrCWsBAgFbwWMrF7ncky/exec';
 
     const monthOrder = {
         'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
@@ -867,16 +868,41 @@
                 const nombreAlumno = this.form.nombre + ' ' + this.form.apellidos;
                 const mesesOrdenados = [...this.listaMesesDinamicos];
                 
-                // Buscar el primer mes que no esté marcado como pagado en ingresos fijos
+                let ultimoMesPagadoIdx = -1;
+                for (let i = 0; i < mesesOrdenados.length; i++) {
+                    const mes = mesesOrdenados[i];
+                    const reg = this.ingresosFijosList.find(f => 
+                        this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes
+                    );
+                    const pagadoFijo = reg ? Boolean(reg.pagado) : false;
+                    const tienePago = this.pagosList.some(p => 
+                        this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && 
+                        this.normalizeName(p.mes) === this.normalizeName(mes)
+                    );
+                    
+                    if (pagadoFijo || tienePago) {
+                        ultimoMesPagadoIdx = i;
+                    }
+                }
+                
+                if (ultimoMesPagadoIdx !== -1 && ultimoMesPagadoIdx + 1 < mesesOrdenados.length) {
+                    return mesesOrdenados[ultimoMesPagadoIdx + 1];
+                }
+                
                 for (const mes of mesesOrdenados) {
                     const reg = this.ingresosFijosList.find(f => 
                         this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes
                     );
                     const pagado = reg ? Boolean(reg.pagado) : false;
-                    if (!pagado) {
+                    const tienePago = this.pagosList.some(p => 
+                        this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && 
+                        this.normalizeName(p.mes) === this.normalizeName(mes)
+                    );
+                    if (!pagado && !tienePago) {
                         return mes;
                     }
                 }
+                
                 return mesesOrdenados.length > 0 ? mesesOrdenados[0] : '';
             },
             async login() {
@@ -936,7 +962,7 @@
                 const pagosAlumno = this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreCompleto);
                 
                 if (pagosAlumno.length > 0) {
-                    const ultimo = pagosAlumno[pagosAlumno.length - 1];
+                    const ultimo = pagosAlumno[0];
                     this.nuevoPago.tarifa = ultimo.tarifa || '';
                     this.nuevoPago.importe = ultimo.importe || '';
                 } else {
@@ -944,7 +970,6 @@
                     this.nuevoPago.importe = '';
                 }
                 
-                // Asignar automáticamente el primer mes pendiente de pago
                 this.nuevoPago.mes = this.calcularSiguienteMesAPagar();
             },
             getCuotaValor(nombreAlumno, mes) {
