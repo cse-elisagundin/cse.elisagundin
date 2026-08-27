@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#243c7a">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="https://github.com/cse-elisagundin/horarios_alumnos/blob/main/image.png?raw=true">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root { 
@@ -24,14 +25,44 @@
             padding: 0;
             
             /* CONFIGURACIÓN SIN SCROLL (APP MODE) */
-            height: 100vh;      /* Altura exacta de la pantalla */
-            width: 100vw;       /* Ancho exacto */
+            height: 100vh;    /* Altura exacta de la pantalla */
+            width: 100vw;     /* Ancho exacto */
             overflow: hidden;   /* Prohibido hacer scroll */
             
             display: flex;
             justify-content: center;
             align-items: center;
             color: white;
+            position: relative;
+        }
+
+        /* BOTÓN DE INICIO DE SESIÓN FLOTANTE (ESQUINA SUPERIOR DERECHA) */
+        .login-btn-top {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .login-btn-top:hover {
+            background: white;
+            color: var(--c-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
 
         .main-container {
@@ -42,7 +73,7 @@
             padding: 20px;
             max-width: 1200px;
             width: 100%;
-            height: 100%; /* Para centrar verticalmente mejor */
+            height: 100%;
             animation: fadeIn 1.2s ease-out;
             box-sizing: border-box;
         }
@@ -56,7 +87,7 @@
             border-radius: 50%;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-            transition: all 0.3s ease; /* Transición suave si cambia de tamaño */
+            transition: all 0.3s ease;
         }
 
         /* TEXTOS */
@@ -134,26 +165,28 @@
 
         /* --- VERSIÓN MÓVIL (COMPACTA) --- */
         @media (max-width: 900px) {
+            .login-btn-top {
+                top: 15px;
+                right: 15px;
+                padding: 8px 14px;
+                font-size: 0.85rem;
+            }
+
             .main-container {
                 flex-direction: column;
                 text-align: center;
-                /* Espaciado dinámico: usa % de la altura para no pasarse */
                 gap: 3vh; 
             }
 
             .logo-img {
-                /* El logo se adapta: nunca ocupará más del 25% de la altura de la pantalla */
                 width: 130px; 
                 height: 130px;
                 padding: 10px;
-                
-                /* Truco para móviles muy bajitos: si falta sitio, el logo encoge */
                 max-height: 20vh; 
                 max-width: 20vh;
             }
 
             h1 { 
-                /* Texto un poco más pequeño para asegurar que cabe */
                 font-size: 2.6rem; 
             }
 
@@ -166,7 +199,6 @@
                 margin-bottom: 20px;
             }
 
-            /* Botones uno al lado del otro */
             .button-container {
                 flex-direction: row;
                 justify-content: center;
@@ -176,14 +208,13 @@
             }
             
             .btn {
-                padding: 12px 15px; /* Un poco menos de relleno lateral */
-                font-size: 0.95rem; /* Letra ajustada */
-                flex: 1; /* Los botones se reparten el espacio */
-                max-width: 160px; /* Pero no se hacen gigantes */
+                padding: 12px 15px;
+                font-size: 0.95rem;
+                flex: 1;
+                max-width: 160px;
             }
         }
         
-        /* Ajuste para móviles MUY pequeños (iPhone SE, etc) */
         @media (max-height: 600px) {
             .logo-img { width: 100px; height: 100px; }
             h1 { font-size: 2.2rem; }
@@ -197,6 +228,11 @@
     </style>
 </head>
 <body>
+
+    <!-- BOTÓN DE ACCESO AL ÁREA PRIVADA -->
+    <a href="app.html" class="login-btn-top">
+        <i class="fas fa-lock text-xs"></i> Acceso Privado
+    </a>
 
     <div class="main-container">
         <img src="https://github.com/cse-elisagundin/horarios_alumnos/blob/main/image.png?raw=true" alt="Logo CSE" class="logo-img">
