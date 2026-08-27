@@ -48,7 +48,7 @@
 </head>
 <body class="h-screen overflow-hidden text-sm">
 
-<!-- ZONA DE IMPRESIÓN DE FACTURA OFICIAL -->
+<!-- ZONA DE IMPRESIÓN DE FACTURA OFICIAL EXACTA -->
 <div id="zona-impresion" class="hidden bg-white font-sans">
     <div id="ticket-data"></div>
 </div>
@@ -332,7 +332,7 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS Y FACTURACIÓN PDF -->
+                        <!-- GESTIÓN DE PAGOS Y FACTURACIÓN PDF (CON DISEÑO EXACTO SOLICITADO) -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
@@ -394,7 +394,7 @@
                                 <div class="flex items-center justify-between border-t pt-5 mt-2 bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl">
                                     <div class="flex flex-col">
                                         <span class="text-xs font-bold text-gray-400 uppercase">Importe a Registrar</span>
-                                        <span class="text-3xl font-black text-[#243c7a]">{{ nuevoPago.importe || 0 }} €</span>
+                                        <span class="text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <button @click="registrarPago" :disabled="savingPago" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2">
@@ -612,23 +612,65 @@
                 const numRecibo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
                 const fechaE = new Date(this.nuevoPago.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
-                const importeTotalStr = this.importeCalculado.toFixed(2).replace('.', ',') + " €";
                 
-                let filasHTML = `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
+                const importeTotalStr = parseFloat(this.importeCalculado || 0).toFixed(2).replace('.', ',') + " €";
+                let filasHTML = "";
                 
-                if (this.nuevoPago.extras) {
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">Incluido</td></tr>`;
+                if (this.nuevoPago.tarifa && String(this.nuevoPago.tarifa).trim() !== "") {
+                    let matchTarifa = String(this.nuevoPago.tarifa).match(/\(([\d,\.]+)€\)/);
+                    let importeTarifaStr = matchTarifa ? matchTarifa[1] + " €" : importeTotalStr;
+                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTarifaStr}</td></tr>`;
+                }
+                
+                if (this.nuevoPago.extras && String(this.nuevoPago.extras).trim() !== "") {
+                    let matchExtra = String(this.nuevoPago.extras).match(/\(([\d,\.]+)€\)/);
+                    let importeExtraStr = matchExtra ? matchExtra[1] + " €" : parseFloat(String(this.nuevoPago.extras).replace(/[^\d\.,]/g,'').replace(',','.')||0).toFixed(2).replace('.',',') + " €";
+                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${this.nuevoPago.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeExtraStr}</td></tr>`;
                 }
 
                 document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family: 'Helvetica', sans-serif; margin: 0; padding: 30px; color: #000; min-height: 850px; display: flex; flex-direction: column; border: 2px solid #000; position: relative; background: #fff;">
-                        <img src="${logoUrl}" style="position: absolute; top: 300px; left: 50%; margin-left: -200px; width: 400px; opacity: 0.05; filter: grayscale(100%); z-index: -1;" />
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="padding:15px; vertical-align: top;"><img src="${logoUrl}" style="width: 120px; filter: grayscale(100%);" /></td><td style="text-align: right; font-size: 11px; padding:15px; vertical-align: top;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td></tr></table>
-                        <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; padding:10px 0;"><tr><td style="padding:10px; vertical-align: top;">Nº RECIBO<span style="display: block; font-size: 14px; margin-top: 4px;">${numRecibo}</span></td><td style="text-align:center;padding:10px; vertical-align: top;">FECHA EMISIÓN<span style="display: block; font-size: 14px; margin-top: 4px;">${fechaE}</span></td><td style="text-align:right;padding:10px; vertical-align: top;">FORMA DE PAGO<span style="display: block; font-size: 14px; margin-top: 4px;">${this.nuevoPago.metodo.toUpperCase()}</span></td></tr></table>
-                        <div style="border-bottom: 2px solid #000; padding: 15px;"><p style="font-size:10px;margin:0">RECIBÍ DE:</p><h3 style="margin:5px 0;text-transform:uppercase">${this.form.nombre} ${this.form.apellidos}</h3></div>
-                        <table style="width: 100%; border-collapse: collapse;"><tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>${filasHTML}<tr style="height: 250px;"><td colspan="2"></td></tr><tr><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 12px; padding: 15px;">TOTAL EUROS</td><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 20px; text-align: right; padding: 15px;">${importeTotalStr}</td></tr></table>
-                        <table style="margin-top: 30px; margin-bottom: 20px; width: 100%; border-collapse: collapse;"><tr><td style="font-size:10px;font-weight:bold;width:60%;padding:15px; vertical-align: top;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</td><td style="text-align:center;position:relative;padding:15px; vertical-align: top;"><div style="border-top:1px dashed #000;margin-top:40px;font-size:10px;display:inline-block;padding-top:10px;width: 150px;">FDO. CSE ELISA GUNDÍN</div></td></tr></table>
-                        <div style="font-size: 8px; text-align: justify; padding-top: 15px; margin-top: auto; border-top: 2px solid #000; line-height: 1.2; width: 100%; box-sizing: border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018...</div>
+                    <div style="font-family:'Helvetica',sans-serif;margin:0;padding:30px;color:#000">
+                        <div style="border:2px solid #000;width:100%;position:relative;min-height:850px;display:flex;flex-direction:column;background:#fff;">
+                            <img src="${logoUrl}" style="position:absolute;top:300px;left:50%;margin-left:-200px;width:400px;opacity:0.05;filter:grayscale(100%);z-index:-1;" />
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                                <tr>
+                                    <td style="padding:15px;"><img src="${logoUrl}" style="width:120px;filter:grayscale(100%);" /></td>
+                                    <td style="text-align:right;font-size:11px;padding:15px;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
+                                </tr>
+                            </table>
+                            <table style="width:100%;border-collapse:collapse;border-top:2px solid #000;border-bottom:2px solid #000;font-weight:bold;font-size:10px;text-transform:uppercase;padding:10px 0;">
+                                <tr>
+                                    <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
+                                    <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${this.nuevoPago.metodo.toUpperCase()}</span></td>
+                                </tr>
+                            </table>
+                            <div style="border-bottom:2px solid #000;padding:15px;">
+                                <p style="font-size:10px;margin:0">RECIBÍ DE:</p>
+                                <h3 style="margin:5px 0;text-transform:uppercase">${this.form.nombre} ${this.form.apellidos}</h3>
+                            </div>
+                            <table style="width:100%;border-collapse:collapse;">
+                                <tr>
+                                    <th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th>
+                                    <th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th>
+                                </tr>
+                                ${filasHTML}
+                                <tr style="height:250px;"><td colspan="2"></td></tr>
+                                <tr style="border-top:2px solid #000;border-bottom:2px solid #000;background:#eee;font-weight:bold;font-size:20px;">
+                                    <td style="font-size:12px;padding:15px;">TOTAL EUROS</td>
+                                    <td style="text-align:right;padding:15px;">${importeTotalStr}</td>
+                                </tr>
+                            </table>
+                            <table style="margin-top:30px;margin-bottom:20px;width:100%;border-collapse:collapse;">
+                                <tr>
+                                    <td style="font-size:10px;font-weight:bold;width:60%;padding:15px;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</td>
+                                    <td style="text-align:center;position:relative;padding:15px;">
+                                        <div style="border-top:1px dashed #000;margin-top:70px;font-size:10px">FDO. CSE ELISA GUNDÍN</div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD)...</div>
+                        </div>
                     </div>`;
                 window.print();
             },
