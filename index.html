@@ -48,7 +48,7 @@
 </head>
 <body class="h-screen overflow-hidden text-sm">
 
-<!-- ZONA DE IMPRESIÓN DE FACTURA OFICIAL CON LOGO -->
+<!-- ZONA DE IMPRESIÓN DE FACTURA OFICIAL -->
 <div id="zona-impresion" class="hidden bg-white font-sans">
     <div id="ticket-data"></div>
 </div>
@@ -211,7 +211,7 @@
                                     {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
                                 </h2>
                                 <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha Académica</span>
-                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos y Facturación</span>
+                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos e Ingresos Fijos</span>
                                 <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
                             </div>
 
@@ -249,7 +249,7 @@
                                         <i class="fas fa-euro-sign text-4xl px-2"></i>
                                     </div>
                                     <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Cobros, método efectivo/bizum e impresión PDF.</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Cobros, recibos PDF e Ingresos Fijos.</span>
                                 </button>
 
                                 <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
@@ -332,8 +332,10 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS Y FACTURACIÓN PDF -->
+                        <!-- GESTIÓN DE PAGOS Y INGRESOS FIJOS -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
+                            
+                            <!-- REGISTRO DE PAGO RÁPIDO Y RECIBO -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Pago y Generar Factura</h3>
@@ -351,7 +353,7 @@
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option value="" disabled>Selecciona mes...</option>
-                                            <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+                                            <option>Octubre 25'</option><option>Noviembre 25'</option><option>Diciembre 25'</option><option>Enero 26'</option><option>Febrero 26'</option><option>Marzo 26'</option><option>Abril 26'</option><option>Mayo 26'</option><option>Junio 26'</option>
                                         </select>
                                     </div>
                                 </div>
@@ -407,6 +409,32 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- MATRIZ DE INGRESOS FIJOS (MES A MES) -->
+                            <div class="bg-white p-6 rounded-xl border border-[#2b94cc] shadow-sm">
+                                <h3 class="font-extrabold text-[#243c7a] mb-4 uppercase flex items-center gap-2 border-b pb-2">
+                                    <i class="fas fa-calendar-check text-[#2b94cc]"></i> Historial de Ingresos Fijos (Matriz Mensual)
+                                </h3>
+                                <div v-if="mesesFijosAlumno.length === 0" class="text-gray-500 italic text-sm">Cargando o sin datos de ingresos fijos para este alumno.</div>
+                                <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div v-for="(mes, idx) in mesesFijosAlumno" :key="idx" class="border rounded-xl p-4 flex flex-col items-center shadow-sm relative overflow-hidden transition-all duration-300" :class="mes.pagado ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                                        <div class="text-xs font-extrabold text-gray-500 uppercase mb-1">{{ mes.nombreMes }}</div>
+                                        
+                                        <div class="flex flex-col items-center w-full mb-2">
+                                            <div class="text-2xl font-black mb-2 text-[#243c7a]">
+                                                {{ mes.cuota ? mes.cuota + '€' : '0€' }}
+                                            </div>
+                                            <button v-if="mes.pagado" @click="toggleMesPagado(mes)" class="w-full py-1.5 bg-green-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-green-600 transition flex justify-center items-center gap-1">
+                                                <i class="fas fa-check-circle"></i> PAGADO
+                                            </button>
+                                            <button v-else @click="toggleMesPagado(mes)" class="w-full py-1.5 bg-red-100 text-red-600 border border-red-300 rounded-lg font-bold text-xs uppercase hover:bg-red-200 transition flex justify-center items-center gap-1">
+                                                PENDIENTE
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
 
                         <!-- EXÁMENES -->
@@ -466,6 +494,7 @@
                 activeTab: 'menu', 
                 nuevoPago: this.pagoVacio(),
                 examenesList: [],
+                ingresosFijosList: [],
                 loadingExamenes: false,
                 savingExamenes: false,
                 searchGestor: '',
@@ -503,13 +532,31 @@
                     grupos[fechaOrd].push(ex);
                 });
                 return grupos;
+            },
+            mesesFijosAlumno() {
+                if (!this.selected) return [];
+                const nombreCompleto = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                const mesesNombres = ["Octubre 25'", "Noviembre 25'", "Diciembre 25'", "Enero 26'", "Febrero 26'", "Marzo 26'", "Abril 26'", "Mayo 26'", "Junio 26'"];
+                
+                let registroFijo = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === nombreCompleto);
+                
+                return mesesNombres.map(mesNombre => {
+                    let cuotaVal = registroFijo ? (registroFijo[mesNombre.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_cuota'] || 85) : 85;
+                    let pagadoVal = registroFijo ? (registroFijo[mesNombre.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_pagado'] || false) : false;
+                    return {
+                        nombreMes: mesNombre,
+                        cuota: cuotaVal,
+                        pagado: pagadoVal,
+                        idRegistro: registroFijo ? registroFijo.id : null
+                    };
+                });
             }
         },
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
             pagoVacio() {
                 const hoy = new Date().toISOString().split('T')[0];
-                return { fecha: hoy, mes: 'Octubre', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
+                return { fecha: hoy, mes: 'Octubre 25\'', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -539,6 +586,9 @@
 
                     const resEx = await _supabase.from('examenes').select('*');
                     this.examenesList = resEx.data || [];
+
+                    const resFijos = await _supabase.from('ingresos_fijos').select('*');
+                    this.ingresosFijosList = resFijos.data || [];
                 } catch(e) {
                     console.error("Error cargando desde Supabase:", e);
                 }
@@ -607,6 +657,21 @@
                 this.showSuccess = true;
                 this.successMessage = '¡Pago registrado correctamente!';
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
+            },
+            async toggleMesPagado(mes) {
+                mes.pagado = !mes.pagado;
+                const nombreCompleto = this.selected.nombre + ' ' + this.selected.apellidos;
+                const campoKey = mes.nombreMes.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_pagado';
+                
+                let registroFijo = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreCompleto));
+                
+                if (registroFijo) {
+                    await _supabase.from('ingresos_fijos').update({ [campoKey]: mes.pagado }).eq('id', registroFijo.id);
+                } else {
+                    let nuevoReg = { alumno: nombreCompleto, [campoKey]: mes.pagado, [mes.nombreMes.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_cuota']: mes.cuota };
+                    await _supabase.from('ingresos_fijos').insert([nuevoReg]);
+                }
+                await this.cargarDatosSupabase();
             },
             imprimirTicketRapido() {
                 const numRecibo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
