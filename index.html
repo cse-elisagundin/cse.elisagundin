@@ -592,11 +592,8 @@
 
                             <!-- SECCIÓN: REGISTRAR PAGO Y RECIBO PDF -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
+                                <div class="border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
-                                    <button @click="imprimirTicketRapido" :disabled="savingPago || !nuevoPago.importe || importeCalculado === 0" class="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-bold text-xs flex justify-center items-center gap-2 disabled:opacity-50">
-                                        <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-print"></i> Imprimir Recibo
-                                    </button>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -650,10 +647,18 @@
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
-                                    <div class="flex flex-col w-full sm:w-auto text-center sm:text-left">
-                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
-                                        <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
+                                    <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                                        <div class="flex flex-col text-center sm:text-left">
+                                            <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
+                                            <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
+                                        </div>
+                                        <!-- CHECKBOX "Imprimir Factura" -->
+                                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border shadow-sm select-none">
+                                            <input type="checkbox" v-model="imprimirAlGuardar" id="checkImprimir" class="w-4 h-4 accent-[#fa65c3] rounded cursor-pointer">
+                                            <label for="checkImprimir" class="text-xs font-extrabold text-[#243c7a] cursor-pointer">Imprimir Factura</label>
+                                        </div>
                                     </div>
+                                    
                                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                                         <button @click="registrarPago" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#2b94cc] text-white px-6 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
                                             <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
@@ -732,6 +737,7 @@
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 nuevoPago: this.pagoVacio(),
+                imprimirAlGuardar: false, // Variable para el checkbox de impresión
                 examenesList: [],
                 ingresosFijosList: [],
                 pagosList: [],
@@ -877,7 +883,7 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            // MOTOR BLINDADO DE CÁLCULO DE ID (EXCLUYE NULOS Y GARANTIZA SECUENCIA)
+            // MOTOR BLINDADO DE CÁLCULO DE ID
             async obtenerSiguienteFacturaIdReal() {
                 let maxFacturaId = 0;
                 try {
@@ -1199,6 +1205,7 @@
                 this.successMessage = 'Ficha guardada correctamente';
                 setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
+            // REGISTRAR PAGO (Y OPCIONALMENTE IMPRIMIR SI EL CHECKBOX ESTÁ MARCADO)
             async registrarPago() {
                 if (!this.form || !this.form.nombre || !this.form.apellidos) {
                     alert("Por favor selecciona un alumno válido.");
@@ -1226,10 +1233,25 @@
                 }
 
                 await this.cargarDatosSupabase();
+
+                // Si la casilla "Imprimir Factura" está marcada, imprimimos tras guardar con el ID correcto
+                if (this.imprimirAlGuardar) {
+                    this.generarReciboHTML({
+                        fecha: this.nuevoPago.fecha,
+                        metodo: this.nuevoPago.metodo,
+                        tarifa: this.nuevoPago.tarifa,
+                        extras: this.nuevoPago.extras,
+                        importe: this.importeCalculado,
+                        id: 'REC-' + nextId
+                    });
+                    setTimeout(() => { window.print(); }, 400);
+                }
+
                 this.showSuccess = true;
                 this.successMessage = '¡Pago registrado correctamente!';
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
             },
+            // REGISTRAR Y GENERAR PDF EN DRIVE (Y OPCIONALMENTE IMPRIMIR SI EL CHECKBOX ESTÁ MARCADO)
             async registrarYGenerarPDF() {
                 if (!this.form || !this.form.nombre || !this.form.apellidos) {
                     alert("Por favor selecciona un alumno válido.");
@@ -1286,6 +1308,20 @@
                     });
 
                     await this.cargarDatosSupabase();
+
+                    // Si la casilla "Imprimir Factura" está marcada, imprimimos tras guardar con el ID correcto
+                    if (this.imprimirAlGuardar) {
+                        this.generarReciboHTML({
+                            fecha: this.nuevoPago.fecha,
+                            metodo: this.nuevoPago.metodo,
+                            tarifa: this.nuevoPago.tarifa,
+                            extras: this.nuevoPago.extras,
+                            importe: this.importeCalculado,
+                            id: 'REC-' + nextId
+                        });
+                        setTimeout(() => { window.print(); }, 400);
+                    }
+
                     this.showSuccess = true;
                     this.successMessage = '¡Pago guardado y PDF enviado a Google Drive!';
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
@@ -1293,57 +1329,6 @@
                     alert("Error al sincronizar con Google Drive: " + e.toString());
                     this.savingPago = false;
                 }
-            },
-            // IMPRIMIR RECIBO (AHORA GUARDA PRIMERO EN SUPABASE PARA BLOQUEAR EL ID EXACTO Y COINCIDIR CON TABLE EDITOR)
-            async imprimirTicketRapido() {
-                if (!this.form || !this.form.nombre || !this.form.apellidos) {
-                    alert("Por favor selecciona un alumno válido.");
-                    return;
-                }
-                if (!this.nuevoPago.importe || this.importeCalculado === 0) {
-                    alert("Introduce un importe válido para imprimir el recibo.");
-                    return;
-                }
-
-                this.savingPago = true;
-                const nextId = await this.obtenerSiguienteFacturaIdReal();
-
-                // Guardado obligatorio en Supabase antes de imprimir para garantizar que el ID es real y coincida
-                const { error } = await _supabase.from('pagos').insert([{
-                    factura_id: nextId,
-                    alumno: this.form.nombre + ' ' + this.form.apellidos,
-                    tarifa: this.nuevoPago.tarifa,
-                    extras: this.nuevoPago.extras,
-                    importe: this.importeCalculado,
-                    fecha_pago: this.nuevoPago.fecha,
-                    mes: this.nuevoPago.mes,
-                    metodo_pago: this.nuevoPago.metodo,
-                    registrado: true
-                }]);
-
-                if (error) {
-                    alert("Error al registrar el pago en Supabase: " + error.message);
-                    this.savingPago = false;
-                    return;
-                }
-
-                await this.cargarDatosSupabase();
-                this.savingPago = false;
-
-                this.generarReciboHTML({
-                    fecha: this.nuevoPago.fecha,
-                    metodo: this.nuevoPago.metodo,
-                    tarifa: this.nuevoPago.tarifa,
-                    extras: this.nuevoPago.extras,
-                    importe: this.importeCalculado,
-                    id: 'REC-' + nextId
-                });
-
-                this.showSuccess = true;
-                this.successMessage = `¡Recibo REC-${nextId} guardado e impreso!`;
-                setTimeout(() => { this.showSuccess = false; }, 2500);
-
-                setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
                 const facturaNum = pago.factura_id || pago.id_factura || pago.id || 'S/N';
