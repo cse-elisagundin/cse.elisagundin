@@ -47,7 +47,7 @@
         .date-col .day-num { font-size: 28px; font-weight: 900; color: var(--c-primary); line-height: 1; }
         .date-col .day-name { font-size: 13px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 4px; }
         .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .exam-pill { border-left: 4px solid var(--c-primary); padding: 8px 14px; border-radius: 8px; background: white; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; }
+        .exam-pill { border-left: 4px solid var(--c-primary); padding: 8px 14px; border-radius: 8px; background: white; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
         .pill-subject { font-size: 11px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
         .pill-student { font-size: 14px; font-weight: 700; color: #333; }
     </style>
@@ -69,6 +69,63 @@
                     <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
                     <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
                     <p class="text-gray-500 font-semibold text-center">{{ successMessage }}</p>
+                </div>
+            </div>
+        </transition>
+
+        <!-- MODAL PARA EDITAR EXAMEN -->
+        <transition name="pop">
+            <div v-if="showEditExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
+                    <div class="flex items-center gap-3 border-b pb-3">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-full text-xl"><i class="fas fa-edit"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Modificar Examen</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Actualizar datos del examen</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Alumno</label>
+                        <input type="text" v-model="editExamenForm.alumno" disabled class="w-full p-2.5 rounded-lg border bg-gray-100 outline-none text-gray-600 font-bold">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                            <input type="date" v-model="editExamenForm.fecha" class="w-full p-2.5 rounded-lg border outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Nota</label>
+                            <input type="text" v-model="editExamenForm.nota" placeholder="Ej: 8.5" class="w-full p-2.5 rounded-lg border outline-none font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Asignatura</label>
+                        <input type="text" v-model="editExamenForm.asignatura" class="w-full p-2.5 rounded-lg border outline-none font-bold">
+                    </div>
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showEditExamenModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="guardarEdicionExamen" class="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition">Guardar Cambios</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- MODAL PARA ELIMINAR EXAMEN -->
+        <transition name="pop">
+            <div v-if="showDeleteExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-500 p-3 rounded-full text-xl"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Eliminar Examen</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar el examen de <strong class="text-[#243c7a]">{{ examenAEliminar?.asignatura }}</strong> de <strong class="text-[#243c7a]">{{ examenAEliminar?.alumno }}</strong>?</p>
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showDeleteExamenModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="ejecutarEliminarExamen" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
+                    </div>
                 </div>
             </div>
         </transition>
@@ -372,9 +429,17 @@
                                 </div>
                                 <div class="exams-col">
                                     <div v-if="diaObj.examenes.length > 0" class="flex flex-wrap gap-2">
-                                        <div v-for="(ex, i) in diaObj.examenes" :key="i" class="exam-pill">
+                                        <!-- TARJETA DE EXAMEN CON BOTONES NO INTRUSIVOS EN HOVER -->
+                                        <div v-for="(ex, i) in diaObj.examenes" :key="i" class="exam-pill group">
                                             <span class="pill-subject">{{ ex.asignatura }}</span>
                                             <span class="pill-student">{{ ex.alumno }}</span>
+                                            <span v-if="ex.nota" class="text-[11px] font-bold text-indigo-600 mt-1">Nota: {{ ex.nota }}</span>
+                                            
+                                            <!-- ACCIONES FLOTANTES (APARECEN AL PONER EL RATÓN ENCIMA) -->
+                                            <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
+                                                <button @click.stop="abrirEditarExamen(ex)" title="Modificar examen" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit text-xs"></i></button>
+                                                <button @click.stop="abrirEliminarExamen(ex)" title="Eliminar examen" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt text-xs"></i></button>
+                                            </div>
                                         </div>
                                     </div>
                                     <span v-else-if="diaObj.esHoy" class="text-gray-400 font-semibold italic text-xs">Hoy</span>
@@ -792,6 +857,11 @@
                 showDeletePagoModal: false,
                 editPagoForm: {},
                 pagoAEliminar: null,
+                // Modales para Exámenes
+                showEditExamenModal: false,
+                showDeleteExamenModal: false,
+                editExamenForm: {},
+                examenAEliminar: null,
                 // Calendario general de exámenes
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos'
@@ -879,14 +949,12 @@
                     const fechaObj = new Date(year, month, d);
                     const nombreDia = fechaObj.toLocaleDateString('es-ES', { weekday: 'short' });
 
-                    // Filtrar exámenes de este día según el alumno seleccionado
                     const evs = this.examenesList.filter(ex => {
                         const coincideFecha = String(ex.fecha || '').replace(/\//g, '-') === fStr;
                         const coincideAlumno = this.filtroAlumnoCalendario === 'todos' || this.normalizeName(ex.alumno) === this.normalizeName(this.filtroAlumnoCalendario);
                         return coincideFecha && coincideAlumno;
                     });
 
-                    // Si hay exámenes o es el día de hoy, se añade a la vista
                     if (evs.length > 0 || fStr === hoyStr) {
                         arrayDias.push({
                             diaNum: d,
@@ -1088,6 +1156,44 @@
                 const nuevoMes = new Date(this.mesVisualizadoCalendario);
                 nuevoMes.setMonth(nuevoMes.getMonth() + d);
                 this.mesVisualizadoCalendario = nuevoMes;
+            },
+            abrirEditarExamen(ex) {
+                this.editExamenForm = JSON.parse(JSON.stringify(ex));
+                this.showEditExamenModal = true;
+            },
+            async guardarEdicionExamen() {
+                const { id, fecha, asignatura, nota } = this.editExamenForm;
+                const { error } = await _supabase.from('examenes').update({
+                    fecha, asignatura, nota
+                }).eq('id', id);
+
+                if (error) {
+                    alert("Error al actualizar el examen: " + error.message);
+                    return;
+                }
+                this.showEditExamenModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen actualizado correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            abrirEliminarExamen(ex) {
+                this.examenAEliminar = ex;
+                this.showDeleteExamenModal = true;
+            },
+            async ejecutarEliminarExamen() {
+                if (!this.examenAEliminar) return;
+                const { error } = await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
+                if (error) {
+                    alert("Error al eliminar el examen: " + error.message);
+                    return;
+                }
+                this.showDeleteExamenModal = false;
+                this.examenAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen eliminado correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             abrirSeccionPagos() {
                 this.activeTab = 'pagos';
