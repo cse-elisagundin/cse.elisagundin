@@ -605,7 +605,7 @@
                                         <input type="date" v-model="nuevoPago.fecha" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3]">
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar</label>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Automático)</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
                                         </select>
@@ -862,6 +862,23 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
+            calcularSiguienteMesAPagar() {
+                if (!this.form || !this.form.nombre) return '';
+                const nombreAlumno = this.form.nombre + ' ' + this.form.apellidos;
+                const mesesOrdenados = [...this.listaMesesDinamicos];
+                
+                // Buscar el primer mes que no esté marcado como pagado en ingresos fijos
+                for (const mes of mesesOrdenados) {
+                    const reg = this.ingresosFijosList.find(f => 
+                        this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes
+                    );
+                    const pagado = reg ? Boolean(reg.pagado) : false;
+                    if (!pagado) {
+                        return mes;
+                    }
+                }
+                return mesesOrdenados.length > 0 ? mesesOrdenados[0] : '';
+            },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
                 this.loading = true;
@@ -922,14 +939,13 @@
                     const ultimo = pagosAlumno[pagosAlumno.length - 1];
                     this.nuevoPago.tarifa = ultimo.tarifa || '';
                     this.nuevoPago.importe = ultimo.importe || '';
-                    this.nuevoPago.mes = ultimo.mes || (this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || '');
                 } else {
                     this.nuevoPago.tarifa = '';
                     this.nuevoPago.importe = '';
-                    if (this.listaMesesDinamicos.length > 0) {
-                        this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
-                    }
                 }
+                
+                // Asignar automáticamente el primer mes pendiente de pago
+                this.nuevoPago.mes = this.calcularSiguienteMesAPagar();
             },
             getCuotaValor(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
