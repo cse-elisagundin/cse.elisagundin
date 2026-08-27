@@ -14,6 +14,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Select2 para los desplegables de alumnos -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <style>
         :root { --c-primary: #243c7a; --c-secondary: #2b94cc; --c-accent: #fa65c3; --bg-body: #f4f6f9; }
         body { font-family: 'Outfit', sans-serif; background-color: var(--bg-body); }
@@ -35,15 +40,16 @@
             #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
         }
         .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 15px 0; transition: background 0.2s; }
+        .timeline-row.today { background-color: #fff5fa; }
         .timeline-row:last-child { border-bottom: none; }
         .timeline-row:hover { background-color: #fafbff; }
         .date-col { width: 90px; flex-shrink: 0; text-align: center; border-right: 2px solid #f0f0f0; margin-right: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .date-col .day-num { font-size: 28px; font-weight: 900; color: var(--c-primary); line-height: 1; }
         .date-col .day-name { font-size: 13px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 4px; }
         .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .exam-pill { display: inline-flex; flex-direction: column; background: white; border: 1px solid #e0e0e0; border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .exam-pill { border-left: 4px solid var(--c-primary); padding: 8px 14px; border-radius: 8px; background: white; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; }
         .pill-subject { font-size: 11px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
-        .pill-grade { font-size: 14px; font-weight: 700; color: #333; }
+        .pill-student { font-size: 14px; font-weight: 700; color: #333; }
     </style>
 </head>
 <body class="h-screen overflow-hidden text-sm">
@@ -278,13 +284,13 @@
                     <span class="text-xs font-semibold truncate max-w-[200px]">{{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}</span>
                 </div>
 
-                <!-- GESTOR MASIVO DE EXÁMENES -->
+                <!-- GESTOR MASIVO DE EXÁMENES / CALENDARIO GENERAL -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
-                    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                        <div class="p-4 sm:p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col mb-8">
+                        <div class="p-4 sm:p-6 border-b flex justify-between items-center bg-white/95 backdrop-blur">
                             <h2 class="text-lg sm:text-2xl font-extrabold text-indigo-800 flex items-center gap-3">
                                 <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-tasks"></i></div>
-                                Gestor Masivo
+                                Gestor Masivo de Exámenes
                             </h2>
                             <button @click="activeTab = 'menu'" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
                         </div>
@@ -317,7 +323,7 @@
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[350px] overflow-y-auto pr-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto pr-2">
                                 <label v-for="a in alumnosFiltradosGestor" :key="a.id" class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-indigo-50 transition" :class="gestorExamenes.alumnosSeleccionados.includes(a.nombre + ' ' + a.apellidos) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white'">
                                     <input type="checkbox" :value="a.nombre + ' ' + a.apellidos" v-model="gestorExamenes.alumnosSeleccionados" class="w-5 h-5 accent-indigo-600 rounded">
                                     <span class="font-semibold text-sm text-gray-800">{{ a.nombre }} {{ a.apellidos }}</span>
@@ -333,13 +339,56 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- CALENDARIO DE EXÁMENES CON NAVEGACIÓN Y FILTRO -->
+                    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-calendar-alt text-xl"></i></div>
+                                <h3 class="text-xl font-extrabold text-[#243c7a]">Calendario Global de Exámenes</h3>
+                            </div>
+                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
+                                <select id="alumnoSelectCalendar" v-model="filtroAlumnoCalendario" class="p-2.5 rounded-xl border outline-none font-bold text-[#243c7a] bg-white w-full sm:w-[250px]">
+                                    <option value="todos">👥 Ver todos</option>
+                                    <option v-for="a in list" :key="a.id" :value="a.nombre + ' ' + a.apellidos">{{ a.apellidos }}, {{ a.nombre }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- NAVEGADOR DE MESES -->
+                        <div class="flex justify-between items-center mb-6 bg-[#243c7a] text-white py-3 px-5 rounded-xl shadow-sm">
+                            <button @click="cambiarMesCalendario(-1)" class="bg-white/10 hover:bg-white/20 border-none text-white px-4 py-2 rounded-lg cursor-pointer font-bold transition">&#10094;</button>
+                            <span class="text-base sm:text-lg font-extrabold uppercase tracking-wide">{{ mesVisualizadoTexto }}</span>
+                            <button @click="cambiarMesCalendario(1)" class="bg-white/10 hover:bg-white/20 border-none text-white px-4 py-2 rounded-lg cursor-pointer font-bold transition">&#10095;</button>
+                        </div>
+
+                        <!-- TIMELINE DINÁMICO -->
+                        <div class="space-y-2">
+                            <div v-for="diaObj in diasMesActual" :key="diaObj.fechaStr" class="timeline-row" :class="diaObj.esHoy ? 'today' : ''">
+                                <div class="date-col">
+                                    <span class="day-num">{{ diaObj.diaNum }}</span>
+                                    <span class="day-name">{{ diaObj.nombreDia }}</span>
+                                </div>
+                                <div class="exams-col">
+                                    <div v-if="diaObj.examenes.length > 0" class="flex flex-wrap gap-2">
+                                        <div v-for="(ex, i) in diaObj.examenes" :key="i" class="exam-pill">
+                                            <span class="pill-subject">{{ ex.asignatura }}</span>
+                                            <span class="pill-student">{{ ex.alumno }}</span>
+                                        </div>
+                                    </div>
+                                    <span v-else-if="diaObj.esHoy" class="text-gray-400 font-semibold italic text-xs">Hoy</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- VISTA DE ALUMNO SELECCIONADO -->
                 <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
-                        <!-- BARRA SUPERIOR DE LA FICHA (OCULTA EN MÓVIL PEQUEÑO PARA USAR LA BARRA FIJA) -->
+                        <!-- BARRA SUPERIOR DE LA FICHA -->
                         <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                             <div class="flex items-center gap-4">
                                 <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
@@ -665,16 +714,15 @@
                             </div>
                         </div>
 
-                        <!-- EXÁMENES -->
+                        <!-- EXÁMENES (VISTA ESPECÍFICA DEL ALUMNO) -->
                         <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
-                                <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes</h3>
-                                <button @click="actualizarExamenes" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                                    <i class="fas fa-sync-alt" :class="{'fa-spin': loadingExamenes}"></i> Actualizar
+                                <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
+                                <button @click="cargarDatosSupabase" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
                                 </button>
                             </div>
-                            <div v-if="loadingExamenes" class="text-center py-10 text-gray-400 font-semibold animate-pulse">Cargando exámenes...</div>
-                            <div v-else-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">No se encontraron exámenes para este alumno.</div>
+                            <div v-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">No se encontraron exámenes para este alumno.</div>
                             <div v-else class="flex flex-col">
                                 <div v-for="(grupo, fecha) in examenesAgrupados" :key="fecha" class="timeline-row">
                                     <div class="date-col">
@@ -730,7 +778,6 @@
                 examenesList: [],
                 ingresosFijosList: [],
                 pagosList: [],
-                loadingExamenes: false,
                 savingExamenes: false,
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
@@ -744,7 +791,10 @@
                 showEditPagoModal: false,
                 showDeletePagoModal: false,
                 editPagoForm: {},
-                pagoAEliminar: null
+                pagoAEliminar: null,
+                // Calendario general de exámenes
+                mesVisualizadoCalendario: new Date(),
+                filtroAlumnoCalendario: 'todos'
             }
         },
         watch: {
@@ -813,6 +863,41 @@
                     agrupados[cursoKey].push(mes);
                 });
                 return agrupados;
+            },
+            mesVisualizadoTexto() {
+                return this.mesVisualizadoCalendario.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            },
+            diasMesActual() {
+                const year = this.mesVisualizadoCalendario.getFullYear();
+                const month = this.mesVisualizadoCalendario.getMonth();
+                const diasTotales = new Date(year, month + 1, 0).getDate();
+                const hoyStr = new Date().toISOString().split('T')[0];
+                const arrayDias = [];
+
+                for (let d = 1; d <= diasTotales; d++) {
+                    const fStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const fechaObj = new Date(year, month, d);
+                    const nombreDia = fechaObj.toLocaleDateString('es-ES', { weekday: 'short' });
+
+                    // Filtrar exámenes de este día según el alumno seleccionado
+                    const evs = this.examenesList.filter(ex => {
+                        const coincideFecha = String(ex.fecha || '').replace(/\//g, '-') === fStr;
+                        const coincideAlumno = this.filtroAlumnoCalendario === 'todos' || this.normalizeName(ex.alumno) === this.normalizeName(this.filtroAlumnoCalendario);
+                        return coincideFecha && coincideAlumno;
+                    });
+
+                    // Si hay exámenes o es el día de hoy, se añade a la vista
+                    if (evs.length > 0 || fStr === hoyStr) {
+                        arrayDias.push({
+                            diaNum: d,
+                            nombreDia: nombreDia,
+                            fechaStr: fStr,
+                            esHoy: fStr === hoyStr,
+                            examenes: evs
+                        });
+                    }
+                }
+                return arrayDias;
             }
         },
         methods: {
@@ -836,6 +921,11 @@
                     return `${mes} ${anio}'`;
                 }
                 return limpio;
+            },
+            obtenerNombreMesCorto(f) {
+                if (!f) return '';
+                const d = new Date(f);
+                return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
             },
             calcularImporteTotalPago() {
                 let base = 0;
@@ -873,9 +963,8 @@
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
 
-            // --- LÓGICA DE ID ALFANUMÉRICO (NÚMERO-INICIALES-MES-DÍA) ---
+            // --- BLOQUE INTOCABLE DE GENERACIÓN DE ID ALFANUMÉRICO (PAGOS) ---
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
-                // 1. Obtener el número contador (leyendo todos los IDs actuales)
                 let maxNum = 0;
                 if (this.pagosList && this.pagosList.length > 0) {
                     const numeros = this.pagosList.map(p => {
@@ -888,25 +977,17 @@
                     });
                     maxNum = Math.max(...numeros, 0);
                 }
-                const siguienteNum = maxNum + 1; // Ejem: 107
-
-                // 2. Obtener Iniciales Completas (Hasta 3: Nombre + Apellido1 + Apellido2)
+                const siguienteNum = maxNum + 1;
                 const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
-                // Cogemos las 3 primeras palabras (Lorena, Díaz, Castillo) y su primera letra
-                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join(''); // Ejem: LDC
-
-                // 3. Mes (3 primeras letras del mes de pago)
-                const mesLimpio = String(mesStr || '').trim().split(' ')[0]; // Quitar el año "27'"
-                const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase(); // Ejem: JUL
-
-                // 4. Día (Extraer de la fecha seleccionada YYYY-MM-DD)
+                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
+                const mesLimpio = String(mesStr || '').trim().split(' ')[0];
+                const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
                 let dia = "01";
                 if (fecha) {
                     const partesFecha = fecha.split('-');
-                    if (partesFecha.length === 3) dia = partesFecha[2]; // Ejem: 01
+                    if (partesFecha.length === 3) dia = partesFecha[2];
                 }
-
                 return `${siguienteNum}-${iniciales}-${mesLetras}-${dia}`;
             },
 
@@ -1002,6 +1083,11 @@
                 this.activeTab = 'gestor_examenes';
                 this.gestorExamenes.fecha = new Date().toISOString().split('T')[0];
                 this.searchGestor = '';
+            },
+            cambiarMesCalendario(d) {
+                const nuevoMes = new Date(this.mesVisualizadoCalendario);
+                nuevoMes.setMonth(nuevoMes.getMonth() + d);
+                this.mesVisualizadoCalendario = nuevoMes;
             },
             abrirSeccionPagos() {
                 this.activeTab = 'pagos';
@@ -1192,7 +1278,6 @@
                 this.successMessage = 'Ficha guardada correctamente';
                 setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
-            // OPCIÓN 1: REGISTRAR PAGO (SOLO DATOS Y TICKET)
             async registrarPagoSolo() {
                 if (!this.form || !this.form.nombre || !this.form.apellidos) {
                     alert("Por favor selecciona un alumno válido.");
@@ -1200,7 +1285,6 @@
                 }
                 this.savingPago = true;
                 try {
-                    // Generar el código alfanumérico exacto
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     
                     const { error } = await _supabase.from('pagos').insert([{
@@ -1227,10 +1311,10 @@
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        id: idFinal // Se envía directamente al recibo
+                        id: idFinal
                     });
 
-                    await this.cargarDatosSupabase(); // Refrescar lista de pagos para el contador
+                    await this.cargarDatosSupabase();
                     this.showSuccess = true;
                     this.successMessage = `¡Pago ${idFinal} guardado con éxito!`;
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
@@ -1242,7 +1326,6 @@
                     this.savingPago = false;
                 }
             },
-            // OPCIÓN 2: GUARDAR PAGO Y SUBIR PDF AL STORAGE DE SUPABASE
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre || !this.form.apellidos) {
                     alert("Por favor selecciona un alumno válido.");
@@ -1250,7 +1333,6 @@
                 }
                 this.savingPago = true;
                 try {
-                    // Generar el código alfanumérico exacto
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     
                     const { error } = await _supabase.from('pagos').insert([{
@@ -1277,10 +1359,9 @@
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        id: idFinal // Se envía directamente al recibo
+                        id: idFinal
                     });
 
-                    // Generar y subir PDF a Supabase Storage con el nombre correcto
                     const element = document.getElementById('zona-impresion');
                     const opt = {
                         margin: 0,
@@ -1304,10 +1385,10 @@
                         });
 
                     if (uploadRes.error) {
-                        alert("Aviso: El pago se guardó pero hubo un error al subir el PDF a Storage (comprueba si aplicaste la política SQL): " + uploadRes.error.message);
+                        alert("Aviso: El pago se guardó pero hubo un error al subir el PDF a Storage: " + uploadRes.error.message);
                     }
 
-                    await this.cargarDatosSupabase(); // Refrescar lista de pagos para el contador
+                    await this.cargarDatosSupabase();
                     this.showSuccess = true;
                     this.successMessage = `¡Pago registrado y ${idFinal}.pdf subido a la nube!`;
                     setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
@@ -1396,11 +1477,6 @@
                         </div>
                     </div>`;
             },
-            async actualizarExamenes() {
-                this.loadingExamenes = true;
-                await this.cargarDatosSupabase();
-                this.loadingExamenes = false;
-            },
             async guardarExamenesMasivos() {
                 this.savingExamenes = true;
                 const rowsToInsert = this.gestorExamenes.alumnosSeleccionados.map(alumnoNombre => ({
@@ -1409,7 +1485,12 @@
                     alumno: alumnoNombre,
                     nota: ''
                 }));
-                await _supabase.from('examenes').insert(rowsToInsert);
+                const { error } = await _supabase.from('examenes').insert(rowsToInsert);
+                if (error) {
+                    alert("Error al guardar exámenes: " + error.message);
+                    this.savingExamenes = false;
+                    return;
+                }
                 this.showSuccess = true;
                 this.successMessage = 'Exámenes creados correctamente';
                 this.gestorExamenes.asignatura = '';
