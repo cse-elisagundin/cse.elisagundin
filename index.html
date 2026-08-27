@@ -99,6 +99,99 @@
             </div>
         </transition>
 
+        <!-- MODAL PARA EDITAR PAGO HISTÓRICO -->
+        <transition name="pop">
+            <div v-if="showEditPagoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg border border-gray-100 flex flex-col gap-4">
+                    <div class="flex items-center gap-3 border-b pb-3">
+                        <div class="bg-blue-100 text-[#2b94cc] p-3 rounded-full text-xl"><i class="fas fa-edit"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Modificar Pago Registrado</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Actualizar datos de este recibo</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Fecha de Pago</label>
+                            <input type="date" v-model="editPagoForm.fecha_pago" class="w-full p-2.5 rounded-lg border outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Mes</label>
+                            <select v-model="editPagoForm.mes" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
+                                <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa</label>
+                            <select v-model="editPagoForm.tarifa" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
+                                <option value="Opción 1 (40€)">Opción 1 (40€)</option>
+                                <option value="Opción 2 (50€)">Opción 2 (50€)</option>
+                                <option value="Opción 3 (60€)">Opción 3 (60€)</option>
+                                <option value="Opción 4 (80€)">Opción 4 (80€)</option>
+                                <option value="Opción 5 (85€)">Opción 5 (85€)</option>
+                                <option value="Opción 6 (110€)">Opción 6 (110€)</option>
+                                <option value="Opción 7 (135€)">Opción 7 (135€)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Importe (€)</label>
+                            <input type="number" step="0.01" v-model="editPagoForm.importe" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Extras</label>
+                        <input type="text" v-model="editPagoForm.extras" placeholder="Ej: Material (10€)" class="w-full p-2.5 rounded-lg border outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Método de Pago</label>
+                        <select v-model="editPagoForm.metodo_pago" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Bizum">Bizum</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showEditPagoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button @click="guardarEdicionPago" class="flex-1 py-3 px-4 rounded-xl btn-corp text-white font-bold shadow-lg transition">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- MODAL PARA ELIMINAR PAGO HISTÓRICO -->
+        <transition name="pop">
+            <div v-if="showDeletePagoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-500 p-3 rounded-full text-xl"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Eliminar Registro de Pago</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ pagoAEliminar?.importe }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ pagoAEliminar?.mes }}</strong>?</p>
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showDeletePagoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button @click="ejecutarEliminarPago" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">
+                            Sí, eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- PANTALLA DE LOGIN SUPABASE -->
         <transition name="fade">
             <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
@@ -452,7 +545,7 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: HISTORIAL DE PAGOS DEL ALUMNO (NUEVO) -->
+                            <!-- SECCIÓN: HISTORIAL DE PAGOS DEL ALUMNO (CON EDITAR Y ELIMINAR) -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
                                 <h3 class="font-extrabold text-[#243c7a] uppercase text-xs sm:text-sm mb-4 flex items-center gap-2 border-b pb-3">
                                     <i class="fas fa-history text-[#2b94cc]"></i> Historial de Pagos Recientes ({{ form.nombre }})
@@ -461,7 +554,7 @@
                                     No hay pagos registrados para este alumno todavía.
                                 </div>
                                 <div v-else class="overflow-x-auto">
-                                    <table class="w-full border-collapse text-xs min-w-[320px]">
+                                    <table class="w-full border-collapse text-xs min-w-[360px]">
                                         <thead>
                                             <tr class="bg-gray-50 text-gray-600 uppercase">
                                                 <th class="p-2 border text-center">Fecha</th>
@@ -469,7 +562,7 @@
                                                 <th class="p-2 border text-left">Concepto</th>
                                                 <th class="p-2 border text-center">Importe</th>
                                                 <th class="p-2 border text-center">Método</th>
-                                                <th class="p-2 border text-center">Recibo</th>
+                                                <th class="p-2 border text-center">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -486,10 +579,10 @@
                                                         {{ pago.metodo_pago || 'Efectivo' }}
                                                     </span>
                                                 </td>
-                                                <td class="p-2 border text-center">
-                                                    <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo de este pago" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition text-xs">
-                                                        <i class="fas fa-print"></i>
-                                                    </button>
+                                                <td class="p-2 border text-center space-x-1">
+                                                    <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
+                                                    <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
+                                                    <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -649,7 +742,11 @@
                 modalTitle: '',
                 modalMessage: '',
                 modalInputVal: '',
-                modalTargetMes: ''
+                modalTargetMes: '',
+                showEditPagoModal: false,
+                showDeletePagoModal: false,
+                editPagoForm: {},
+                pagoAEliminar: null
             }
         },
         computed: {
@@ -903,6 +1000,44 @@
                 this.showCustomModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            abrirEditarPago(pago) {
+                this.editPagoForm = JSON.parse(JSON.stringify(pago));
+                this.showEditPagoModal = true;
+            },
+            async guardarEdicionPago() {
+                const { id, alumno, tarifa, extras, importe, fecha_pago, mes, metodo_pago, registrado } = this.editPagoForm;
+                const { error } = await _supabase.from('pagos').update({
+                    tarifa, extras, importe: Number(importe) || 0, fecha_pago, mes, metodo_pago
+                }).eq('id', id);
+
+                if (error) {
+                    alert("Error al actualizar el pago: " + error.message);
+                    return;
+                }
+                this.showEditPagoModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago actualizado correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            abrirEliminarPago(pago) {
+                this.pagoAEliminar = pago;
+                this.showDeletePagoModal = true;
+            },
+            async ejecutarEliminarPago() {
+                if (!this.pagoAEliminar) return;
+                const { error } = await _supabase.from('pagos').delete().eq('id', this.pagoAEliminar.id);
+                if (error) {
+                    alert("Error al eliminar el pago: " + error.message);
+                    return;
+                }
+                this.showDeletePagoModal = false;
+                this.pagoAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago eliminado correctamente';
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             seleccionarTodos(marcar) {
