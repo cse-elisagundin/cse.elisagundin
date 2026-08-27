@@ -248,7 +248,7 @@
                                         <i class="fas fa-euro-sign text-4xl px-2"></i>
                                     </div>
                                     <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Cuotas fijas, cobros y recibos PDF.</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Cuotas fijas por años, cobros y recibos PDF.</span>
                                 </button>
 
                                 <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
@@ -331,53 +331,70 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO -->
+                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO (AGRUPADOS POR AÑOS / ARCHIVADOS) -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
                             
-                            <!-- SECCIÓN 1: CUOTAS FIJAS MENSUALES DE ESTE ALUMNO -->
+                            <!-- SECCIÓN: CUOTAS FIJAS MENSUALES (AGRUPADAS POR AÑOS) -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2">
-                                        <i class="fas fa-calendar-alt text-[#fa65c3]"></i> Cuotas Fijas Mensuales ({{ form.nombre }})
+                                        <i class="fas fa-calendar-alt text-[#fa65c3]"></i> Cuotas Fijas por Años ({{ form.nombre }})
                                     </h3>
                                     <button @click="agregarNuevoMesAlumno" class="bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 font-bold text-xs flex items-center gap-2 transition">
                                         <i class="fas fa-plus"></i> Añadir Mes Nuevo
                                     </button>
                                 </div>
 
-                                <div class="overflow-x-auto max-h-[300px]">
-                                    <table class="w-full border-collapse text-xs">
-                                        <thead>
-                                            <tr class="bg-gray-100 text-gray-700 uppercase">
-                                                <th class="p-2.5 border text-left">Mes</th>
-                                                <th class="p-2.5 border text-center w-36">Cuota (€)</th>
-                                                <th class="p-2.5 border text-center w-28">Pagado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="mes in listaMesesDinamicos" :key="mes" class="hover:bg-blue-50/40 transition">
-                                                <td class="p-2.5 border font-bold text-[#243c7a]">{{ mes }}</td>
-                                                <td class="p-2 border text-center">
-                                                    <input type="number" step="0.01" 
-                                                        :value="getCuotaValor(form.nombre + ' ' + form.apellidos, mes)" 
-                                                        @input="updateCuotaLocal(form.nombre + ' ' + form.apellidos, mes, $event.target.value)"
-                                                        @change="guardarCeldaIngresosFijos(form.nombre + ' ' + form.apellidos, mes)"
-                                                        placeholder=""
-                                                        class="w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
-                                                </td>
-                                                <td class="p-2 border text-center" :class="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
-                                                    <input type="checkbox" 
-                                                        :checked="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes)" 
-                                                        @change="togglePagadoIngresosFijos(form.nombre + ' ' + form.apellidos, mes, $event.target.checked)"
-                                                        class="w-5 h-5 accent-green-600 rounded cursor-pointer">
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <!-- ACORDEÓN / CARPETAS POR AÑO -->
+                                <div class="space-y-4">
+                                    <div v-for="(mesesAnio, anio) in mesesAgrupadosPorAnio" :key="anio" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <!-- Cabecera de la carpeta del año -->
+                                        <div @click="toggleAnio(anio)" class="bg-gray-100 p-4 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
+                                            <div class="flex items-center gap-3">
+                                                <i class="fas fa-folder-open text-[#fa65c3]" v-if="anioAbierto[anio]"></i>
+                                                <i class="fas fa-folder text-gray-400" v-else></i>
+                                                <span>Año / Carpeta {{ anio }}</span>
+                                                <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesAnio.length }} meses</span>
+                                            </div>
+                                            <i class="fas fa-chevron-down transition-transform duration-300" :class="anioAbierto[anio] ? 'rotate-180' : ''"></i>
+                                        </div>
+
+                                        <!-- Tabla de meses de ese año (Desplegable) -->
+                                        <div v-if="anioAbierto[anio]" class="p-3 overflow-x-auto">
+                                            <table class="w-full border-collapse text-xs">
+                                                <thead>
+                                                    <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                        <th class="p-2 border text-left">Mes</th>
+                                                        <th class="p-2 border text-center w-36">Cuota (€)</th>
+                                                        <th class="p-2 border text-center w-28">Pagado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="mes in mesesAnio" :key="mes" class="hover:bg-blue-50/40 transition">
+                                                        <td class="p-2.5 border font-bold text-[#243c7a]">{{ mes }}</td>
+                                                        <td class="p-2 border text-center">
+                                                            <input type="number" step="0.01" 
+                                                                :value="getCuotaValor(form.nombre + ' ' + form.apellidos, mes)" 
+                                                                @input="updateCuotaLocal(form.nombre + ' ' + form.apellidos, mes, $event.target.value)"
+                                                                @change="guardarCeldaIngresosFijos(form.nombre + ' ' + form.apellidos, mes)"
+                                                                placeholder=""
+                                                                class="w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
+                                                        </td>
+                                                        <td class="p-2 border text-center" :class="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
+                                                            <input type="checkbox" 
+                                                                :checked="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes)" 
+                                                                @change="togglePagadoIngresosFijos(form.nombre + ' ' + form.apellidos, mes, $event.target.checked)"
+                                                                class="w-5 h-5 accent-green-600 rounded cursor-pointer">
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN 2: REGISTRAR PAGO Y RECIBO PDF -->
+                            <!-- SECCIÓN: REGISTRAR PAGO Y RECIBO PDF -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro y Generar Factura</h3>
@@ -513,7 +530,8 @@
                 loadingExamenes: false,
                 savingExamenes: false,
                 searchGestor: '',
-                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] }
+                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
+                anioAbierto: {} // Controla qué carpetas de años están abiertas
             }
         },
         computed: {
@@ -553,6 +571,21 @@
                 const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
                 const todos = [...new Set([...porDefecto, ...mesesBD])];
                 return todos;
+            },
+            mesesAgrupadosPorAnio() {
+                const agrupados = {};
+                this.listaMesesDinamicos.forEach(mes => {
+                    // Extrae el año (ej: de "OCTUBRE 25'" extrae 25 o 2025)
+                    let partes = mes.split(' ');
+                    let anioStr = partes.length > 1 ? partes[1].replace("'", "") : '26';
+                    let anioCompleto = '20' + anioStr;
+                    
+                    if (!agrupados[anioCompleto]) {
+                        agrupados[anioCompleto] = [];
+                    }
+                    agrupados[anioCompleto].push(mes);
+                });
+                return agrupados;
             }
         },
         methods: {
@@ -599,6 +632,10 @@
             logout() {
                 _supabase.auth.signOut();
                 location.reload();
+            },
+            toggleAnio(anio) {
+                // Alterna el despliegue de la carpeta del año
+                this.anioAbierto[anio] = !this.anioAbierto[anio];
             },
             abrirGestorExamenes() {
                 this.selected = null;
@@ -696,6 +733,8 @@
                 this.activeTab = 'menu';
                 this.selected = s;
                 this.nuevoPago = this.pagoVacio();
+                // Abrir por defecto el año actual (2026) al entrar
+                this.anioAbierto['2026'] = true;
             },
             async saveData() {
                 this.saving = true;
@@ -787,7 +826,7 @@
                                     </td>
                                 </tr>
                             </table>
-                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serão tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
+                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
                         </div>
                     </div>`;
                 window.print();
