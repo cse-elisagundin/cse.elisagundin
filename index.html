@@ -128,13 +128,13 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa</label>
                             <select v-model="editPagoForm.tarifa" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
-                                <option value="Opción 1 (40€)">Opción 1 (40€)</option>
-                                <option value="Opción 2 (50€)">Opción 2 (50€)</option>
-                                <option value="Opción 3 (60€)">Opción 3 (60€)</option>
-                                <option value="Opción 4 (80€)">Opción 4 (80€)</option>
-                                <option value="Opción 5 (85€)">Opción 5 (85€)</option>
-                                <option value="Opción 6 (110€)">Opción 6 (110€)</option>
-                                <option value="Opción 7 (135€)">Opción 7 (135€)</option>
+                                <option value="Opción 1 (40€)">Opción 1: 1h/semana (40€)</option>
+                                <option value="Opción 2 (50€)">Opción 2: 1,5h/semana - Antiguos (50€)</option>
+                                <option value="Opción 3 (60€)">Opción 3: 1,5h/semana - Nuevos (60€)</option>
+                                <option value="Opción 4 (80€)">Opción 4: 2h/semana (80€)</option>
+                                <option value="Opción 5 (85€)">Opción 5: 3h/semana (85€)</option>
+                                <option value="Opción 6 (110€)">Opción 6: 4h/semana (110€)</option>
+                                <option value="Opción 7 (135€)">Opción 7: 5h/semana (135€)</option>
                             </select>
                         </div>
                         <div>
@@ -630,13 +630,13 @@
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option value="" disabled>Selecciona tarifa...</option>
-                                            <option value="Opción 1 (40€)">Opción 1 (40€)</option>
-                                            <option value="Opción 2 (50€)">Opción 2 (50€)</option>
-                                            <option value="Opción 3 (60€)">Opción 3 (60€)</option>
-                                            <option value="Opción 4 (80€)">Opción 4 (80€)</option>
-                                            <option value="Opción 5 (85€)">Opción 5 (85€)</option>
-                                            <option value="Opción 6 (110€)">Opción 6 (110€)</option>
-                                            <option value="Opción 7 (135€)">Opción 7 (135€)</option>
+                                            <option value="Opción 1 (40€)">Opción 1: 1h/semana (40€)</option>
+                                            <option value="Opción 2 (50€)">Opción 2: 1,5h/semana - Antiguos (50€)</option>
+                                            <option value="Opción 3 (60€)">Opción 3: 1,5h/semana - Nuevos (60€)</option>
+                                            <option value="Opción 4 (80€)">Opción 4: 2h/semana (80€)</option>
+                                            <option value="Opción 5 (85€)">Opción 5: 3h/semana (85€)</option>
+                                            <option value="Opción 6 (110€)">Opción 6: 4h/semana (110€)</option>
+                                            <option value="Opción 7 (135€)">Opción 7: 5h/semana (135€)</option>
                                         </select>
                                     </div>
                                     <div>
@@ -659,8 +659,8 @@
                                             <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
                                             {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
                                         </button>
-                                        <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-5 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
-                                            <i class="fas fa-file-pdf"></i> Recibo PDF
+                                        <button @click="registrarYGenerarPDF" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-5 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
+                                            <i class="fas fa-file-pdf"></i> Recibo PDF (Drive)
                                         </button>
                                     </div>
                                 </div>
@@ -711,9 +711,13 @@
 <script>
     const { createApp } = Vue;
 
+    // CREDENCIALES DE SUPABASE Y ENDPOINT APPS SCRIPT
     const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // URL DE TU WEB APP DE APPS SCRIPT (PARA GUARDAR EN GOOGLE SHEETS / DRIVE)
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf3C_V9m8oR9.../exec'; // Remplaza con tu endpoint de despliegue si es necesario
 
     const monthOrder = {
         'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
@@ -1087,7 +1091,7 @@
                 this.isNew = false;
                 this.activeTab = 'menu';
                 this.selected = s;
-                this.cursoAbierto = {}; // Todas las carpetas cerradas por defecto
+                this.cursoAbierto = {};
             },
             async saveData() {
                 this.saving = true;
@@ -1119,15 +1123,51 @@
                 this.successMessage = '¡Pago registrado correctamente!';
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
             },
-            imprimirTicketRapido() {
-                this.generarReciboHTML({
-                    fecha: this.nuevoPago.fecha,
-                    metodo: this.nuevoPago.metodo,
-                    tarifa: this.nuevoPago.tarifa,
-                    extras: this.nuevoPago.extras,
-                    importe: this.importeCalculado
-                });
-                window.print();
+            async registrarYGenerarPDF() {
+                this.savingPago = true;
+                try {
+                    // 1. Guardar en Supabase localmente para mantener la app al día
+                    await _supabase.from('pagos').insert([{
+                        alumno: this.form.nombre + ' ' + this.form.apellidos,
+                        tarifa: this.nuevoPago.tarifa,
+                        extras: this.nuevoPago.extras,
+                        importe: this.importeCalculado,
+                        fecha_pago: this.nuevoPago.fecha,
+                        mes: this.nuevoPago.mes,
+                        metodo_pago: this.nuevoPago.metodo,
+                        registrado: true
+                    }]);
+
+                    // 2. Enviar petición al backend de Google Apps Script para que cree la fila en Google Sheets y guarde el PDF en Drive
+                    const payload = {
+                        pass: "010523",
+                        device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
+                        action: 'create_pago',
+                        alumno: this.form.nombre + ' ' + this.form.apellidos,
+                        tarifa: this.nuevoPago.tarifa,
+                        fecha: this.nuevoPago.fecha,
+                        extras: this.nuevoPago.extras,
+                        importe: this.importeCalculado,
+                        mes: this.nuevoPago.mes,
+                        metodo: this.nuevoPago.metodo,
+                        generarPDF: true
+                    };
+
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = '¡Pago guardado y PDF enviado a Google Drive!';
+                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
+                } catch (e) {
+                    alert("Error al sincronizar con Google Drive: " + e.toString());
+                    this.savingPago = false;
+                }
             },
             reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({
@@ -1135,16 +1175,17 @@
                     metodo: pago.metodo_pago || 'Efectivo',
                     tarifa: pago.tarifa,
                     extras: pago.extras,
-                    importe: pago.importe
+                    importe: pago.importe,
+                    id: pago.id ? ('REC-' + pago.id) : 'REC-2026'
                 });
                 window.print();
             },
             generarReciboHTML(datos) {
-                const numRecibo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+                const numRecibo = datos.id || `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
                 
-                const importeTotalStr = parseFloat(datos.importe || 0).toFixed(2).replace('.', ',') + " €";
+                const importeTotalStr = parseFloat(datos.importe || datos.importeTotal || 0).toFixed(2).replace('.', ',') + " €";
                 let filasHTML = "";
                 
                 if (datos.tarifa && String(datos.tarifa).trim() !== "") {
@@ -1173,7 +1214,7 @@
                                 <tr>
                                     <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
                                     <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
-                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo).toUpperCase()}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || datos.metodo_pago || '').toUpperCase()}</span></td>
                                 </tr>
                             </table>
                             <div style="border-bottom:2px solid #000;padding:15px;">
