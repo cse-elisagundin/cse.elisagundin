@@ -877,30 +877,36 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            // CONSULTA DIRECTA A SUPABASE PARA OBTENER EL SIGUIENTE ID DE FACTURA REAL (ELEM. 107)
-            async getNextFacturaId() {
+            // FUNCIÓN MAESTRA BLINDADA DE OBTENCIÓN DE ID EN TIEMPO REAL
+            async obtenerSiguienteFacturaIdReal() {
                 try {
+                    // Consulta directa a Supabase ordenando y filtrando nulos
                     const { data, error } = await _supabase
                         .from('pagos')
-                        .select('factura_id')
+                        .select('factura_id, id_factura, id')
+                        .not('factura_id', 'is', null)
                         .order('factura_id', { ascending: false })
-                        .limit(1);
+                        .limit(50);
 
                     if (!error && data && data.length > 0) {
-                        const maxId = Number(data[0].factura_id) || 0;
-                        if (maxId > 0) return maxId + 1;
+                        const numeros = data
+                            .map(p => Number(p.factura_id || p.id_factura || p.id))
+                            .filter(n => !isNaN(n) && n > 0);
+                        if (numeros.length > 0) {
+                            return Math.max(...numeros) + 1;
+                        }
                     }
                 } catch (e) {
-                    console.error("Error consultando max factura_id:", e);
+                    console.error("Error consultando Supabase en directo:", e);
                 }
 
-                // Respaldo secundario con pagosList local si falla la red
+                // Respaldo secundario local robusto
                 if (this.pagosList && this.pagosList.length > 0) {
-                    const numeros = this.pagosList
-                        .map(p => Number(p.factura_id))
+                    const numerosLocales = this.pagosList
+                        .map(p => Number(p.factura_id || p.id_factura || p.id))
                         .filter(n => !isNaN(n) && n > 0);
-                    if (numeros.length > 0) {
-                        return Math.max(...numeros) + 1;
+                    if (numerosLocales.length > 0) {
+                        return Math.max(...numerosLocales) + 1;
                     }
                 }
                 return 1;
@@ -1193,7 +1199,7 @@
                     return;
                 }
                 this.savingPago = true;
-                const nextId = await this.getNextFacturaId();
+                const nextId = await this.obtenerSiguienteFacturaIdReal();
                 
                 const { error } = await _supabase.from('pagos').insert([{
                     factura_id: nextId,
@@ -1225,7 +1231,7 @@
                 }
                 this.savingPago = true;
                 try {
-                    const nextId = await this.getNextFacturaId();
+                    const nextId = await this.obtenerSiguienteFacturaIdReal();
                     
                     const { error } = await _supabase.from('pagos').insert([{
                         factura_id: nextId,
@@ -1250,7 +1256,7 @@
                         mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
                     }
 
-                    // ENVÍO EXPLÍCITO DEL ID DE FACTURA AL PAYLOAD DE GOOGLE APPS SCRIPT
+                    // ENVÍO EXACTO Y VERIFICADO DE LA factura_id AL SCRIPT DE GOOGLE DRIVE
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
@@ -1284,7 +1290,7 @@
                 }
             },
             async imprimirTicketRapido() {
-                const nextId = await this.getNextFacturaId();
+                const nextId = await this.obtenerSiguienteFacturaIdReal();
                 this.generarReciboHTML({
                     fecha: this.nuevoPago.fecha,
                     metodo: this.nuevoPago.metodo,
@@ -1296,7 +1302,7 @@
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
-                const facturaNum = pago.factura_id ? pago.factura_id : 'S/N';
+                const facturaNum = pago.factura_id || pago.id_factura || pago.id || 'S/N';
                 this.generarReciboHTML({
                     fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
                     metodo: pago.metodo_pago || 'Efectivo',
