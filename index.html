@@ -548,7 +548,7 @@
                             </section>
 
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
-                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <div class="col-span-1 sm:col-span-2 md:grid-cols-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
                                 <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
@@ -779,7 +779,7 @@
                             </div>
                         </div>
 
-                        <!-- EXÁMENES (VISTA ESPECÍFICA DEL ALUMNO) -->
+                        <!-- EXÁMENES (VISTA ESPECÍFICA DEL ALUMNO CON BOTONES DE EDICIÓN Y BORRADO) -->
                         <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
@@ -797,7 +797,13 @@
                                     <div class="exams-col">
                                         <div v-for="(ex, index) in grupo" :key="index" class="exam-pill group">
                                             <span class="pill-subject">{{ ex.asignatura }}</span>
-                                            <span class="pill-grade">Nota: {{ ex.nota || 'Pendiente' }}</span>
+                                            <span class="pill-grade font-semibold text-gray-800">Nota: {{ ex.nota || 'Pendiente' }}</span>
+                                            
+                                            <!-- ACCIONES FLOTANTES (APARECEN AL PONER EL RATÓN ENCIMA) -->
+                                            <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
+                                                <button @click.stop="abrirEditarExamen(ex)" title="Modificar examen" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit text-xs"></i></button>
+                                                <button @click.stop="abrirEliminarExamen(ex)" title="Eliminar examen" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt text-xs"></i></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
