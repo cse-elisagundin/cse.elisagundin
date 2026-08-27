@@ -331,21 +331,21 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO (AGRUPADOS POR AÑOS / ARCHIVADOS) -->
+                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO (CON EDICIÓN Y ELIMINACIÓN DE MESES) -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
                             
-                            <!-- SECCIÓN: CUOTAS FIJAS MENSUALES (AGRUPADAS POR AÑOS) -->
+                            <!-- SECCIÓN: CUOTAS FIJAS MENSUALES -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2">
                                         <i class="fas fa-calendar-alt text-[#fa65c3]"></i> Cuotas Fijas por Años ({{ form.nombre }})
                                     </h3>
-                                    <button @click="agregarNuevoMesAlumno" class="bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 font-bold text-xs flex items-center gap-2 transition">
-                                        <i class="fas fa-plus"></i> Añadir Mes Nuevo
+                                    <button @click="generarSiguienteMes" class="bg-pink-50 text-[#fa65c3] border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold text-xs flex items-center gap-2 transition shadow-sm">
+                                        <i class="fas fa-plus"></i> Generar Siguiente Mes
                                     </button>
                                 </div>
 
-                                <!-- ACORDEÓN / CARPETAS POR AÑO -->
+                                <!-- ACORDEÓN / CARPETAS POR AÑO UNIFICADO -->
                                 <div class="space-y-4">
                                     <div v-for="(mesesAnio, anio) in mesesAgrupadosPorAnio" :key="anio" class="border rounded-xl overflow-hidden bg-white shadow-sm">
                                         <!-- Cabecera de la carpeta del año -->
@@ -359,7 +359,7 @@
                                             <i class="fas fa-chevron-down transition-transform duration-300" :class="anioAbierto[anio] ? 'rotate-180' : ''"></i>
                                         </div>
 
-                                        <!-- Tabla de meses de ese año (Desplegable) -->
+                                        <!-- Tabla de meses de ese año -->
                                         <div v-if="anioAbierto[anio]" class="p-3 overflow-x-auto">
                                             <table class="w-full border-collapse text-xs">
                                                 <thead>
@@ -367,6 +367,7 @@
                                                         <th class="p-2 border text-left">Mes</th>
                                                         <th class="p-2 border text-center w-36">Cuota (€)</th>
                                                         <th class="p-2 border text-center w-28">Pagado</th>
+                                                        <th class="p-2 border text-center w-20">Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -385,6 +386,10 @@
                                                                 :checked="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes)" 
                                                                 @change="togglePagadoIngresosFijos(form.nombre + ' ' + form.apellidos, mes, $event.target.checked)"
                                                                 class="w-5 h-5 accent-green-600 rounded cursor-pointer">
+                                                        </td>
+                                                        <td class="p-2 border text-center space-x-2">
+                                                            <button @click="editarNombreMes(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit"></i></button>
+                                                            <button @click="eliminarMesGlobal(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt"></i></button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -516,6 +521,11 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const monthOrder = {
+        'ENERO': 1, 'FEBRERO': 2, 'MARZO': 3, 'ABRIL': 4, 'MAYO': 5, 'JUNIO': 6,
+        'JULIO': 7, 'AGOSTO': 8, 'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12
+    };
+
     createApp({
         data() {
             return {
@@ -531,7 +541,7 @@
                 savingExamenes: false,
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
-                anioAbierto: {} // Controla qué carpetas de años están abiertas
+                anioAbierto: {}
             }
         },
         computed: {
@@ -570,15 +580,20 @@
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
                 const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
                 const todos = [...new Set([...porDefecto, ...mesesBD])];
-                return todos;
+                
+                return todos.sort((a, b) => {
+                    const pa = this.parseMonthOrder(a);
+                    const pb = this.parseMonthOrder(b);
+                    if (pa.year !== pb.year) return pa.year - pb.year;
+                    return pa.monthIdx - pb.monthIdx;
+                });
             },
             mesesAgrupadosPorAnio() {
                 const agrupados = {};
                 this.listaMesesDinamicos.forEach(mes => {
-                    // Extrae el año (ej: de "OCTUBRE 25'" extrae 25 o 2025)
-                    let partes = mes.split(' ');
-                    let anioStr = partes.length > 1 ? partes[1].replace("'", "") : '26';
-                    let anioCompleto = '20' + anioStr;
+                    let partes = mes.replace("'", "").trim().split(' ');
+                    let anioStr = partes.length > 1 ? partes[1] : '26';
+                    let anioCompleto = '20' + (anioStr.length === 2 ? anioStr : anioStr.slice(-2));
                     
                     if (!agrupados[anioCompleto]) {
                         agrupados[anioCompleto] = [];
@@ -590,6 +605,17 @@
         },
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
+            parseMonthOrder(m_str) {
+                const parts = m_str.replace("'", "").trim().split(' ');
+                if (parts.length >= 2) {
+                    const m_name = parts[0];
+                    const y_raw = parts[1];
+                    const year = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
+                    const monthIdx = monthOrder[m_name] || 0;
+                    return { year, monthIdx };
+                }
+                return { year: 2026, monthIdx: 1 };
+            },
             pagoVacio() {
                 const hoy = new Date().toISOString().split('T')[0];
                 return { fecha: hoy, mes: 'OCTUBRE 25\'', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
@@ -634,7 +660,6 @@
                 location.reload();
             },
             toggleAnio(anio) {
-                // Alterna el despliegue de la carpeta del año
                 this.anioAbierto[anio] = !this.anioAbierto[anio];
             },
             abrirGestorExamenes() {
@@ -693,20 +718,73 @@
 
                 await this.cargarDatosSupabase();
             },
-            async agregarNuevoMesAlumno() {
-                const nuevoMes = prompt("Introduce el nombre del nuevo mes (ej: JULIO 26'):");
-                if (!nuevoMes) return;
-                const mesFormateado = nuevoMes.toUpperCase().trim();
+            async generarSiguienteMes() {
+                const meses = this.listaMesesDinamicos;
+                if (meses.length === 0) return;
+                const ultimoMes = meses[meses.length - 1];
                 
+                const parts = ultimoMes.replace("'", "").trim().split(' ');
+                const mName = parts[0];
+                const yRaw = parts[1];
+                const listaNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+                
+                let siguienteMesStr = "";
+                try {
+                    let idx = listaNombres.indexOf(mName);
+                    if (idx === 11) {
+                        siguienteMesStr = `${listaNombres[0]} ${Number(yRaw) + 1}'`;
+                    } else {
+                        siguienteMesStr = `${listaNombres[idx + 1]} ${yRaw}'`;
+                    }
+                } catch(e) {
+                    siguienteMesStr = "JULIO 26'";
+                }
+
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
                 await _supabase.from('ingresos_fijos').upsert({
                     alumno: nombreCompleto,
-                    mes: mesFormateado,
+                    mes: siguienteMesStr,
                     cuota: 0,
                     pagado: false
                 }, { onConflict: 'alumno,mes' });
                 
                 await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `¡Mes de ${siguienteMesStr} generado correctamente!`;
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            async editarNombreMes(mesActual) {
+                const nuevoNombre = prompt(`Introduce el nuevo nombre corregido para el mes "${mesActual}":`, mesActual);
+                if (!nuevoNombre || nuevoNombre.trim() === "") return;
+                const mesLimpio = nuevoNombre.toUpperCase().trim();
+                if (mesLimpio === mesActual) return;
+
+                // Actualizar en Supabase para todos los registros que tengan este mes
+                const { error } = await _supabase.from('ingresos_fijos').update({ mes: mesLimpio }).eq('mes', mesActual);
+                if (error) {
+                    alert("Error al actualizar el mes: " + error.message);
+                    return;
+                }
+
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = "Mes modificado correctamente";
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            async eliminarMesGlobal(mesActual) {
+                const seguro = confirm(`⚠️ ATENCIÓN: ¿Estás seguro de eliminar por completo el mes "${mesActual}"?\n\nSe borrarán todos los datos y cuotas de este mes para todos los alumnos. Esta acción no se puede deshacer.`);
+                if (!seguro) return;
+
+                const { error } = await _supabase.from('ingresos_fijos').delete().eq('mes', mesActual);
+                if (error) {
+                    alert("Error al eliminar el mes: " + error.message);
+                    return;
+                }
+
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `Mes ${mesActual} eliminado correctamente`;
+                setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             seleccionarTodos(marcar) {
                 if(marcar) {
@@ -733,7 +811,6 @@
                 this.activeTab = 'menu';
                 this.selected = s;
                 this.nuevoPago = this.pagoVacio();
-                // Abrir por defecto el año actual (2026) al entrar
                 this.anioAbierto['2026'] = true;
             },
             async saveData() {
