@@ -367,7 +367,7 @@
                                                         <th class="p-2 border text-left">Mes</th>
                                                         <th class="p-2 border text-center w-36">Cuota (€)</th>
                                                         <th class="p-2 border text-center w-28">Pagado</th>
-                                                        <th class="p-2 border text-center w-20">Acciones</th>
+                                                        <th class="p-2 border text-center w-24">Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -388,8 +388,8 @@
                                                                 class="w-5 h-5 accent-green-600 rounded cursor-pointer">
                                                         </td>
                                                         <td class="p-2 border text-center space-x-2">
-                                                            <button @click="editarNombreMes(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit"></i></button>
-                                                            <button @click="eliminarMesGlobal(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt"></i></button>
+                                                            <button @click="editarNombreMes(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1.5 transition"><i class="fas fa-edit text-sm"></i></button>
+                                                            <button @click="eliminarMesGlobal(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1.5 transition"><i class="fas fa-trash-alt text-sm"></i></button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -591,7 +591,7 @@
             mesesAgrupadosPorAnio() {
                 const agrupados = {};
                 this.listaMesesDinamicos.forEach(mes => {
-                    let partes = mes.replace("'", "").trim().split(' ');
+                    let partes = mes.replace(/'/g, "").trim().split(' ');
                     let anioStr = partes.length > 1 ? partes[1] : '26';
                     let anioCompleto = '20' + (anioStr.length === 2 ? anioStr : anioStr.slice(-2));
                     
@@ -606,7 +606,7 @@
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
             parseMonthOrder(m_str) {
-                const parts = m_str.replace("'", "").trim().split(' ');
+                const parts = m_str.replace(/'/g, "").trim().split(' ');
                 if (parts.length >= 2) {
                     const m_name = parts[0];
                     const y_raw = parts[1];
@@ -723,7 +723,7 @@
                 if (meses.length === 0) return;
                 const ultimoMes = meses[meses.length - 1];
                 
-                const parts = ultimoMes.replace("'", "").trim().split(' ');
+                const parts = ultimoMes.replace(/'/g, "").trim().split(' ');
                 const mName = parts[0];
                 const yRaw = parts[1];
                 const listaNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -759,7 +759,6 @@
                 const mesLimpio = nuevoNombre.toUpperCase().trim();
                 if (mesLimpio === mesActual) return;
 
-                // Actualizar en Supabase para todos los registros que tengan este mes
                 const { error } = await _supabase.from('ingresos_fijos').update({ mes: mesLimpio }).eq('mes', mesActual);
                 if (error) {
                     alert("Error al actualizar el mes: " + error.message);
@@ -903,7 +902,7 @@
                                     </td>
                                 </tr>
                             </table>
-                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
+                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serão tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
                         </div>
                     </div>`;
                 window.print();
