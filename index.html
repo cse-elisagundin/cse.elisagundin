@@ -128,13 +128,13 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa</label>
                             <select v-model="editPagoForm.tarifa" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
-                                <option value="Opción 1 (40€)">Opción 1: 1h/semana (40€)</option>
-                                <option value="Opción 2 (50€)">Opción 2: 1,5h/semana - Antiguos (50€)</option>
-                                <option value="Opción 3 (60€)">Opción 3: 1,5h/semana - Nuevos (60€)</option>
-                                <option value="Opción 4 (80€)">Opción 4: 2h/semana (80€)</option>
-                                <option value="Opción 5 (85€)">Opción 5: 3h/semana (85€)</option>
-                                <option value="Opción 6 (110€)">Opción 6: 4h/semana (110€)</option>
-                                <option value="Opción 7 (135€)">Opción 7: 5h/semana (135€)</option>
+                                <option value="1h/semana 40€">1h/semana 40€</option>
+                                <option value="1,5h/semana 50€ (antiguos alumnos)">1,5h/semana 50€ (antiguos alumnos)</option>
+                                <option value="1,5h/semana 60€ (nuevos alumnos)">1,5h/semana 60€ (nuevos alumnos)</option>
+                                <option value="2h/semana 80€">2h/semana 80€</option>
+                                <option value="3h/semana 85€">3h/semana 85€</option>
+                                <option value="4h/semana 110€">4h/semana 110€</option>
+                                <option value="5h/semana 135€">5h/semana 135€</option>
                             </select>
                         </div>
                         <div>
@@ -630,13 +630,13 @@
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option value="" disabled>Selecciona tarifa...</option>
-                                            <option value="Opción 1 (40€)">Opción 1: 1h/semana (40€)</option>
-                                            <option value="Opción 2 (50€)">Opción 2: 1,5h/semana - Antiguos (50€)</option>
-                                            <option value="Opción 3 (60€)">Opción 3: 1,5h/semana - Nuevos (60€)</option>
-                                            <option value="Opción 4 (80€)">Opción 4: 2h/semana (80€)</option>
-                                            <option value="Opción 5 (85€)">Opción 5: 3h/semana (85€)</option>
-                                            <option value="Opción 6 (110€)">Opción 6: 4h/semana (110€)</option>
-                                            <option value="Opción 7 (135€)">Opción 7: 5h/semana (135€)</option>
+                                            <option value="1h/semana 40€">1h/semana 40€</option>
+                                            <option value="1,5h/semana 50€ (antiguos alumnos)">1,5h/semana 50€ (antiguos alumnos)</option>
+                                            <option value="1,5h/semana 60€ (nuevos alumnos)">1,5h/semana 60€ (nuevos alumnos)</option>
+                                            <option value="2h/semana 80€">2h/semana 80€</option>
+                                            <option value="3h/semana 85€">3h/semana 85€</option>
+                                            <option value="4h/semana 110€">4h/semana 110€</option>
+                                            <option value="5h/semana 135€">5h/semana 135€</option>
                                         </select>
                                     </div>
                                     <div>
@@ -711,13 +711,11 @@
 <script>
     const { createApp } = Vue;
 
-    // CREDENCIALES DE SUPABASE Y ENDPOINT APPS SCRIPT
     const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // URL DE TU WEB APP DE APPS SCRIPT (PARA GUARDAR EN GOOGLE SHEETS / DRIVE)
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf3C_V9m8oR9.../exec'; // Remplaza con tu endpoint de despliegue si es necesario
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf3C_V9m8oR9.../exec';
 
     const monthOrder = {
         'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
@@ -832,12 +830,12 @@
             calcularImporteTotalPago() {
                 let base = 0;
                 if (this.nuevoPago.tarifa) {
-                    const matchT = this.nuevoPago.tarifa.match(/\((\d+)€\)/);
+                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
                     if (matchT) base = Number(matchT[1]);
                 }
                 let extra = 0;
                 if (this.nuevoPago.extras) {
-                    const matchE = this.nuevoPago.extras.match(/\((\d+(?:[\.,]\d+)?)€\)/);
+                    const matchE = this.nuevoPago.extras.match(/(\d+(?:[\.,]\d)?)€/);
                     if (matchE) {
                         extra = Number(matchE[1].replace(',', '.'));
                     } else {
@@ -1126,7 +1124,6 @@
             async registrarYGenerarPDF() {
                 this.savingPago = true;
                 try {
-                    // 1. Guardar en Supabase localmente para mantener la app al día
                     await _supabase.from('pagos').insert([{
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
@@ -1138,7 +1135,6 @@
                         registrado: true
                     }]);
 
-                    // 2. Enviar petición al backend de Google Apps Script para que cree la fila en Google Sheets y guarde el PDF en Drive
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
@@ -1189,13 +1185,13 @@
                 let filasHTML = "";
                 
                 if (datos.tarifa && String(datos.tarifa).trim() !== "") {
-                    let matchTarifa = String(datos.tarifa).match(/\(([\d,\.]+)€\)/);
+                    let matchTarifa = String(datos.tarifa).match(/(\d+)€/);
                     let importeTarifaStr = matchTarifa ? matchTarifa[1] + " €" : importeTotalStr;
                     filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTarifaStr}</td></tr>`;
                 }
                 
                 if (datos.extras && String(datos.extras).trim() !== "") {
-                    let matchExtra = String(datos.extras).match(/\(([\d,\.]+)€\)/);
+                    let matchExtra = String(datos.extras).match(/(\d+(?:[\.,]\d)?)€/);
                     let importeExtraStr = matchExtra ? matchExtra[1] + " €" : parseFloat(String(datos.extras).replace(/[^\d\.,]/g,'').replace(',','.')||0).toFixed(2).replace('.',',') + " €";
                     filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeExtraStr}</td></tr>`;
                 }
