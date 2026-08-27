@@ -23,6 +23,13 @@
             }
         }
     </script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #zona-impresion, #zona-impresion * { visibility: visible; }
+            #zona-impresion { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex flex-col">
 
@@ -120,6 +127,31 @@
             </div>
         </section>
 
+        <!-- ================= SECCIÓN VISOR DE RECIBOS INTEGRADO (Plano, sin pop-ups) ================= -->
+        <section id="seccion-recibo" class="space-y-6 hidden">
+            <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                <div>
+                    <h2 class="text-xl font-black text-brand-navy">Visor de Recibo Oficial</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Comprobante listo para imprimir o guardar sin restricciones.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="volverAPagos()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+                        ← Volver a Pagos
+                    </button>
+                    <button onclick="window.print()" class="bg-brand-navy hover:bg-black text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-md">
+                        🖨️ Imprimir / Guardar PDF
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-center bg-gray-100 p-8 rounded-2xl border border-gray-200">
+                <div id="zona-impresion" class="bg-white border-2 border-black w-full max-w-[700px] p-8 box-sizing text-black flex flex-col justify-between" style="min-height: 850px;">
+                    <!-- Contenido dinámico del recibo -->
+                    <div id="recibo-contenido-interno"></div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- MODAL NUEVO PAGO -->
@@ -192,34 +224,46 @@
         function cambiarPestana(pestana) {
             const secAlumnos = document.getElementById('seccion-alumnos');
             const secPagos = document.getElementById('seccion-pagos');
+            const secRecibo = document.getElementById('seccion-recibo');
             const btnAlumnos = document.getElementById('btn-tab-alumnos');
             const btnPagos = document.getElementById('btn-tab-pagos');
 
+            secAlumnos.classList.add('hidden');
+            secPagos.classList.add('hidden');
+            secRecibo.classList.add('hidden');
+
             if (pestana === 'alumnos') {
                 secAlumnos.classList.remove('hidden');
-                secPagos.classList.add('hidden');
                 btnAlumnos.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm";
                 btnPagos.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white";
-            } else {
+            } else if (pestana === 'pagos') {
                 secPagos.classList.remove('hidden');
-                secAlumnos.classList.add('hidden');
                 btnPagos.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm";
                 btnAlumnos.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white";
             }
         }
 
-        // --- 1. CARGAR ALUMNOS (Conectado a listado_alumnos) ---
+        function volverAPagos() {
+            cambiarPestana('pagos');
+        }
+
+        // --- 1. CARGAR ALUMNOS (Conectado a listado_alumnos con manejo de errores visible) ---
         async function cargarAlumnosSeguro() {
+            const tbody = document.getElementById('tabla-alumnos-body');
             try {
                 const { data, error } = await _supabase.from('listado_alumnos').select('*').limit(100);
-                const tbody = document.getElementById('tabla-alumnos-body');
-                tbody.innerHTML = '';
-
-                if (error || !data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No se han encontrado registros en listado_alumnos.</td></tr>`;
+                
+                if (error) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-semibold">Error al conectar con Supabase: ${error.message}</td></tr>`;
                     return;
                 }
 
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No hay registros en la tabla listado_alumnos.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
                 data.forEach(alum => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
@@ -238,26 +282,30 @@
                     tbody.appendChild(tr);
                 });
             } catch (err) {
-                console.warn("Aviso al cargar alumnos: ", err);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-semibold">Excepción de red: ${err.message}</td></tr>`;
             }
         }
 
         // --- 2. CARGAR PAGOS (Blindado) ---
         async function cargarPagosSeguro() {
+            const tbody = document.getElementById('tabla-pagos-body');
             try {
                 const { data, error } = await _supabase
                     .from('pagos')
                     .select('*')
                     .order('id', { ascending: false });
 
-                const tbody = document.getElementById('tabla-pagos-body');
-                tbody.innerHTML = '';
+                if (error) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-red-500 font-semibold">Error al cargar pagos: ${error.message}</td></tr>`;
+                    return;
+                }
 
-                if (error || !data || data.length === 0) {
+                if (!data || data.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 italic">No hay pagos registrados o la tabla está vacía.</td></tr>`;
                     return;
                 }
 
+                tbody.innerHTML = '';
                 data.forEach(pago => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
@@ -280,7 +328,7 @@
                             <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
                         </td>
                         <td class="p-4 text-center">
-                            <button onclick='imprimirRecibo(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
+                            <button onclick='mostrarReciboEnPantalla(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
                                 🖨️ Recibo
                             </button>
                         </td>
@@ -288,7 +336,7 @@
                     tbody.appendChild(tr);
                 });
             } catch (err) {
-                console.error("Error al cargar pagos:", err);
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-red-500 font-semibold">Excepción de red: ${err.message}</td></tr>`;
             }
         }
 
@@ -363,79 +411,60 @@
             cargarPagosSeguro();
         }
 
-        // --- IMPRESIÓN BLINDADA CON BLOB ---
-        function imprimirRecibo(pago) {
-            let contenidoHTML = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Recibo - ${pago.factura_id || 'EFECTIVO'}</title>
-                    <style>
-                        body { font-family: 'Helvetica', sans-serif; margin: 0; padding: 30px; color: #000; }
-                        .container { border: 2px solid #000; width: 100%; max-width: 700px; margin: auto; padding: 25px; box-sizing: border-box; min-height: 800px; display: flex; flex-direction: column; }
-                        table { width: 100%; border-collapse: collapse; }
-                        .header-right { text-align: right; font-size: 11px; }
-                        .info-row { border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; padding: 10px 0; margin-top: 20px; }
-                        .info-val { display: block; font-size: 14px; margin-top: 4px; }
-                        .client-row { border-bottom: 2px solid #000; padding: 15px 0; }
-                        .total-row td { border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 18px; text-align: right; padding: 15px; }
-                        .legal { font-size: 8px; text-align: justify; padding-top: 15px; margin-top: auto; border-top: 2px solid #000; line-height: 1.2; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <table>
-                            <tr>
-                                <td><strong>CENTRO DE ESTUDIOS</strong></td>
-                                <td class="header-right"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
-                            </tr>
-                        </table>
-                        <table class="info-row">
-                            <tr>
-                                <td>Nº RECIBO<span class="info-val">${pago.factura_id || 'S/N (Efectivo)'}</span></td>
-                                <td style="text-align:center;">FECHA EMISIÓN<span class="info-val">${pago.fecha_pago}</span></td>
-                                <td style="text-align:right;">FORMA DE PAGO<span class="info-val">${pago.metodo_pago}</span></td>
-                            </tr>
-                        </table>
-                        <div class="client-row">
-                            <p style="font-size: 10px; margin: 0;">RECIBÍ DE:</p>
-                            <h3 style="margin: 5px 0; text-transform: uppercase;">${pago.alumno}</h3>
-                        </div>
-                        <table>
-                            <tr>
-                                <th style="text-align:left; border-bottom:1px solid #000; padding:15px 0;">CONCEPTO</th>
-                                <th style="text-align:right; border-bottom:1px solid #000; padding:15px 0;">IMPORTE</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:15px 0; border-bottom:1px solid #000;"><strong>${pago.tarifa}</strong><br><small>Curso académico vigente</small></td>
-                                <td style="text-align:right; font-weight:bold; padding:15px 0; border-bottom:1px solid #000;">${pago.importe}</td>
-                            </tr>
-                            ${pago.extras ? `<tr><td style="padding:15px 0; border-bottom:1px solid #000;"><strong>${pago.extras}</strong></td><td style="text-align:right; font-weight:bold; padding:15px 0; border-bottom:1px solid #000;">Incluido</td></tr>` : ''}
-                            <tr style="height: 200px;"><td colspan="2"></td></tr>
-                            <tr class="total-row">
-                                <td style="font-size:12px;">TOTAL EUROS</td>
-                                <td>${pago.importe}</td>
-                            </tr>
-                        </table>
-                        <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-                            <div style="font-size: 10px; font-weight: bold; width: 60%;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</div>
-                            <div style="text-align: center; border-top: 1px dashed #000; width: 150px; padding-top: 5px; font-size: 10px;">FDO. CSE ELISA GUNDÍN</div>
-                        </div>
-                        <div class="legal">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD)...</div>
+        // --- VISOR INTEGRADO DE RECIBO (Sin popups, plano en pantalla) ---
+        function mostrarReciboEnPantalla(pago) {
+            const contenedor = document.getElementById('recibo-contenido-interno');
+            contenedor.innerHTML = `
+                <div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td><strong>CENTRO DE ESTUDIOS</strong></td>
+                            <td style="text-align: right; font-size: 11px;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
+                        </tr>
+                    </table>
+                    <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; margin-top: 20px;">
+                        <tr>
+                            <td style="padding: 10px;">Nº RECIBO<br><span style="font-size: 14px;">${pago.factura_id || 'S/N (Efectivo)'}</span></td>
+                            <td style="text-align: center; padding: 10px;">FECHA EMISIÓN<br><span style="font-size: 14px;">${pago.fecha_pago}</span></td>
+                            <td style="text-align: right; padding: 10px;">FORMA DE PAGO<br><span style="font-size: 14px;">${pago.metodo_pago}</span></td>
+                        </tr>
+                    </table>
+                    <div style="border-bottom: 2px solid #000; padding: 15px 0;">
+                        <p style="font-size: 10px; margin: 0;">RECIBÍ DE:</p>
+                        <h3 style="margin: 5px 0; text-transform: uppercase;">${pago.alumno}</h3>
                     </div>
-                    <script>
-                        window.onload = function() { window.print(); }
-                    </script>
-                </body>
-                </html>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <tr>
+                            <th style="text-align: left; border-bottom: 1px solid #000; padding: 10px 0; font-size: 11px;">CONCEPTO</th>
+                            <th style="text-align: right; border-bottom: 1px solid #000; padding: 10px 0; font-size: 11px;">IMPORTE</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;"><strong>${pago.tarifa}</strong><br><small style="color:#555;">Curso académico vigente</small></td>
+                            <td style="text-align: right; font-weight: bold; padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;">${pago.importe}</td>
+                        </tr>
+                        ${pago.extras ? `<tr><td style="padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;"><strong>${pago.extras}</strong></td><td style="text-align: right; font-weight: bold; padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;">Incluido</td></tr>` : ''}
+                        <tr style="height: 150px;"><td colspan="2"></td></tr>
+                        <tr style="background: #eee;">
+                            <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px; font-weight: bold; font-size: 12px;">TOTAL EUROS</td>
+                            <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px; font-weight: bold; font-size: 18px; text-align: right;">${pago.importe}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div>
+                    <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div style="font-size: 9px; font-weight: bold; width: 60%;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</div>
+                        <div style="text-align: center; border-top: 1px dashed #000; width: 150px; padding-top: 5px; font-size: 10px;">FDO. CSE ELISA GUNDÍN</div>
+                    </div>
+                    <div style="font-size: 8px; text-align: justify; padding-top: 15px; margin-top: 20px; border-top: 2px solid #000; line-height: 1.2;">
+                        PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD)...
+                    </div>
+                </div>
             `;
 
-            const blob = new Blob([contenidoHTML], { type: 'text/html;charset=utf-8' });
-            const blobUrl = URL.createObjectURL(blob);
-            let ventana = window.open(blobUrl, '_blank', 'height=650,width=800');
-            if (!ventana) {
-                alert("Tu navegador ha bloqueado la ventana emergente del recibo. Por favor, permite las ventanas emergentes para este sitio.");
-            }
+            // Ocultar pestañas y mostrar la sección del recibo en la misma pantalla
+            document.getElementById('seccion-alumnos').classList.add('hidden');
+            document.getElementById('seccion-pagos').classList.add('hidden');
+            document.getElementById('seccion-recibo').classList.remove('hidden');
         }
     </script>
 </body>
