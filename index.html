@@ -243,7 +243,7 @@
                             <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ pagoAEliminar?.importe }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ formatMesUnificado(pagoAEliminar?.mes) }}</strong>?</p>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ formatImporte(pagoAEliminar?.importe) }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ formatMesUnificado(pagoAEliminar?.mes) }}</strong>?</p>
                     <div class="flex gap-3 pt-3 border-t">
                         <button @click="showDeletePagoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">
                             Cancelar
@@ -362,14 +362,11 @@
                         </div>
 
                         <!-- BARRA DE BÚSQUEDA GLOBAL -->
-                        <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between bg-gray-50 p-4 rounded-xl border">
-                            <div class="w-full sm:w-96 relative">
+                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
+                            <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchPagosGlobal" type="text" placeholder="Buscar por alumno, mes o ID..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#fa65c3] shadow-sm text-sm">
+                                <input v-model="searchPagosGlobal" type="text" placeholder="Buscar por alumno, mes o ID..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#fa65c3] shadow-sm text-sm bg-white">
                                 <button v-if="searchPagosGlobal" @click="searchPagosGlobal = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                            </div>
-                            <div class="text-xs font-bold text-gray-600 bg-white px-4 py-2.5 rounded-lg border shadow-sm">
-                                Total Recaudado: <span class="text-[#243c7a] text-base font-black ml-1">{{ totalRecaudadoGlobal }} €</span>
                             </div>
                         </div>
 
@@ -406,7 +403,7 @@
                                                 {{ pago.metodo_pago || 'Efectivo' }}
                                             </span>
                                         </td>
-                                        <td class="p-3 border text-center font-black text-base text-[#243c7a]">{{ pago.importe }} €</td>
+                                        <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                         <td class="p-3 border text-center space-x-1">
                                             <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
                                             <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
@@ -767,7 +764,7 @@
                                                     <span class="font-bold">{{ pago.tarifa }}</span>
                                                     <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
                                                 </td>
-                                                <td class="p-2 border text-center font-black text-[#243c7a]">{{ pago.importe }} €</td>
+                                                <td class="p-2 border text-center font-black text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                                 <td class="p-2 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
@@ -1004,9 +1001,6 @@
                     return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
                 }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
             },
-            totalRecaudadoGlobal() {
-                return this.pagosFiltradosGlobal.reduce((acc, p) => acc + (Number(p.importe) || 0), 0).toFixed(2);
-            },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
                 const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
@@ -1073,6 +1067,12 @@
                 const parts = f.split('-');
                 if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 return f;
+            },
+            formatImporte(val) {
+                if (val === null || val === undefined || val === '') return '0.00';
+                const clean = String(val).replace(/[€\s]/g, '').replace(',', '.');
+                const num = Number(clean);
+                return isNaN(num) ? val : num.toFixed(2);
             },
             formatMesUnificado(mesStr) {
                 if (!mesStr) return '-';
