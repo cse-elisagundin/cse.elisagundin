@@ -46,56 +46,126 @@
             <!-- PESTAÑAS DE NAVEGACIÓN -->
             <div class="flex space-x-2 bg-black/20 p-1.5 rounded-xl">
                 <button onclick="cambiarPestana('alumnos')" id="btn-tab-alumnos" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm">
-                    Alumnos
+                    Alumnos y Expedientes
                 </button>
                 <button onclick="cambiarPestana('pagos')" id="btn-tab-pagos" class="px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white">
-                    Pagos y Recibos
+                    Control de Pagos Global
                 </button>
             </div>
         </div>
     </nav>
 
     <!-- CONTENEDOR PRINCIPAL -->
-    <main class="max-w-7xl mx-auto p-6 flex-grow w-full">
+    <main class="max-w-7xl mx-auto p-6 flex-grow w-full space-y-6">
         
-        <!-- ================= SECCIÓN ALUMNOS ================= -->
-        <section id="seccion-alumnos" class="space-y-6">
-            <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                <div>
-                    <h2 class="text-xl font-black text-brand-navy">Base de Datos de Alumnos</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">Gestión de fichas académicas, datos de contacto y credenciales Aules.</p>
+        <!-- ================= SECCIÓN ALUMNOS Y EXPEDIENTES (VISTA PRINCIPAL) ================= -->
+        <section id="seccion-alumnos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- COLUMNA IZQUIERDA: Buscador y Listado de Alumnos -->
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 flex flex-col h-[750px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-black text-brand-navy">Alumnos</h2>
+                    <button onclick="abrirModalAlumno()" class="bg-brand-navy hover:bg-black text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow-sm">
+                        + Nuevo
+                    </button>
                 </div>
-                <button onclick="alert('Módulo de inserción de alumnos activo')" class="bg-brand-navy hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
-                    + Nuevo Alumno
-                </button>
+                <!-- Buscador de alumnos -->
+                <div class="mb-3">
+                    <input type="text" id="input-buscar-alumno" oninput="filtrarAlumnos()" placeholder="🔍 Buscar por nombre o DNI..." class="w-full border border-gray-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-navy outline-none">
+                </div>
+                <!-- Listado scrollable -->
+                <div id="lista-alumnos-sidebar" class="flex-grow overflow-y-auto space-y-2 pr-1">
+                    <p class="text-xs text-gray-400 text-center py-6">Cargando listado...</p>
+                </div>
             </div>
 
-            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
-                                <th class="p-4 font-semibold">Nombre y Apellidos</th>
-                                <th class="p-4 font-semibold">DNI</th>
-                                <th class="p-4 font-semibold">Curso / Colegio</th>
-                                <th class="p-4 font-semibold">Teléfono</th>
-                                <th class="p-4 font-semibold">Aules (Usuario)</th>
-                                <th class="p-4 font-semibold text-center">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-alumnos-body" class="divide-y divide-gray-100 text-sm">
-                            <tr><td colspan="6" class="p-6 text-center text-gray-400">Cargando alumnos...</td></tr>
-                        </tbody>
-                    </table>
+            <!-- COLUMNA DERECHA: Expediente Completo del Alumno Seleccionado -->
+            <div class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex flex-col h-[750px] overflow-y-auto">
+                <div id="expediente-vacio" class="m-auto text-center text-gray-400 py-20">
+                    <p class="text-4xl mb-2">👤</p>
+                    <p class="text-sm font-semibold">Selecciona un alumno de la lista izquierda para ver su expediente completo.</p>
+                </div>
+
+                <div id="expediente-contenido" class="hidden space-y-6">
+                    <!-- Cabecera del alumno -->
+                    <div class="flex justify-between items-start border-b pb-4">
+                        <div>
+                            <h2 id="exp-nombre" class="text-2xl font-black text-brand-navy">Nombre del Alumno</h2>
+                            <p class="text-xs text-gray-500 mt-1">DNI: <span id="exp-dni" class="font-mono font-bold">-</span> | Colegio: <span id="exp-colegio">-</span> | Curso: <span id="exp-curso">-</span></p>
+                        </div>
+                        <span id="exp-estado" class="px-3 py-1 rounded-full text-xs font-bold uppercase">Activo</span>
+                    </div>
+
+                    <!-- Datos de contacto y Aules -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs">
+                        <div>
+                            <span class="text-gray-400 block uppercase font-bold text-[10px]">Teléfono</span>
+                            <span id="exp-tlf" class="font-semibold text-gray-800">-</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block uppercase font-bold text-[10px]">Usuario Aules</span>
+                            <span id="exp-aules" class="font-mono font-semibold text-brand-navy">-</span>
+                        </div>
+                        <div class="col-span-2">
+                            <span class="text-gray-400 block uppercase font-bold text-[10px]">Dirección</span>
+                            <span id="exp-direccion" class="font-semibold text-gray-800">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Sub-pestaña de Pagos del Alumno -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-black text-brand-navy uppercase tracking-wider">Historial de Pagos del Alumno</h3>
+                        </div>
+                        <div class="border border-gray-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-600 text-[10px] uppercase tracking-wider border-b">
+                                        <th class="p-3">Factura ID</th>
+                                        <th class="p-3">Concepto / Tarifa</th>
+                                        <th class="p-3">Fecha</th>
+                                        <th class="p-3">Importe</th>
+                                        <th class="p-3 text-center">Método</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="exp-tabla-pagos" class="divide-y divide-gray-100 text-xs">
+                                    <tr><td colspan="5" class="p-4 text-center text-gray-400">Sin pagos registrados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sub-pestaña de Exámenes del Alumno -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-black text-brand-navy uppercase tracking-wider">Calendario y Notas de Exámenes</h3>
+                        </div>
+                        <div class="border border-gray-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-600 text-[10px] uppercase tracking-wider border-b">
+                                        <th class="p-3">Fecha</th>
+                                        <th class="p-3">Asignatura</th>
+                                        <th class="p-3 text-center">Calificación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="exp-tabla-examenes" class="divide-y divide-gray-100 text-xs">
+                                    <tr><td colspan="3" class="p-4 text-center text-gray-400">Sin exámenes registrados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
         </section>
 
-        <!-- ================= SECCIÓN PAGOS ================= -->
+        <!-- ================= SECCIÓN PAGOS GLOBAL ================= -->
         <section id="seccion-pagos" class="space-y-6 hidden">
             <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
                 <div>
-                    <h2 class="text-xl font-black text-brand-navy">Control de Pagos y Facturación</h2>
+                    <h2 class="text-xl font-black text-brand-navy">Control Global de Pagos y Facturación</h2>
                     <p class="text-xs text-gray-500 mt-0.5">Registro fiscal, Bizum con numeración automática y recibos oficiales.</p>
                 </div>
                 <button onclick="abrirModalPago()" class="bg-brand-pink hover:bg-brand-pinkHover text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-md">
@@ -127,7 +197,7 @@
             </div>
         </section>
 
-        <!-- ================= SECCIÓN VISOR DE RECIBOS INTEGRADO (Plano, sin pop-ups) ================= -->
+        <!-- ================= VISOR DE RECIBO INTEGRADO ================= -->
         <section id="seccion-recibo" class="space-y-6 hidden">
             <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
                 <div>
@@ -135,7 +205,7 @@
                     <p class="text-xs text-gray-500 mt-0.5">Comprobante listo para imprimir o guardar sin restricciones.</p>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="volverAPagos()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+                    <button onclick="cambiarPestana('pagos')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold px-4 py-2.5 rounded-xl transition">
                         ← Volver a Pagos
                     </button>
                     <button onclick="window.print()" class="bg-brand-navy hover:bg-black text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-md">
@@ -146,7 +216,6 @@
 
             <div class="flex justify-center bg-gray-100 p-8 rounded-2xl border border-gray-200">
                 <div id="zona-impresion" class="bg-white border-2 border-black w-full max-w-[700px] p-8 box-sizing text-black flex flex-col justify-between" style="min-height: 850px;">
-                    <!-- Contenido dinámico del recibo -->
                     <div id="recibo-contenido-interno"></div>
                 </div>
             </div>
@@ -158,13 +227,11 @@
     <div id="modal-pago" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-gray-100">
             <h3 class="text-lg font-bold text-brand-navy mb-4">Registrar Nuevo Pago</h3>
-            
             <form id="form-nuevo-pago" onsubmit="procesarNuevoPago(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nombre del Alumno</label>
-                    <input type="text" id="input-alumno" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Manu Vila Rico">
+                    <input type="text" id="input-pago-alumno" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Manu Vila Rico">
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tarifa</label>
@@ -175,7 +242,6 @@
                         <input type="text" id="input-extras" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Material (10€)">
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Importe Total</label>
@@ -186,7 +252,6 @@
                         <input type="date" id="input-fecha" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mes Correspondiente</label>
@@ -200,7 +265,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                     <button type="button" onclick="cerrarModalPago()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition">Cancelar</button>
                     <button type="submit" class="px-5 py-2 bg-brand-pink text-white text-sm font-bold rounded-xl hover:bg-brand-pinkHover transition shadow-md">Guardar Pago</button>
@@ -209,18 +273,99 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE CONEXIÓN Y LÓGICA GENERAL BLINDADO -->
+    <!-- MODAL NUEVO ALUMNO -->
+    <div id="modal-alumno" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-gray-100">
+            <h3 class="text-lg font-bold text-brand-navy mb-4">Registrar Nuevo Alumno</h3>
+            <form id="form-nuevo-alumno" onsubmit="procesarNuevoAlumno(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nombre</label>
+                        <input type="text" id="alum-nombre" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Apellidos</label>
+                        <input type="text" id="alum-apellidos" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">DNI</label>
+                        <input type="text" id="alum-dni" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Teléfono</label>
+                        <input type="text" id="alum-tlf" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Curso</label>
+                        <input type="text" id="alum-curso" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Colegio</label>
+                        <input type="text" id="alum-colegio" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Usuario Aules</label>
+                        <input type="text" id="alum-aules-user" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Contraseña Aules</label>
+                        <input type="text" id="alum-aules-pass" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="cerrarModalAlumno()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-navy text-white text-sm font-bold rounded-xl hover:bg-black transition shadow-md">Guardar Alumno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE CONEXIÓN Y LÓGICA -->
     <script>
         const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        let globalAlumnos = [];
+        let globalPagos = [];
+        let globalExamenes = [];
+
         document.addEventListener('DOMContentLoaded', () => {
-            cargarAlumnosSeguro();
-            cargarPagosSeguro();
+            cargarDatosGlobales();
         });
 
-        // --- CONTROL DE PESTAÑAS ROBUSTO ---
+        // --- CARGAR TODOS LOS DATOS DESDE SUPABASE ---
+        async function cargarDatosGlobales() {
+            try {
+                // 1. Alumnos
+                const resAlumnos = await _supabase.from('listado_alumnos').select('*');
+                globalAlumnos = resAlumnos.data || [];
+
+                // 2. Pagos
+                const resPagos = await _supabase.from('pagos').select('*').order('id', { ascending: false });
+                globalPagos = resPagos.data || [];
+
+                // 3. Exámenes (si existe la tabla)
+                try {
+                    const resEx = await _supabase.from('examenes').select('*');
+                    globalExamenes = resEx.data || [];
+                } catch(e) { globalExamenes = []; }
+
+                renderizarSidebarAlumnos(globalAlumnos);
+                renderizarTablaPagosGlobal(globalPagos);
+
+            } catch (err) {
+                console.error("Error cargando datos:", err);
+            }
+        }
+
+        // --- CONTROL DE PESTAÑAS ---
         function cambiarPestana(pestana) {
             const secAlumnos = document.getElementById('seccion-alumnos');
             const secPagos = document.getElementById('seccion-pagos');
@@ -240,137 +385,203 @@
                 secPagos.classList.remove('hidden');
                 btnPagos.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm";
                 btnAlumnos.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white";
+            } else if (pestana === 'recibo') {
+                secRecibo.classList.remove('hidden');
             }
         }
 
-        function volverAPagos() {
-            cambiarPestana('pagos');
+        // --- RENDERIZAR LISTADO LATERAL DE ALUMNOS ---
+        function renderizarSidebarAlumnos(alumnos) {
+            const contenedor = document.getElementById('lista-alumnos-sidebar');
+            contenedor.innerHTML = '';
+
+            if (alumnos.length === 0) {
+                contenedor.innerHTML = `<p class="text-xs text-gray-400 text-center py-6">No hay alumnos encontrados.</p>`;
+                return;
+            }
+
+            alumnos.forEach(alum => {
+                const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`.trim();
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-xl border border-gray-100 hover:border-brand-navy hover:bg-brand-navy/5 cursor-pointer transition flex justify-between items-center";
+                div.onclick = () => seleccionarAlumno(alum);
+                div.innerHTML = `
+                    <div>
+                        <p class="text-xs font-bold text-gray-800">${nombreCompleto}</p>
+                        <p class="text-[10px] text-gray-500 font-mono">${alum.dni || 'Sin DNI'}</p>
+                    </div>
+                    <span class="w-2 h-2 rounded-full ${alum.baja ? 'bg-red-400' : 'bg-green-400'}"></span>
+                `;
+                contenedor.appendChild(div);
+            });
         }
 
-        // --- 1. CARGAR ALUMNOS (Conectado a listado_alumnos con manejo de errores visible) ---
-        async function cargarAlumnosSeguro() {
-            const tbody = document.getElementById('tabla-alumnos-body');
-            try {
-                const { data, error } = await _supabase.from('listado_alumnos').select('*').limit(100);
-                
-                if (error) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-semibold">Error al conectar con Supabase: ${error.message}</td></tr>`;
-                    return;
-                }
+        function filtrarAlumnos() {
+            const texto = document.getElementById('input-buscar-alumno').value.toLowerCase();
+            const filtrados = globalAlumnos.filter(alum => {
+                const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`.toLowerCase();
+                const dni = String(alum.dni || '').toLowerCase();
+                return nombreCompleto.includes(texto) || dni.includes(texto);
+            });
+            renderizarSidebarAlumnos(filtrados);
+        }
 
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No hay registros en la tabla listado_alumnos.</td></tr>`;
-                    return;
-                }
+        // --- SELECCIONAR ALUMNO Y MOSTRAR EXPEDIENTE ---
+        function seleccionarAlumno(alum) {
+            document.getElementById('expediente-vacio').classList.add('hidden');
+            document.getElementById('expediente-contenido').classList.remove('hidden');
 
-                tbody.innerHTML = '';
-                data.forEach(alum => {
+            const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`;
+            document.getElementById('exp-nombre').innerText = nombreCompleto;
+            document.getElementById('exp-dni').innerText = alum.dni || '-';
+            document.getElementById('exp-colegio').innerText = alum.colegio || '-';
+            document.getElementById('exp-curso').innerText = alum.curso || '-';
+            document.getElementById('exp-tlf').innerText = alum.tlf || '-';
+            document.getElementById('exp-aules').innerText = alum.usuario_aules || 'Sin usuario';
+            document.getElementById('exp-direccion').innerText = `${alum.direccion || ''} (${alum.poblacion || ''})`;
+
+            const badgeEstado = document.getElementById('exp-estado');
+            badgeEstado.innerText = alum.baja ? 'Baja' : 'Activo';
+            badgeEstado.className = `px-3 py-1 rounded-full text-xs font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+
+            // Filtrar pagos de este alumno
+            const pagosAlumno = globalPagos.filter(p => normalizeName(p.alumno) === normalizeName(nombreCompleto));
+            const tbodyPagos = document.getElementById('exp-tabla-pagos');
+            tbodyPagos.innerHTML = '';
+            if (pagosAlumno.length === 0) {
+                tbodyPagos.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">Sin pagos registrados para este alumno.</td></tr>`;
+            } else {
+                pagosAlumno.forEach(p => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
                     tr.innerHTML = `
-                        <td class="p-4 font-semibold text-gray-800">${alum.nombre || ''} ${alum.apellidos || ''}</td>
-                        <td class="p-4 text-xs font-mono text-gray-600">${alum.dni || '-'}</td>
-                        <td class="p-4 text-xs text-gray-600">${alum.curso || '-'} (${alum.colegio || '-'})</td>
-                        <td class="p-4 text-xs text-gray-600">${alum.tlf || '-'}</td>
-                        <td class="p-4 text-xs font-mono text-brand-navy">${alum.usuario_aules || 'Sin usuario'}</td>
-                        <td class="p-4 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                                ${alum.baja ? 'Baja' : 'Activo'}
-                            </span>
-                        </td>
+                        <td class="p-3 font-mono text-[10px] font-bold">${p.factura_id || 'S/F'}</td>
+                        <td class="p-3"><strong>${p.tarifa}</strong>${p.extras ? '<br><span class="text-gray-400">'+p.extras+'</span>' : ''}</td>
+                        <td class="p-3 text-gray-600">${p.fecha_pago}</td>
+                        <td class="p-3 font-bold">${p.importe}</td>
+                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${p.metodo_pago==='BIZUM'?'bg-blue-100 text-blue-700':'bg-green-100 text-green-700'}">${p.metodo_pago}</span></td>
                     `;
-                    tbody.appendChild(tr);
+                    tbodyPagos.appendChild(tr);
                 });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-semibold">Excepción de red: ${err.message}</td></tr>`;
+            }
+
+            // Filtrar exámenes de este alumno
+            const examenesAlumno = globalExamenes.filter(ex => normalizeName(ex.alumno) === normalizeName(nombreCompleto));
+            const tbodyEx = document.getElementById('exp-tabla-examenes');
+            tbodyEx.innerHTML = '';
+            if (examenesAlumno.length === 0) {
+                tbodyEx.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Sin exámenes registrados para este alumno.</td></tr>`;
+            } else {
+                examenesAlumno.forEach(ex => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-3 text-gray-600">${ex.fecha}</td>
+                        <td class="p-3 font-semibold">${ex.asignatura}</td>
+                        <td class="p-3 text-center font-bold">${ex.nota || 'Pendiente'}</td>
+                    `;
+                    tbodyEx.appendChild(tr);
+                });
             }
         }
 
-        // --- 2. CARGAR PAGOS (Blindado) ---
-        async function cargarPagosSeguro() {
+        function normalizeName(str) {
+            return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ");
+        }
+
+        // --- RENDERIZAR TABLA DE PAGOS GLOBAL ---
+        function renderizarTablaPagosGlobal(pagos) {
             const tbody = document.getElementById('tabla-pagos-body');
-            try {
-                const { data, error } = await _supabase
-                    .from('pagos')
-                    .select('*')
-                    .order('id', { ascending: false });
+            tbody.innerHTML = '';
 
-                if (error) {
-                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-red-500 font-semibold">Error al cargar pagos: ${error.message}</td></tr>`;
-                    return;
-                }
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 italic">No hay pagos registrados o la tabla está vacía.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = '';
-                data.forEach(pago => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
-                    tr.innerHTML = `
-                        <td class="p-4 font-mono text-xs font-bold text-gray-700">${pago.factura_id || '<span class="text-gray-400 italic">Sin factura</span>'}</td>
-                        <td class="p-4 font-semibold text-gray-800">${pago.alumno}</td>
-                        <td class="p-4 text-gray-600 text-xs">
-                            <span class="font-medium">${pago.tarifa}</span>
-                            ${pago.extras ? `<br><span class="text-gray-400">${pago.extras}</span>` : ''}
-                        </td>
-                        <td class="p-4 text-gray-600 text-xs">${pago.fecha_pago}</td>
-                        <td class="p-4 font-bold text-gray-900">${pago.importe}</td>
-                        <td class="p-4 text-gray-600 text-xs">${pago.mes}</td>
-                        <td class="p-4 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${pago.metodo_pago === 'BIZUM' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
-                                ${pago.metodo_pago}
-                            </span>
-                        </td>
-                        <td class="p-4 text-center">
-                            <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
-                        </td>
-                        <td class="p-4 text-center">
-                            <button onclick='mostrarReciboEnPantalla(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
-                                🖨️ Recibo
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-red-500 font-semibold">Excepción de red: ${err.message}</td></tr>`;
+            if (!pagos || pagos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400">No hay pagos registrados.</td></tr>`;
+                return;
             }
+
+            pagos.forEach(pago => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs font-bold text-gray-700">${pago.factura_id || '<span class="text-gray-400 italic">Sin factura</span>'}</td>
+                    <td class="p-4 font-semibold text-gray-800">${pago.alumno}</td>
+                    <td class="p-4 text-gray-600 text-xs">
+                        <span class="font-medium">${pago.tarifa}</span>
+                        ${pago.extras ? `<br><span class="text-gray-400">${pago.extras}</span>` : ''}
+                    </td>
+                    <td class="p-4 text-gray-600 text-xs">${pago.fecha_pago}</td>
+                    <td class="p-4 font-bold text-gray-900">${pago.importe}</td>
+                    <td class="p-4 text-gray-600 text-xs">${pago.mes}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${pago.metodo_pago === 'BIZUM' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
+                            ${pago.metodo_pago}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick='mostrarReciboEnPantalla(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
+                            🖨️ Recibo
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         async function actualizarRegistrado(idPago, valor) {
             const { error } = await _supabase.from('pagos').update({ registrado: valor }).eq('id', idPago);
-            if (error) {
-                alert("Error al actualizar el estado: " + error.message);
-                cargarPagosSeguro();
-            }
+            if (error) alert("Error al actualizar: " + error.message);
         }
 
+        // --- MODALES ---
         function abrirModalPago() {
             document.getElementById('form-nuevo-pago').reset();
             document.getElementById('input-fecha').valueAsDate = new Date();
             document.getElementById('modal-pago').classList.remove('hidden');
         }
+        function cerrarModalPago() { document.getElementById('modal-pago').classList.add('hidden'); }
 
-        function cerrarModalPago() {
-            document.getElementById('modal-pago').classList.add('hidden');
+        function abrirModalAlumno() {
+            document.getElementById('form-nuevo-alumno').reset();
+            document.getElementById('modal-alumno').classList.remove('hidden');
+        }
+        function cerrarModalAlumno() { document.getElementById('modal-alumno').classList.add('hidden'); }
+
+        // --- PROCESAR NUEVO ALUMNO ---
+        async function procesarNuevoAlumno(event) {
+            event.preventDefault();
+            const nuevo = {
+                nombre: document.getElementById('alum-nombre').value.trim(),
+                apellidos: document.getElementById('alum-apellidos').value.trim(),
+                dni: document.getElementById('alum-dni').value.trim(),
+                tlf: document.getElementById('alum-tlf').value.trim(),
+                curso: document.getElementById('alum-curso').value.trim(),
+                colegio: document.getElementById('alum-colegio').value.trim(),
+                usuario_aules: document.getElementById('alum-aules-user').value.trim(),
+                pass_aules: document.getElementById('alum-aules-pass').value.trim(),
+                baja: false
+            };
+
+            const { error } = await _supabase.from('listado_alumnos').insert([nuevo]);
+            if (error) {
+                alert("Error al guardar alumno: " + error.message);
+                return;
+            }
+            cerrarModalAlumno();
+            cargarDatosGlobales();
         }
 
+        // --- PROCESAR NUEVO PAGO ---
         async function generarFacturaIdAutomatico(nombreAlumno, fechaPago) {
             const fecha = new Date(fechaPago);
             const mesIndex = fecha.getMonth();
-            const { data, error } = await _supabase.from('pagos').select('factura_id');
-            if (error) return null;
-
-            let maxGen = 0;
-            let maxAlumno = 0;
+            const { data } = await _supabase.from('pagos').select('factura_id');
+            let maxGen = 0; let maxAlumno = 0;
             const nomAbrev = String(nombreAlumno).substring(0, 3).toUpperCase();
             const mesesAbrev = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
             const mesAbrev = mesesAbrev[mesIndex];
 
-            data.forEach(row => {
+            (data || []).forEach(row => {
                 let fid = row.factura_id;
                 if (fid) {
                     let mGen = fid.match(/^(\d+)-/);
@@ -379,13 +590,12 @@
                     if (mAlu) maxAlumno = Math.max(maxAlumno, parseInt(mAlu[1]));
                 }
             });
-
             return `${maxGen + 1}-${nomAbrev}-${mesAbrev}-${(maxAlumno + 1).toString().padStart(2, '0')}`;
         }
 
         async function procesarNuevoPago(event) {
             event.preventDefault();
-            const alumno = document.getElementById('input-alumno').value.trim();
+            const alumno = document.getElementById('input-pago-alumno').value.trim();
             const tarifa = document.getElementById('input-tarifa').value.trim();
             const extras = document.getElementById('input-extras').value.trim();
             const importe = document.getElementById('input-importe').value.trim();
@@ -403,15 +613,14 @@
             }]);
 
             if (error) {
-                alert("Error al guardar el pago: " + error.message);
+                alert("Error al guardar pago: " + error.message);
                 return;
             }
-
             cerrarModalPago();
-            cargarPagosSeguro();
+            cargarDatosGlobales();
         }
 
-        // --- VISOR INTEGRADO DE RECIBO (Sin popups, plano en pantalla) ---
+        // --- VISOR DE RECIBOS ---
         function mostrarReciboEnPantalla(pago) {
             const contenedor = document.getElementById('recibo-contenido-interno');
             contenedor.innerHTML = `
@@ -460,11 +669,7 @@
                     </div>
                 </div>
             `;
-
-            // Ocultar pestañas y mostrar la sección del recibo en la misma pantalla
-            document.getElementById('seccion-alumnos').classList.add('hidden');
-            document.getElementById('seccion-pagos').classList.add('hidden');
-            document.getElementById('seccion-recibo').classList.remove('hidden');
+            cambiarPestana('recibo');
         }
     </script>
 </body>
