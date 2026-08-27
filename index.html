@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -64,6 +65,7 @@
             </div>
         </transition>
 
+        <!-- PANTALLA DE LOGIN SUPABASE -->
         <transition name="fade">
             <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
                 <div class="login-container p-10 w-full max-w-md text-center relative overflow-hidden">
@@ -74,11 +76,13 @@
                     </div>
                     
                     <h2 class="text-2xl font-extrabold text-[#243c7a] mb-2 uppercase">Acceso Privado</h2>
-                    <p v-if="!hasDeviceToken" class="text-xs font-bold text-orange-500 mb-4 bg-orange-50 p-2 rounded border border-orange-200">🔒 Equipo no vinculado</p>
+                    <p class="text-xs font-bold text-gray-400 mb-4">Autenticación Segura Supabase</p>
                     
-                    <input type="password" v-model="passwordInput" @keyup.enter="login" placeholder="Contraseña..." class="w-full p-4 rounded-xl input-corp text-center text-lg mb-4 bg-gray-50">
+                    <input type="email" v-model="loginEmail" placeholder="Correo electrónico..." class="w-full p-3.5 rounded-xl input-corp text-sm mb-3 bg-gray-50">
+                    <input type="password" v-model="loginPassword" @keyup.enter="login" placeholder="Contraseña..." class="w-full p-3.5 rounded-xl input-corp text-sm mb-4 bg-gray-50">
+                    
                     <button @click="login" :disabled="loading" class="w-full py-4 text-white font-bold rounded-xl btn-corp uppercase shadow-lg disabled:opacity-50">
-                        {{ loading ? 'Verificando...' : 'Entrar' }}
+                        {{ loading ? 'Iniciando sesión...' : 'Entrar' }}
                     </button>
                     
                     <p v-if="loginError" class="mt-4 text-red-500 font-bold text-xs animate-pulse">{{ errorMsg }}</p>
@@ -86,6 +90,7 @@
             </div>
         </transition>
 
+        <!-- APLICACIÓN PRINCIPAL -->
         <div v-if="authenticated" class="flex h-full animate-opacity duration-700">
             <div class="w-1/4 bg-white border-r flex flex-col shadow-xl z-20">
                 <div class="p-5 bg-[#243c7a] text-white">
@@ -128,12 +133,13 @@
                 </div>
                 <div class="p-2 border-t bg-gray-50 text-center flex justify-between px-4">
                     <button @click="logout" class="text-xs font-bold text-gray-400 hover:text-red-500">CERRAR SESIÓN</button>
-                    <span class="text-xs font-bold text-green-500" title="Conexión Cifrada y Segura"><i class="fas fa-shield-alt"></i> API Segura</span>
+                    <span class="text-xs font-bold text-green-500" title="Conexión Supabase"><i class="fas fa-database"></i> Supabase</span>
                 </div>
             </div>
 
             <div class="w-3/4 bg-[#f4f6f9] h-full flex flex-col relative">
                 
+                <!-- GESTOR MASIVO DE EXÁMENES -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-8 pb-24 animate-fade">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
                         <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
@@ -178,9 +184,6 @@
                                     <span class="font-semibold text-sm text-gray-800">{{ a.nombre }} {{ a.apellidos }}</span>
                                 </label>
                             </div>
-                            <div v-if="alumnosFiltradosGestor.length === 0" class="text-center py-6 text-gray-400 italic">
-                                No se encontraron alumnos con esa búsqueda.
-                            </div>
                         </div>
                         
                         <div class="p-6 border-t bg-gray-50 flex justify-end items-center">
@@ -193,6 +196,7 @@
                     </div>
                 </div>
 
+                <!-- VISTA DE ALUMNO SELECCIONADO -->
                 <div v-if="selected" class="flex-1 overflow-y-auto p-8 pb-24">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[700px] flex flex-col">
                         
@@ -225,6 +229,7 @@
                             </div>
                         </div>
 
+                        <!-- MENÚ INTERNO DEL ALUMNO -->
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
                             <h3 class="text-3xl font-black text-[#243c7a] mb-2">Panel del Alumno</h3>
                             <p class="text-gray-500 mb-10 font-medium">¿Qué deseas gestionar para {{ form.nombre }}?</p>
@@ -243,7 +248,7 @@
                                         <i class="fas fa-euro-sign text-4xl px-2"></i>
                                     </div>
                                     <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Registrar cobros, recibos e ingresos fijos.</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Registrar cobros, recibos y tarifas.</span>
                                 </button>
 
                                 <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
@@ -256,6 +261,7 @@
                             </div>
                         </div>
 
+                        <!-- FICHA ACADÉMICA -->
                         <form v-if="activeTab === 'ficha'" class="p-8 space-y-8 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
                             <section class="grid grid-cols-4 gap-6">
                                 <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
@@ -290,34 +296,10 @@
                                 <input v-model="form.curso" placeholder="Curso" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
                             </section>
-                            <section class="grid grid-cols-2 gap-8">
-                                <div class="bg-green-50 p-6 rounded-2xl border border-green-200">
-                                    <div class="font-bold text-green-800 mb-4">FAMILIAR 1</div>
-                                    <div class="space-y-3">
-                                        <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
-                                        <select v-model="form.fam1_relacion" class="w-full p-2 border rounded bg-white"><option value="" disabled>Relación...</option><option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option></select>
-                                        <div class="flex gap-2">
-                                            <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
-                                            <a v-if="form.fam1_tlf" :href="'https://wa.me/34'+String(form.fam1_tlf).replace(/\s/g,'')" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600"><i class="fab fa-whatsapp"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-100 p-6 rounded-2xl border border-gray-200">
-                                    <div class="font-bold text-gray-600 mb-4">FAMILIAR 2</div>
-                                    <div class="space-y-3">
-                                        <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
-                                        <select v-model="form.fam2_relacion" class="w-full p-2 border rounded bg-white"><option value="" disabled>Relación...</option><option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option></select>
-                                        <div class="flex gap-2">
-                                            <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
-                                            <a v-if="form.fam2_tlf" :href="'https://wa.me/34'+String(form.fam2_tlf).replace(/\s/g,'')" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500"><i class="fab fa-whatsapp"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
                         </form>
 
+                        <!-- GESTIÓN DE PAGOS -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
-                            
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Pago</h3>
@@ -325,7 +307,6 @@
                                         <i class="fas fa-print"></i> Imprimir Recibo
                                     </button>
                                 </div>
-                                
                                 <div class="grid grid-cols-2 gap-5 mb-5">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
@@ -339,130 +320,19 @@
                                         </select>
                                     </div>
                                 </div>
-
-                                <div v-if="cuotaDetectada > 0" class="col-span-2 bg-blue-50 p-5 rounded-xl border border-blue-200 flex justify-between items-center mb-5 shadow-inner">
-                                    <div>
-                                        <span class="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Cuota Automática Detectada ({{ nuevoPago.mes }})</span>
-                                        <div class="text-3xl font-black text-[#243c7a]">{{ cuotaDetectada }} €</div>
-                                    </div>
-                                    <div class="text-right bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                                        <span class="text-[10px] font-bold text-gray-400 uppercase">Clasificación en Google Sheets</span><br>
-                                        <span class="text-sm font-bold" :class="tarifaClasificada.esOficial ? 'text-green-600' : 'text-orange-500'">
-                                            <i class="fas" :class="tarifaClasificada.esOficial ? 'fa-check-circle' : 'fa-code-branch'"></i> {{ tarifaClasificada.texto }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div v-if="cuotaDetectada === 0" class="mb-5 animate-fade">
-                                    <div class="bg-red-50 text-red-600 border border-red-200 p-3 rounded-lg text-xs font-bold mb-4 flex items-center gap-2">
-                                        <i class="fas fa-exclamation-triangle"></i> No hay cuota fijada para este mes. Puedes editarla en Ingresos Fijos, o registrar el cobro manualmente aquí:
-                                    </div>
-                                    
-                                    <div class="col-span-3 mb-4">
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa / Opción Manual <span class="text-red-500 font-normal ml-1">(Para un extra exclusivo, pon "Sin Tarifa")</span></label>
-                                        <select v-model="nuevoPago.tarifaSelect" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
-                                            <option value="">-- Sin Tarifa Base (Solo Extra) --</option>
-                                            <option value="Opción 1 (40€)">Opción 1 (40€)</option>
-                                            <option value="Opción 2 (50€)">Opción 2 (50€)</option>
-                                            <option value="Opción 3 (80€)">Opción 3 (80€)</option>
-                                            <option value="Opción 4 (85€)">Opción 4 (85€)</option>
-                                            <option value="Opción 5 (110€)">Opción 5 (110€)</option>
-                                            <option value="Opción 6 (135€)">Opción 6 (135€)</option>
-                                            <option value="personalizada">✏️ Otra cantidad (Personalizada...)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div v-if="nuevoPago.tarifaSelect === 'personalizada'" class="col-span-3 grid grid-cols-3 gap-5 bg-orange-50 p-4 rounded-lg border border-orange-200">
-                                        <div class="col-span-2">
-                                            <label class="block text-xs font-bold text-orange-600 mb-1">Concepto Personalizado</label>
-                                            <input v-model="nuevoPago.tarifaPersConcepto" placeholder="Ej: Medio mes Abril..." class="w-full p-2 rounded border border-orange-300 outline-none">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-orange-600 mb-1">Importe Tarifa (€)</label>
-                                            <input type="number" step="0.01" v-model="nuevoPago.tarifaPersImporte" placeholder="0.00" class="w-full p-2 rounded border border-orange-300 outline-none font-bold">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-4 gap-5 mb-4 p-5 border border-gray-100 rounded-xl bg-gray-50/50">
-                                    <div class="col-span-1">
-                                        <label class="block text-xs font-bold text-[#fa65c3] mb-1">Añadir Extra (€)</label>
-                                        <input type="number" step="0.01" v-model="nuevoPago.extraImporte" placeholder="0.00" class="w-full p-2.5 rounded-lg border border-[#fa65c3] outline-none focus:ring focus:ring-pink-200">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-xs font-bold text-[#fa65c3] mb-1">Concepto del Extra</label>
-                                        <input v-model="nuevoPago.extraConcepto" placeholder="Ej: Material escolar..." class="w-full p-2.5 rounded-lg border border-[#fa65c3] outline-none focus:ring focus:ring-pink-200">
-                                    </div>
-                                    <div class="col-span-1">
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Método de Pago</label>
-                                        <select v-model="nuevoPago.metodo" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white">
-                                            <option value="" disabled>Método...</option>
-                                            <option>Efectivo</option>
-                                            <option>Tarjeta</option>
-                                            <option>Transferencia</option>
-                                            <option>Bizum</option>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <div class="flex items-center justify-between border-t pt-5 mt-2 bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl">
                                     <div class="flex flex-col">
-                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total a Cobrar</span>
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
                                         <span class="text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
-                                    <div class="flex items-center gap-6">
-                                        <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-white rounded-lg transition" :class="nuevoPago.generarPDF ? 'text-[#2b94cc]' : 'text-gray-400'">
-                                            <input type="checkbox" v-model="nuevoPago.generarPDF" class="w-5 h-5 rounded accent-[#2b94cc]">
-                                            <span class="font-extrabold text-xs uppercase select-none">Drive PDF</span>
-                                        </label>
-                                        <button @click="registrarPago" :disabled="savingPago || importeCalculado === 0" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2 transition-transform transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
-                                            {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white p-6 rounded-xl border border-[#2b94cc] shadow-sm">
-                                <h3 class="font-extrabold text-[#243c7a] mb-4 uppercase flex items-center gap-2 border-b pb-2">
-                                    <i class="fas fa-calendar-check text-[#2b94cc]"></i> Historial de Ingresos Fijos
-                                </h3>
-                                <div v-if="mesesFijosData.length === 0" class="text-gray-500 italic text-sm">El alumno no existe en la base de Ingresos Fijos.</div>
-                                <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div v-for="(mes, idx) in mesesFijosData" :key="idx" class="border rounded-xl p-4 flex flex-col items-center shadow-sm relative overflow-hidden transition-all duration-300" :class="[mes.bgClass, mes.cargando ? 'opacity-50 cursor-not-allowed' : '']">
-                                        <div class="text-xs font-extrabold text-gray-500 uppercase mb-1">{{ mes.mesNombre }}</div>
-                                        
-                                        <div v-if="!mes.cuota" class="flex flex-col items-center w-full mt-2">
-                                            <span class="text-xs text-gray-400 font-bold mb-1">SIN CUOTA</span>
-                                            <div class="flex gap-1 w-full">
-                                                <input type="number" v-model="mes.inputCuota" placeholder="€" :disabled="mes.cargando" class="w-full p-1 text-center border rounded font-bold text-[#243c7a] text-sm disabled:opacity-50">
-                                                <button @click="actualizarFijo(mes.mesNombre, 'cuota', mes.inputCuota, mes)" :disabled="mes.cargando" class="bg-[#2b94cc] text-white px-2 rounded hover:bg-[#207bb0] disabled:opacity-50"><i class="fas fa-save"></i></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <div v-else class="flex flex-col items-center w-full">
-                                            <div v-if="!mes.unlocked" class="text-2xl font-black mb-2 relative group flex items-center gap-2" :class="mes.pagado ? 'text-green-700' : 'text-gray-700'">
-                                                {{ mes.cuota }}€
-                                                <button @click="mes.unlocked = true" title="Editar cuota" class="text-gray-300 hover:text-orange-500 transition opacity-0 group-hover:opacity-100 text-sm"><i class="fas fa-lock"></i></button>
-                                            </div>
-                                            <div v-else class="flex gap-1 w-full mb-2 animate-pop">
-                                                <input type="number" v-model="mes.inputCuota" :placeholder="mes.cuota" class="w-full p-1 text-center border-2 border-orange-300 rounded font-bold text-orange-600 outline-none">
-                                                <button @click="actualizarFijo(mes.mesNombre, 'cuota', mes.inputCuota || mes.cuota, mes)" class="bg-orange-500 text-white px-2 rounded hover:bg-orange-600"><i class="fas fa-save"></i></button>
-                                                <button @click="mes.unlocked = false" class="bg-gray-300 text-gray-700 px-2 rounded hover:bg-gray-400"><i class="fas fa-times"></i></button>
-                                            </div>
-
-                                            <button v-if="mes.pagado" @click="actualizarFijo(mes.mesNombre, 'estado', false, mes)" :disabled="mes.cargando" class="w-full py-1.5 bg-green-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-green-600 transition flex justify-center items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                <i v-if="mes.cargando" class="fas fa-spinner fa-spin"></i><template v-else><i class="fas fa-check-circle"></i> PAGADO</template>
-                                            </button>
-                                            <button v-else @click="actualizarFijo(mes.mesNombre, 'estado', true, mes)" :disabled="mes.cargando" class="w-full py-1.5 bg-red-100 text-red-600 border border-red-300 rounded-lg font-bold text-xs uppercase hover:bg-red-200 transition flex justify-center items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                <i v-if="mes.cargando" class="fas fa-spinner fa-spin"></i><template v-else>PENDIENTE</template>
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <button @click="registrarPago" :disabled="savingPago" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2">
+                                        <i class="fas fa-paper-plane"></i> Guardar Pago
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- EXÁMENES -->
                         <div v-if="activeTab === 'examenes'" class="p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="font-extrabold text-indigo-800 uppercase text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes y Notas</h3>
@@ -470,15 +340,8 @@
                                     <i class="fas fa-sync-alt" :class="{'fa-spin': loadingExamenes}"></i> Actualizar
                                 </button>
                             </div>
-
-                            <div v-if="loadingExamenes" class="text-center py-10 text-gray-400 font-semibold animate-pulse">
-                                Obteniendo datos seguros...
-                            </div>
-                            
-                            <div v-else-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">
-                                No se encontraron exámenes para este alumno.
-                            </div>
-
+                            <div v-if="loadingExamenes" class="text-center py-10 text-gray-400 font-semibold animate-pulse">Cargando exámenes...</div>
+                            <div v-else-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">No se encontraron exámenes para este alumno.</div>
                             <div v-else class="flex flex-col">
                                 <div v-for="(grupo, fecha) in examenesAgrupados" :key="fecha" class="timeline-row">
                                     <div class="date-col">
@@ -488,42 +351,7 @@
                                     <div class="exams-col">
                                         <div v-for="(ex, index) in grupo" :key="index" class="exam-pill group">
                                             <span class="pill-subject">{{ ex.asignatura }}</span>
-                                            
-                                            <div v-if="!ex.isEditing" class="flex items-center justify-between gap-2 mt-1 min-h-[24px]">
-                                                <span v-if="ex.nota" class="pill-grade" :class="Number(ex.nota.replace(',','.')) >= 5 ? 'text-green-600' : 'text-red-600'">
-                                                    Nota: {{ ex.nota }}
-                                                </span>
-                                                <span v-else class="pill-pending">Pendiente...</span>
-                                                <button @click="ex.isEditing = true" class="text-gray-300 hover:text-indigo-500 transition opacity-0 group-hover:opacity-100" title="Editar Examen">
-                                                    <i class="fas fa-pencil-alt text-xs"></i>
-                                                </button>
-                                            </div>
-
-                                            <div v-else class="flex flex-col gap-2 mt-2 animate-fade bg-indigo-50 p-3 rounded-lg border border-indigo-100 min-w-[200px] shadow-inner">
-                                                <div class="grid grid-cols-1 gap-2">
-                                                    <div>
-                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Fecha</label>
-                                                        <input type="date" v-model="ex.editFecha" class="w-full p-1 border border-indigo-200 rounded text-xs outline-none bg-white">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Asignatura</label>
-                                                        <input type="text" v-model="ex.editAsignatura" class="w-full p-1 border border-indigo-200 rounded text-xs outline-none bg-white">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Nota (Vacío = Pendiente)</label>
-                                                        <div class="flex gap-1">
-                                                            <input type="text" v-model="ex.editNota" placeholder="Ej: 7.5" class="w-full p-1 border border-indigo-200 rounded text-xs font-bold outline-none bg-white" @keyup.enter="guardarNotaExamen(ex)">
-                                                            <button @click="guardarNotaExamen(ex)" :disabled="ex.saving" class="bg-indigo-500 text-white w-8 rounded hover:bg-indigo-600 disabled:opacity-50">
-                                                                <i v-if="ex.saving" class="fas fa-spinner fa-spin text-xs"></i><i v-else class="fas fa-check text-xs"></i>
-                                                            </button>
-                                                            <button @click="cancelarEdicionExamen(ex)" :disabled="ex.saving" class="bg-gray-300 text-gray-700 w-8 rounded hover:bg-gray-400 disabled:opacity-50">
-                                                                <i class="fas fa-times text-xs"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
+                                            <span class="pill-grade">Nota: {{ ex.nota || 'Pendiente' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -546,29 +374,26 @@
 
 <script>
     const { createApp } = Vue;
-    const ENCRYPTED_URL = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6T3hlWmIzTVotY21WZG5GMjBERmtXN0Vrem9aeXVLNlp3bExpSmltbWdsYjVpTXJDV3NCQWdGYndXTXJGN25ja3kvZXhlYw==";
-    
+
+    // Configura tus credenciales de Supabase aquí
+    const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     createApp({
         data() {
             return {
-                authenticated: false, passwordInput: '', sessionPass: '', loginError: false, errorMsg: '',
-                hasDeviceToken: false, apiUrl: '', 
-                list: [], fijosRaw: [], search: '', selected: null, isNew: false, 
+                authenticated: false, loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
+                list: [], search: '', selected: null, isNew: false, 
                 loading: false, saving: false, savingPago: false,
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 nuevoPago: this.pagoVacio(),
-                mesesFijosData: [],
-                
                 examenesList: [],
                 loadingExamenes: false,
                 savingExamenes: false,
                 searchGestor: '',
-                gestorExamenes: {
-                    fecha: '',
-                    asignatura: '',
-                    alumnosSeleccionados: []
-                }
+                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] }
             }
         },
         computed: {
@@ -580,7 +405,6 @@
                     return nombreCompleto.includes(t) || (s.dni || "").toLowerCase().includes(t);
                 });
             },
-
             alumnosFiltradosGestor() {
                 const t = this.normalizeName(this.searchGestor);
                 return this.list.filter(a => {
@@ -589,182 +413,70 @@
                     return nombreCompleto.includes(t);
                 });
             },
-            
-            cuotaDetectada() {
-                if(!this.nuevoPago.mes || this.mesesFijosData.length === 0) return 0;
-                const m = this.mesesFijosData.find(x => x.mesNombre.toLowerCase().includes(this.nuevoPago.mes.toLowerCase()));
-                return m && m.cuota ? Number(m.cuota) : 0;
-            },
-            
-            tarifaClasificada() {
-                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
-                if(this.cuotaDetectada === 0) return { texto: "---", esOficial: false };
-                if(mapTarifas[this.cuotaDetectada]) return { texto: `Tarifa: ${mapTarifas[this.cuotaDetectada]}`, esOficial: true };
-                return { texto: "Clasificará como Extra", esOficial: false };
-            },
-
-            importeCalculado() {
-                let tarifaBase = 0;
-                if (this.cuotaDetectada > 0) {
-                    tarifaBase = this.cuotaDetectada;
-                } else {
-                    if (this.nuevoPago.tarifaSelect === 'personalizada') {
-                        tarifaBase = Number(this.nuevoPago.tarifaPersImporte) || 0;
-                    } else if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') {
-                        const match = this.nuevoPago.tarifaSelect.match(/\((-?\d+(?:\.\d+)?)€\)/);
-                        if(match) tarifaBase = Number(match[1]);
-                    }
-                }
-                const extra = Number(this.nuevoPago.extraImporte) || 0;
-                return parseFloat((tarifaBase + extra).toFixed(2));
-            },
-
+            importeCalculado() { return 85.00; },
             examenesAlumno() {
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
                 return this.examenesList.filter(ex => this.normalizeName(ex.alumno) === nombreLimpio);
             },
-
             examenesAgrupados() {
                 const grupos = {};
                 this.examenesAlumno.forEach(ex => {
-                    let fechaOrd = ex.fecha.replace(/\//g, '-');
+                    let fechaOrd = String(ex.fecha || '').replace(/\//g, '-');
                     if (!grupos[fechaOrd]) grupos[fechaOrd] = [];
                     grupos[fechaOrd].push(ex);
                 });
-                return Object.keys(grupos).sort((a,b) => new Date(b) - new Date(a)).reduce((obj, key) => {
-                    obj[key] = grupos[key];
-                    return obj;
-                }, {});
-            }
-        },
-        watch: {
-            'nuevoPago.fecha'(newFecha) {
-                if(newFecha) {
-                    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-                    const mIndex = new Date(newFecha).getMonth();
-                    this.nuevoPago.mes = meses[mIndex];
-                }
-            },
-            'nuevoPago.metodo'(newMetodo) {
-                if(newMetodo === 'Bizum') this.nuevoPago.generarPDF = true;
-                if(newMetodo === 'Efectivo') this.nuevoPago.generarPDF = false;
-            },
-            fijosRaw: {
-                handler() { this.buildMesesFijos(); },
-                deep: true
+                return grupos;
             }
         },
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
             pagoVacio() {
                 const hoy = new Date().toISOString().split('T')[0];
-                const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-                return { fecha: hoy, mes: meses[new Date().getMonth()], metodo: '', tarifaSelect: '', tarifaPersConcepto: '', tarifaPersImporte: '', extraConcepto: '', extraImporte: '', generarPDF: false };
+                return { fecha: hoy, mes: 'Octubre', metodo: 'Bizum', generarPDF: true };
             },
-            
-            parseDateToISO(dStr) {
-                if(!dStr) return "";
-                let cleanStr = String(dStr).trim().split(' ')[0]; 
-                if(cleanStr.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/)) {
-                    let p = cleanStr.split(/[\/\-]/);
-                    return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-                }
-                if(cleanStr.includes('T')) return cleanStr.split('T')[0];
-                return cleanStr;
-            },
-            
-            buildMesesFijos() {
-                this.mesesFijosData = [];
-                if(!this.form.nombre || this.fijosRaw.length === 0) return;
-                const headers = this.fijosRaw[0];
-                const nombreCompleto = this.normalizeName(this.form.nombre + " " + this.form.apellidos);
-                
-                const filaAlumno = this.fijosRaw.find((row, idx) => idx > 0 && this.normalizeName(row[1]) === nombreCompleto);
-                if(!filaAlumno) return;
-
-                let meses = [];
-                for(let i = 2; i < headers.length; i += 2) {
-                    if(headers[i]) {
-                        const valCuota = filaAlumno[i] !== "" ? filaAlumno[i] : null;
-                        const estaPagado = String(filaAlumno[i+1]).toUpperCase() === 'TRUE' || filaAlumno[i+1] === true;
-                        let bg = valCuota ? (estaPagado ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200') : 'bg-gray-100 border-dashed border-gray-300';
-                        meses.push({ mesNombre: headers[i], cuota: valCuota, pagado: estaPagado, inputCuota: '', cargando: false, bgClass: bg, unlocked: false });
-                    }
-                }
-                this.mesesFijosData = meses;
-            },
-
             async login() {
-                if (!this.passwordInput) return;
+                if (!this.loginEmail || !this.loginPassword) return;
                 this.loading = true;
                 this.loginError = false;
-                this.apiUrl = atob(ENCRYPTED_URL);
 
-                if (this.passwordInput.includes('ACTIVAR')) {
-                    try {
-                        const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'activate', code: this.passwordInput }) });
-                        const json = await res.json();
-                        if (json.status === 'success') {
-                            localStorage.setItem('academia_device_token', json.token);
-                            this.hasDeviceToken = true;
-                            this.passwordInput = '';
-                            alert('✅ Dispositivo VINCULADO de forma segura.');
-                        } else {
-                            this.loginError = true; this.errorMsg = 'Código de activación incorrecto o expirado.';
-                        }
-                    } catch (e) { this.loginError = true; this.errorMsg = 'Error conectando con el servidor.'; }
+                const { data, error } = await _supabase.auth.signInWithPassword({
+                    email: this.loginEmail,
+                    password: this.loginPassword
+                });
+
+                if (error) {
+                    this.loginError = true;
+                    this.errorMsg = 'Credenciales inválidas o error de acceso.';
                     this.loading = false;
                     return;
                 }
 
-                const savedToken = localStorage.getItem('academia_device_token');
-                if (!savedToken) {
-                    this.loginError = true; this.errorMsg = 'ACCESO DENEGADO. Equipo no vinculado.';
-                    this.loading = false; return;
-                }
-
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'fetch_data', pass: this.passwordInput, device_token: savedToken }) });
-                    const json = await res.json();
-                    
-                    if (json.status === 'success') {
-                        this.sessionPass = this.passwordInput; 
-                        this.list = json.data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
-                        this.fijosRaw = json.fijos || [];
-                        
-                        this.procesarExamenesSeguros(json.examenes || []);
-
-                        this.authenticated = true;
-                    } else {
-                        this.loginError = true; this.errorMsg = json.message;
-                        this.passwordInput = '';
-                    }
-                } catch (e) { this.loginError = true; this.errorMsg = 'Error de conexión con la base de datos segura.'; }
+                await this.cargarDatosSupabase();
+                this.authenticated = true;
                 this.loading = false;
             },
+            async cargarDatosSupabase() {
+                try {
+                    const resAlumnos = await _supabase.from('listado_alumnos').select('*');
+                    this.list = (resAlumnos.data || []).sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
 
-            logout() { 
-                this.sessionPass = '';
-                location.reload(); 
+                    const resEx = await _supabase.from('examenes').select('*');
+                    this.examenesList = resEx.data || [];
+                } catch(e) {
+                    console.error("Error cargando desde Supabase:", e);
+                }
             },
-            
-            getSecurePayload(action, extraData = {}) {
-                return {
-                    action: action,
-                    pass: this.sessionPass,
-                    device_token: localStorage.getItem('academia_device_token'),
-                    ...extraData
-                };
+            logout() {
+                _supabase.auth.signOut();
+                location.reload();
             },
-
             abrirGestorExamenes() {
                 this.selected = null;
                 this.activeTab = 'gestor_examenes';
-                this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; 
-                this.searchGestor = ''; 
+                this.gestorExamenes.fecha = new Date().toISOString().split('T')[0];
+                this.searchGestor = '';
             },
-
             seleccionarTodos(marcar) {
                 if(marcar) {
                     this.alumnosFiltradosGestor.forEach(a => {
@@ -777,305 +489,78 @@
                     this.gestorExamenes.alumnosSeleccionados = [];
                 }
             },
-
-            cerrarFicha() {
-                this.selected = null;
-                this.activeTab = 'menu';
-            },
-
+            cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
             createNew() {
-                this.isNew = true; 
+                this.isNew = true;
                 this.activeTab = 'ficha';
-                this.form = { nombre:'', apellidos:'', dni:'', nacimiento:'', direccion:'', cp:'', poblacion:'', provincia:'', colegio:'', curso:'', tlf:'', fam1_nombre:'', fam1_relacion:'', fam1_tlf:'', fam2_nombre:'', fam2_relacion:'', fam2_tlf:'', baja: false, usuario_aules:'', pass_aules:'' };
+                this.form = { nombre:'', apellidos:'', dni:'', nacimiento:'', direccion:'', cp:'', poblacion:'', provincia:'', colegio:'', curso:'', tlf:'', baja: false };
                 this.selected = { id: 'TEMP' };
-                this.buildMesesFijos(); 
             },
-            
             selectStudent(s) {
-                try {
-                    this.form = JSON.parse(JSON.stringify(s));
-                    this.isNew = false; 
-                    this.activeTab = 'menu'; 
-                    this.selected = s;
-                    
-                    this.buildMesesFijos(); 
-                    
-                    this.nuevoPago = this.pagoVacio(); 
-                    const mesActual = this.nuevoPago.mes;
-                    this.nuevoPago.mes = ''; 
-                    this.$nextTick(() => { this.nuevoPago.mes = mesActual; });
-                    
-                    this.form.fam1_tlf = String(this.form.fam1_tlf || ''); this.form.fam2_tlf = String(this.form.fam2_tlf || ''); this.form.tlf = String(this.form.tlf || '');
-                    try {
-                        let val = this.form.nacimiento;
-                        if (val && typeof val === 'string') {
-                            if (val.includes('/')) { const p = val.trim().split('/'); if (p.length === 3) this.form.nacimiento = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; } 
-                            else if (val.includes('T')) this.form.nacimiento = val.split('T')[0];
-                        }
-                    } catch(errDate) { this.form.nacimiento = ''; }
-                } catch(e) {}
+                this.form = JSON.parse(JSON.stringify(s));
+                this.isNew = false;
+                this.activeTab = 'menu';
+                this.selected = s;
             },
-
             async saveData() {
                 this.saving = true;
-                const payload = this.getSecurePayload(this.isNew ? 'create' : 'update', { ...this.form, id: this.selected.id });
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    if (json.status === 'success') {
-                        this.showSuccess = true; this.successMessage = 'Ficha Guardada'; 
-                        
-                        const res2 = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(this.getSecurePayload('fetch_data')) });
-                        const json2 = await res2.json();
-                        if(json2.status === 'success') {
-                            this.list = json2.data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
-                            this.fijosRaw = json2.fijos || [];
-                        }
-                        
-                        setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
-                    } else { alert("Servidor rechazó la acción: " + json.message); this.saving = false; }
-                } catch (e) { alert('Error de red al guardar la ficha'); this.saving = false; }
+                if (this.isNew) {
+                    await _supabase.from('listado_alumnos').insert([this.form]);
+                } else {
+                    await _supabase.from('listado_alumnos').update(this.form).eq('id', this.selected.id);
+                }
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Ficha guardada correctamente';
+                setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
-
-            async actualizarFijo(mesHeader, tipo, valor, objRef) {
-                if(tipo === 'cuota' && !valor) return alert("Introduce una cuota válida");
-                objRef.cargando = true;
-                const payload = this.getSecurePayload('update_ingreso_fijo', { alumno: this.form.nombre + ' ' + this.form.apellidos, mes_header: mesHeader, tipo: tipo, valor: valor });
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    if (json.status === 'success') {
-                         const res2 = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(this.getSecurePayload('fetch_data')) });
-                         const json2 = await res2.json();
-                         if(json2.status === 'success') this.fijosRaw = json2.fijos || [];
-                    } else alert("Servidor rechazó la acción: " + json.message);
-                } catch (e) { alert('Error de red actualizando estado'); }
-                objRef.cargando = false;
-                objRef.unlocked = false; 
-            },
-
             async registrarPago() {
                 this.savingPago = true;
-                
-                let tarifaFinal = "";
-                let partesExtra = [];
-                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
-
-                if (this.cuotaDetectada > 0) {
-                    if (mapTarifas[this.cuotaDetectada]) {
-                        tarifaFinal = `${mapTarifas[this.cuotaDetectada]} (${this.cuotaDetectada}€)`;
-                    } else {
-                        partesExtra.push(`Cuota mensual (${this.cuotaDetectada}€)`);
-                    }
-                } 
-                else {
-                    if (this.nuevoPago.tarifaSelect === 'personalizada') {
-                        let numTarifa = Number(this.nuevoPago.tarifaPersImporte);
-                        if (numTarifa && numTarifa !== 0) { 
-                            let conceptoPers = this.nuevoPago.tarifaPersConcepto ? this.nuevoPago.tarifaPersConcepto.trim() : "Tarifa";
-                            tarifaFinal = `${conceptoPers} (${numTarifa}€)`;
-                        }
-                    } else if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') { 
-                        tarifaFinal = this.nuevoPago.tarifaSelect; 
-                    }
-                }
-
-                let numExtraManual = Number(this.nuevoPago.extraImporte) || 0;
-                if (numExtraManual > 0) {
-                    let concepto = (this.nuevoPago.extraConcepto || 'Extra').trim();
-                    partesExtra.push(`${concepto} (${numExtraManual}€)`);
-                }
-
-                let extraFinal = partesExtra.join(" + ");
-
-                const payload = this.getSecurePayload('create_pago', {
+                await _supabase.from('pagos').insert([{
                     alumno: this.form.nombre + ' ' + this.form.apellidos,
-                    tarifa: tarifaFinal, 
-                    fecha: this.nuevoPago.fecha, 
-                    extras: extraFinal,
-                    importe: this.importeCalculado, 
-                    mes: this.nuevoPago.mes, 
-                    metodo: this.nuevoPago.metodo, 
-                    generarPDF: this.nuevoPago.generarPDF
-                });
-
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    if (json.status === 'success') {
-                        this.showSuccess = true; this.successMessage = '¡Pago registrado correctamente!';
-                        this.nuevoPago = this.pagoVacio(); 
-                        setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
-                    } else { alert("Servidor rechazó el pago:\n\n" + json.message); this.savingPago = false; }
-                } catch (e) { alert('Error de conexión enviando el pago'); this.savingPago = false; }
+                    importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha,
+                    mes: this.nuevoPago.mes,
+                    metodo_pago: this.nuevoPago.metodo
+                }]);
+                this.showSuccess = true;
+                this.successMessage = '¡Pago registrado!';
+                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
             },
-            
-            imprimirTicketRapido() {
-                const numRecibo = `TEMP-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}).replace(':','')}`;
-                const fechaE = new Date(this.nuevoPago.fecha).toLocaleDateString('es-ES');
-                const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
-                
-                let filasHTML = '';
-                const importeTotalStr = this.importeCalculado.toFixed(2).replace('.', ',') + " €";
-                
-                let tarifaFinal = "";
-                let partesExtra = [];
-                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
-
-                if (this.cuotaDetectada > 0) {
-                    if (mapTarifas[this.cuotaDetectada]) {
-                        tarifaFinal = `${mapTarifas[this.cuotaDetectada]} (${this.cuotaDetectada}€)`;
-                        filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${mapTarifas[this.cuotaDetectada]}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${this.cuotaDetectada.toFixed(2).replace('.',',')} €</td></tr>`;
-                    } else {
-                        partesExtra.push({concepto: "Cuota mensual", importe: this.cuotaDetectada});
-                    }
-                } else {
-                    if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') {
-                        let numTarifa = Number(this.nuevoPago.tarifaPersImporte);
-                        if (!(this.nuevoPago.tarifaSelect === 'personalizada' && (!numTarifa || numTarifa === 0))) {
-                            let desc = this.nuevoPago.tarifaSelect === 'personalizada' ? (this.nuevoPago.tarifaPersConcepto || 'Tarifa') : this.nuevoPago.tarifaSelect;
-                            let tarifaNum = this.nuevoPago.tarifaSelect === 'personalizada' ? numTarifa.toFixed(2).replace('.', ',') : this.nuevoPago.tarifaSelect.match(/\((-?\d+(?:\.\d+)?)€\)/)[1].replace('.', ',');
-                            filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${desc}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${tarifaNum} €</td></tr>`;
-                        }
-                    }
-                }
-
-                let numExtraManual = Number(this.nuevoPago.extraImporte) || 0;
-                if (numExtraManual > 0) {
-                    partesExtra.push({concepto: (this.nuevoPago.extraConcepto || 'Extra').trim(), importe: numExtraManual});
-                }
-
-                partesExtra.forEach(ext => {
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${ext.concepto}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${ext.importe.toFixed(2).replace('.', ',')} €</td></tr>`;
-                });
-                
-                document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family: 'Helvetica', sans-serif; margin: 0; padding: 30px; color: #000; min-height: 850px; display: flex; flex-direction: column; border: 2px solid #000; position: relative; background: #fff;">
-                        <img src="${logoUrl}" style="position: absolute; top: 300px; left: 50%; margin-left: -200px; width: 400px; opacity: 0.05; filter: grayscale(100%); z-index: -1;" />
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="padding:15px; vertical-align: top;"><img src="${logoUrl}" style="width: 120px; filter: grayscale(100%);" /></td><td style="text-align: right; font-size: 11px; padding:15px; vertical-align: top;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td></tr></table>
-                        <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; padding:10px 0;"><tr><td style="padding:10px; vertical-align: top;">Nº RECIBO<span style="display: block; font-size: 14px; margin-top: 4px;">${numRecibo}</span></td><td style="text-align:center;padding:10px; vertical-align: top;">FECHA EMISIÓN<span style="display: block; font-size: 14px; margin-top: 4px;">${fechaE}</span></td><td style="text-align:right;padding:10px; vertical-align: top;">FORMA DE PAGO<span style="display: block; font-size: 14px; margin-top: 4px;">${(this.nuevoPago.metodo || 'NO ESPECIFICADA').toUpperCase()}</span></td></tr></table>
-                        <div style="border-bottom: 2px solid #000; padding: 15px;"><p style="font-size:10px;margin:0">RECIBÍ DE:</p><h3 style="margin:5px 0;text-transform:uppercase">${this.form.nombre} ${this.form.apellidos}</h3></div>
-                        <table style="width: 100%; border-collapse: collapse;"><tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>${filasHTML}<tr style="height: 250px;"><td colspan="2"></td></tr><tr><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 12px; padding: 15px;">TOTAL EUROS</td><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 20px; text-align: right; padding: 15px;">${importeTotalStr}</td></tr></table>
-                        <table style="margin-top: 30px; margin-bottom: 20px; width: 100%; border-collapse: collapse;"><tr><td style="font-size:10px;font-weight:bold;width:60%;padding:15px; vertical-align: top;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</td><td style="text-align:center;position:relative;padding:15px; vertical-align: top;"><div style="border-top:1px dashed #000;margin-top:40px;font-size:10px;display:inline-block;padding-top:10px;width: 150px;">FDO. CSE ELISA GUNDÍN</div></td></tr></table>
-                        <div style="font-size: 8px; text-align: justify; padding-top: 15px; margin-top: auto; border-top: 2px solid #000; line-height: 1.2; width: 100%; box-sizing: border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
-                    </div>`;
-                window.print();
-            },
-
-            procesarExamenesSeguros(examenesArray) {
-                this.examenesList = examenesArray.map(row => {
-                    let isoDate = this.parseDateToISO(row[0]);
-                    let asig = row[1];
-                    let notaEx = row[3];
-                    return {
-                        fecha: isoDate,
-                        asignatura: asig,
-                        alumno: row[2],
-                        nota: notaEx,
-                        isEditing: false, 
-                        editFecha: isoDate,
-                        editAsignatura: asig,
-                        editNota: notaEx,
-                        saving: false 
-                    };
-                }).filter(item => item.alumno !== "");
-            },
-
+            imprimirTicketRapido() { window.print(); },
             async actualizarExamenes() {
                 this.loadingExamenes = true;
-                try {
-                    const payload = this.getSecurePayload('fetch_data');
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    
-                    if (json.status === 'success') {
-                        this.procesarExamenesSeguros(json.examenes || []);
-                    }
-                } catch (e) {
-                    console.error("Error recargando exámenes de forma segura.");
-                }
+                await this.cargarDatosSupabase();
                 this.loadingExamenes = false;
             },
-
             async guardarExamenesMasivos() {
                 this.savingExamenes = true;
-                const payload = this.getSecurePayload('create_examenes_masivos', {
+                const rowsToInsert = this.gestorExamenes.alumnosSeleccionados.map(alumnoNombre => ({
                     fecha: this.gestorExamenes.fecha,
                     asignatura: this.gestorExamenes.asignatura,
-                    alumnos: this.gestorExamenes.alumnosSeleccionados
-                });
-
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    
-                    if (json.status === 'success') {
-                        this.showSuccess = true; 
-                        this.successMessage = `Se han creado ${this.gestorExamenes.alumnosSeleccionados.length} exámenes correctamente.`;
-                        
-                        this.gestorExamenes.asignatura = '';
-                        this.gestorExamenes.alumnosSeleccionados = [];
-                        this.searchGestor = ''; 
-                        this.actualizarExamenes();
-
-                        setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 3000);
-                    } else { 
-                        alert("Servidor rechazó la acción:\n" + json.message); 
-                        this.savingExamenes = false; 
-                    }
-                } catch (e) { 
-                    alert('Error de red creando exámenes masivos'); 
-                    this.savingExamenes = false; 
-                }
+                    alumno: alumnoNombre,
+                    nota: ''
+                }));
+                await _supabase.from('examenes').insert(rowsToInsert);
+                this.showSuccess = true;
+                this.successMessage = 'Exámenes creados correctamente';
+                this.gestorExamenes.asignatura = '';
+                this.gestorExamenes.alumnosSeleccionados = [];
+                await this.cargarDatosSupabase();
+                setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 3000);
             },
-
-            async guardarNotaExamen(ex) {
-                ex.saving = true;
-                const payload = this.getSecurePayload('update_nota_examen', {
-                    alumno: ex.alumno,
-                    old_fecha: ex.fecha,           
-                    old_asignatura: ex.asignatura,   
-                    new_fecha: ex.editFecha,         
-                    new_asignatura: ex.editAsignatura, 
-                    nota: ex.editNota
-                });
-
-                try {
-                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    
-                    if (json.status === 'success') {
-                        ex.nota = ex.editNota; 
-                        ex.fecha = ex.editFecha;
-                        ex.asignatura = ex.editAsignatura;
-                        ex.isEditing = false;
-                    } else {
-                        alert("Error desde Google Sheets:\n" + json.message);
-                    }
-                } catch (e) { 
-                    alert("Error de conexión guardando la nota."); 
-                }
-                ex.saving = false;
-            },
-
-            cancelarEdicionExamen(ex) {
-                ex.isEditing = false; 
-                ex.editNota = ex.nota;
-                ex.editFecha = ex.fecha;
-                ex.editAsignatura = ex.asignatura;
-            },
-
             obtenerNombreMesCorto(fechaIso) {
                 try {
-                    const date = new Date(fechaIso);
-                    return date.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
-                } catch (e) {
-                    return "";
-                }
+                    return new Date(fechaIso).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
+                } catch(e) { return ""; }
             }
         },
-        mounted() { 
-            this.hasDeviceToken = !!localStorage.getItem('academia_device_token');
+        async mounted() {
+            const { data } = await _supabase.auth.getSession();
+            if (data.session) {
+                this.authenticated = true;
+                await this.cargarDatosSupabase();
+            }
         }
     }).mount('#app');
 </script>
