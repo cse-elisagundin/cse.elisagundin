@@ -55,12 +55,47 @@
 <div id="app" class="h-full flex flex-col relative">
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
+        <!-- MENSAJE DE ÉXITO FLOTANTE -->
         <transition name="pop">
-            <div v-if="showSuccess" class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+            <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none">
                 <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[300px]">
                     <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
                     <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
                     <p class="text-gray-500 font-semibold">{{ successMessage }}</p>
+                </div>
+            </div>
+        </transition>
+
+        <!-- MODAL PERSONALIZADO (MODIFICAR / ELIMINAR MES) -->
+        <transition name="pop">
+            <div v-if="showCustomModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3">
+                        <div :class="modalType === 'delete' ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-[#2b94cc]'" class="p-3 rounded-full text-xl">
+                            <i :class="modalType === 'delete' ? 'fas fa-exclamation-triangle' : 'fas fa-edit'"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-extrabold text-[#243c7a]">{{ modalTitle }}</h3>
+                            <p class="text-xs text-gray-400 font-semibold mt-0.5">Gestión de Ingresos Fijos</p>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-600 text-sm font-medium leading-relaxed">{{ modalMessage }}</p>
+
+                    <!-- Input si es modo edición -->
+                    <div v-if="modalType === 'edit'" class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Nombre del Mes</label>
+                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 26'">
+                    </div>
+
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="cerrarCustomModal" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button @click="ejecutarAccionModal" :class="modalType === 'delete' ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' : 'btn-corp text-white shadow-lg'" class="flex-1 py-3 px-4 rounded-xl font-bold transition">
+                            {{ modalType === 'delete' ? 'Sí, eliminar' : 'Guardar cambios' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </transition>
@@ -331,7 +366,7 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO (CON EDICIÓN Y ELIMINACIÓN DE MESES) -->
+                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
                             
                             <!-- SECCIÓN: CUOTAS FIJAS MENSUALES -->
@@ -388,8 +423,8 @@
                                                                 class="w-5 h-5 accent-green-600 rounded cursor-pointer">
                                                         </td>
                                                         <td class="p-2 border text-center space-x-2">
-                                                            <button @click="editarNombreMes(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1.5 transition"><i class="fas fa-edit text-sm"></i></button>
-                                                            <button @click="eliminarMesGlobal(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1.5 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+                                                            <button @click="abrirModalEditar(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1.5 transition"><i class="fas fa-edit text-sm"></i></button>
+                                                            <button @click="abrirModalEliminar(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1.5 transition"><i class="fas fa-trash-alt text-sm"></i></button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -541,7 +576,14 @@
                 savingExamenes: false,
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
-                anioAbierto: {}
+                anioAbierto: {},
+                // Control del Modal Personalizado
+                showCustomModal: false,
+                modalType: 'edit', // 'edit' o 'delete'
+                modalTitle: '',
+                modalMessage: '',
+                modalInputVal: '',
+                modalTargetMes: ''
             }
         },
         computed: {
@@ -753,36 +795,50 @@
                 this.successMessage = `¡Mes de ${siguienteMesStr} generado correctamente!`;
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
-            async editarNombreMes(mesActual) {
-                const nuevoNombre = prompt(`Introduce el nuevo nombre corregido para el mes "${mesActual}":`, mesActual);
-                if (!nuevoNombre || nuevoNombre.trim() === "") return;
-                const mesLimpio = nuevoNombre.toUpperCase().trim();
-                if (mesLimpio === mesActual) return;
-
-                const { error } = await _supabase.from('ingresos_fijos').update({ mes: mesLimpio }).eq('mes', mesActual);
-                if (error) {
-                    alert("Error al actualizar el mes: " + error.message);
-                    return;
-                }
-
-                await this.cargarDatosSupabase();
-                this.showSuccess = true;
-                this.successMessage = "Mes modificado correctamente";
-                setTimeout(() => { this.showSuccess = false; }, 2500);
+            // Métodos del Modal Personalizado
+            abrirModalEditar(mes) {
+                this.modalType = 'edit';
+                this.modalTitle = 'Modificar Mes';
+                this.modalMessage = `Introduce el nombre corregido para el mes "${mes}". Se actualizará en los registros de todos los alumnos.`;
+                this.modalInputVal = mes;
+                this.modalTargetMes = mes;
+                this.showCustomModal = true;
             },
-            async eliminarMesGlobal(mesActual) {
-                const seguro = confirm(`⚠️ ATENCIÓN: ¿Estás seguro de eliminar por completo el mes "${mesActual}"?\n\nSe borrarán todos los datos y cuotas de este mes para todos los alumnos. Esta acción no se puede deshacer.`);
-                if (!seguro) return;
-
-                const { error } = await _supabase.from('ingresos_fijos').delete().eq('mes', mesActual);
-                if (error) {
-                    alert("Error al eliminar el mes: " + error.message);
-                    return;
+            abrirModalEliminar(mes) {
+                this.modalType = 'delete';
+                this.modalTitle = 'Eliminar Mes';
+                this.modalMessage = `¿Estás completamente seguro de eliminar el mes "${mes}"? Se borrarán todas las cuotas y estados asociados para todos los alumnos. Esta acción no se puede deshacer.`;
+                this.modalTargetMes = mes;
+                this.showCustomModal = true;
+            },
+            cerrarCustomModal() {
+                this.showCustomModal = false;
+            },
+            async ejecutarAccionModal() {
+                if (this.modalType === 'edit') {
+                    const nuevoNombre = this.modalInputVal.toUpperCase().trim();
+                    if (!nuevoNombre || nuevoNombre === this.modalTargetMes) {
+                        this.showCustomModal = false;
+                        return;
+                    }
+                    const { error } = await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
+                    if (error) {
+                        alert("Error al actualizar: " + error.message);
+                        return;
+                    }
+                    this.successMessage = "Mes modificado correctamente";
+                } else if (this.modalType === 'delete') {
+                    const { error } = await _supabase.from('ingresos_fijos').delete().eq('mes', this.modalTargetMes);
+                    if (error) {
+                        alert("Error al eliminar: " + error.message);
+                        return;
+                    }
+                    this.successMessage = `Mes ${this.modalTargetMes} eliminado correctamente`;
                 }
 
+                this.showCustomModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
-                this.successMessage = `Mes ${mesActual} eliminado correctamente`;
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             seleccionarTodos(marcar) {
