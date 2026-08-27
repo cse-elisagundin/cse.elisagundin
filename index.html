@@ -1106,7 +1106,7 @@
             },
             async registrarPago() {
                 this.savingPago = true;
-                await _supabase.from('pagos').insert([{
+                const { error } = await _supabase.from('pagos').insert([{
                     alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa,
                     extras: this.nuevoPago.extras,
@@ -1116,6 +1116,13 @@
                     metodo_pago: this.nuevoPago.metodo,
                     registrado: true
                 }]);
+
+                if (error) {
+                    alert("Error al registrar el pago en Supabase: " + error.message);
+                    this.savingPago = false;
+                    return;
+                }
+
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = '¡Pago registrado correctamente!';
@@ -1124,7 +1131,7 @@
             async registrarYGenerarPDF() {
                 this.savingPago = true;
                 try {
-                    await _supabase.from('pagos').insert([{
+                    const { error } = await _supabase.from('pagos').insert([{
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1134,6 +1141,12 @@
                         metodo_pago: this.nuevoPago.metodo,
                         registrado: true
                     }]);
+
+                    if (error) {
+                        alert("Error al registrar el pago en Supabase: " + error.message);
+                        this.savingPago = false;
+                        return;
+                    }
 
                     const payload = {
                         pass: "010523",
