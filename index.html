@@ -57,11 +57,11 @@
 
         <!-- MENSAJE DE ÉXITO FLOTANTE -->
         <transition name="pop">
-            <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none">
-                <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[300px]">
+            <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none p-4">
+                <div class="bg-white px-6 py-5 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[280px]">
                     <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
                     <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
-                    <p class="text-gray-500 font-semibold">{{ successMessage }}</p>
+                    <p class="text-gray-500 font-semibold text-center">{{ successMessage }}</p>
                 </div>
             </div>
         </transition>
@@ -69,13 +69,13 @@
         <!-- MODAL PERSONALIZADO (MODIFICAR / ELIMINAR MES) -->
         <transition name="pop">
             <div v-if="showCustomModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
                     <div class="flex items-center gap-3">
                         <div :class="modalType === 'delete' ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-[#2b94cc]'" class="p-3 rounded-full text-xl">
                             <i :class="modalType === 'delete' ? 'fas fa-exclamation-triangle' : 'fas fa-edit'"></i>
                         </div>
                         <div>
-                            <h3 class="text-xl font-extrabold text-[#243c7a]">{{ modalTitle }}</h3>
+                            <h3 class="text-lg sm:text-xl font-extrabold text-[#243c7a]">{{ modalTitle }}</h3>
                             <p class="text-xs text-gray-400 font-semibold mt-0.5">Gestión de Ingresos Fijos</p>
                         </div>
                     </div>
@@ -92,7 +92,7 @@
                             Cancelar
                         </button>
                         <button @click="ejecutarAccionModal" :class="modalType === 'delete' ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' : 'btn-corp text-white shadow-lg'" class="flex-1 py-3 px-4 rounded-xl font-bold transition">
-                            {{ modalType === 'delete' ? 'Sí, eliminar' : 'Guardar cambios' }}
+                            {{ modalType === 'delete' ? 'Sí, eliminar' : 'Guardar' }}
                         </button>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
         <!-- PANTALLA DE LOGIN SUPABASE -->
         <transition name="fade">
             <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
-                <div class="login-container p-10 w-full max-w-md text-center relative overflow-hidden">
+                <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
                     <div v-if="loading" class="loading-line"><div class="loading-progress"></div></div>
                     <div class="mb-6 mt-2">
                         <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-20 mx-auto mb-2 object-contain">
@@ -124,10 +124,12 @@
             </div>
         </transition>
 
-        <!-- APLICACIÓN PRINCIPAL -->
-        <div v-if="authenticated" class="flex h-full animate-opacity duration-700">
-            <div class="w-1/4 bg-white border-r flex flex-col shadow-xl z-20">
-                <div class="p-5 bg-[#243c7a] text-white">
+        <!-- APLICACIÓN PRINCIPAL RESPONSIVE -->
+        <div v-if="authenticated" class="flex flex-col md:flex-row h-full animate-opacity duration-700">
+            
+            <!-- PANEL LATERAL / LISTADO DE ALUMNOS -->
+            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes'}">
+                <div class="p-4 sm:p-5 bg-[#243c7a] text-white">
                     <div class="flex items-center gap-3">
                         <div class="bg-white p-1 rounded-lg shadow-sm">
                             <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-8 w-auto object-contain">
@@ -135,10 +137,10 @@
                         <h1 class="font-bold text-lg leading-tight">Gestión<br><span class="text-[#fa65c3]">Alumnos</span></h1>
                     </div>
                 </div>
-                <div class="p-4 bg-gray-50 border-b space-y-3">
+                <div class="p-3 sm:p-4 bg-gray-50 border-b space-y-3">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input v-model="search" type="text" placeholder="Buscar..." class="w-full pl-9 pr-8 p-2.5 rounded-lg border focus:border-[#2b94cc] outline-none shadow-sm">
+                        <input v-model="search" type="text" placeholder="Buscar alumno..." class="w-full pl-9 pr-8 p-2.5 rounded-lg border focus:border-[#2b94cc] outline-none shadow-sm">
                         <button v-if="search" @click="search = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-gray-500 px-1 select-none">
@@ -171,21 +173,30 @@
                 </div>
             </div>
 
-            <div class="w-3/4 bg-[#f4f6f9] h-full flex flex-col relative">
+            <!-- PANEL DE CONTENIDO PRINCIPAL -->
+            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes'}">
+
+                <!-- BOTÓN VOLVER EN MÓVIL (CUANDO HAY ALUMNO SELECCIONADO) -->
+                <div v-if="selected || activeTab === 'gestor_examenes'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
+                    <button @click="cerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Volver al listado
+                    </button>
+                    <span class="text-xs font-semibold truncate max-w-[200px]">{{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}</span>
+                </div>
 
                 <!-- GESTOR MASIVO DE EXÁMENES -->
-                <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-8 pb-24 animate-fade">
+                <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                        <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
-                            <h2 class="text-2xl font-extrabold text-indigo-800 flex items-center gap-3">
+                        <div class="p-4 sm:p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                            <h2 class="text-lg sm:text-2xl font-extrabold text-indigo-800 flex items-center gap-3">
                                 <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-tasks"></i></div>
-                                Gestor Masivo de Exámenes
+                                Gestor Masivo
                             </h2>
-                            <button @click="activeTab = 'menu'" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar Gestor</button>
+                            <button @click="activeTab = 'menu'" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
                         </div>
                         
-                        <div class="p-8 bg-indigo-50/50 border-b">
-                            <div class="grid grid-cols-2 gap-6">
+                        <div class="p-4 sm:p-8 bg-indigo-50/50 border-b">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <div>
                                     <label class="block text-xs font-bold text-indigo-800 mb-1 uppercase">Fecha del Examen</label>
                                     <input type="date" v-model="gestorExamenes.fecha" class="w-full p-3 rounded-xl border border-indigo-200 outline-none focus:border-indigo-500 bg-white shadow-sm text-indigo-900 font-bold">
@@ -197,22 +208,22 @@
                             </div>
                         </div>
 
-                        <div class="p-8">
+                        <div class="p-4 sm:p-8">
                             <h3 class="font-bold text-gray-700 mb-3">Selecciona los alumnos:</h3>
                             
-                            <div class="flex justify-between items-center mb-4 gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                <div class="flex-1 relative">
+                            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="w-full sm:flex-1 relative">
                                     <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                                     <input v-model="searchGestor" type="text" placeholder="Filtrar por nombre..." class="w-full pl-9 pr-4 py-2 rounded-lg border outline-none focus:border-indigo-400 shadow-sm text-sm">
                                     <button v-if="searchGestor" @click="searchGestor = ''" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                                 </div>
-                                <div class="flex gap-2 shrink-0">
-                                    <button @click="seleccionarTodos(true)" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-100 px-3 py-2 rounded-lg transition">Marcar Visibles</button>
-                                    <button @click="seleccionarTodos(false)" class="text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-200 px-3 py-2 rounded-lg transition">Desmarcar Todos</button>
+                                <div class="flex gap-2 w-full sm:w-auto justify-end">
+                                    <button @click="seleccionarTodos(true)" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-100 px-3 py-2 rounded-lg transition">Marcar</button>
+                                    <button @click="seleccionarTodos(false)" class="text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-200 px-3 py-2 rounded-lg transition">Desmarcar</button>
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[350px] overflow-y-auto pr-2">
                                 <label v-for="a in alumnosFiltradosGestor" :key="a.id" class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-indigo-50 transition" :class="gestorExamenes.alumnosSeleccionados.includes(a.nombre + ' ' + a.apellidos) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white'">
                                     <input type="checkbox" :value="a.nombre + ' ' + a.apellidos" v-model="gestorExamenes.alumnosSeleccionados" class="w-5 h-5 accent-indigo-600 rounded">
                                     <span class="font-semibold text-sm text-gray-800">{{ a.nombre }} {{ a.apellidos }}</span>
@@ -220,9 +231,9 @@
                             </div>
                         </div>
                         
-                        <div class="p-6 border-t bg-gray-50 flex justify-end items-center">
-                            <span class="text-sm font-bold text-gray-500 mr-4">{{ gestorExamenes.alumnosSeleccionados.length }} alumnos seleccionados</span>
-                            <button @click="guardarExamenesMasivos" :disabled="savingExamenes || !gestorExamenes.fecha || !gestorExamenes.asignatura || gestorExamenes.alumnosSeleccionados.length === 0" class="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 font-bold shadow-lg flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div class="p-4 sm:p-6 border-t bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <span class="text-sm font-bold text-gray-500">{{ gestorExamenes.alumnosSeleccionados.length }} alumnos seleccionados</span>
+                            <button @click="guardarExamenesMasivos" :disabled="savingExamenes || !gestorExamenes.fecha || !gestorExamenes.asignatura || gestorExamenes.alumnosSeleccionados.length === 0" class="w-full sm:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 font-bold shadow-lg flex items-center justify-center gap-2 transition disabled:opacity-50">
                                 <i v-if="savingExamenes" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
                                 {{ savingExamenes ? 'Creando...' : 'CREAR EXÁMENES' }}
                             </button>
@@ -231,20 +242,21 @@
                 </div>
 
                 <!-- VISTA DE ALUMNO SELECCIONADO -->
-                <div v-if="selected" class="flex-1 overflow-y-auto p-8 pb-24">
-                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[700px] flex flex-col">
+                <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24">
+                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
-                        <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                        <!-- BARRA SUPERIOR DE LA FICHA (OCULTA EN MÓVIL PEQUEÑO PARA USAR LA BARRA FIJA) -->
+                        <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                             <div class="flex items-center gap-4">
                                 <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
                                     <i class="fas fa-arrow-left"></i> Volver al menú
                                 </button>
                                 
-                                <h2 class="text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
+                                <h2 class="text-xl sm:text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
                                     {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
                                 </h2>
-                                <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha Académica</span>
-                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos e Ingresos Fijos</span>
+                                <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha</span>
+                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos</span>
                                 <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
                             </div>
 
@@ -255,109 +267,119 @@
                                         <div class="absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform" :class="form.baja ? 'translate-x-5' : 'translate-x-0'"></div>
                                     </button>
                                 </div>
-                                <button @click="cerrarFicha" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
-                                <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-6 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2">
+                                <button @click="cerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar</button>
+                                <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-5 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2 text-xs sm:text-sm">
                                     <i v-if="saving" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
-                                    {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
+                                    {{ saving ? 'Guardando...' : 'Guardar' }}
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- BARRA DE ACCIÓN MÓVIL PARA FICHA -->
+                        <div class="p-4 border-b flex md:hidden justify-between items-center bg-gray-50">
+                            <button v-if="activeTab !== 'menu'" @click="activeTab = 'menu'" class="text-xs font-bold text-[#2b94cc] bg-blue-50 px-3 py-2 rounded-lg">
+                                <i class="fas fa-arrow-left"></i> Menú Alumno
+                            </button>
+                            <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-xs ml-auto">
+                                {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
+                            </button>
                         </div>
 
                         <!-- MENÚ INTERNO DEL ALUMNO -->
-                        <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
-                            <h3 class="text-3xl font-black text-[#243c7a] mb-2">Panel del Alumno</h3>
-                            <p class="text-gray-500 mb-10 font-medium">¿Qué deseas gestionar para {{ form.nombre }}?</p>
+                        <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
+                            <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
+                            <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre }}?</p>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl">
-                                <button @click="activeTab = 'ficha'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
-                                    <div class="bg-blue-50 p-5 rounded-full text-[#2b94cc] group-hover:bg-[#2b94cc] group-hover:text-white transition-colors duration-300">
-                                        <i class="fas fa-id-card text-4xl"></i>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                                <button @click="activeTab = 'ficha'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-blue-50 p-4 rounded-full text-[#2b94cc] group-hover:bg-[#2b94cc] group-hover:text-white transition-colors">
+                                        <i class="fas fa-id-card text-3xl"></i>
                                     </div>
-                                    <span class="text-xl font-extrabold text-[#243c7a]">Ficha Académica</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Modificar datos, contactos y familiares.</span>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Ficha Académica</span>
+                                    <span class="text-xs text-gray-500 text-center">Modificar datos y familiares.</span>
                                 </button>
 
-                                <button @click="abrirSeccionPagos" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
-                                    <div class="bg-pink-50 p-5 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors duration-300">
-                                        <i class="fas fa-euro-sign text-4xl px-2"></i>
+                                <button @click="abrirSeccionPagos" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-pink-50 p-4 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors">
+                                        <i class="fas fa-euro-sign text-3xl px-1"></i>
                                     </div>
-                                    <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Cuotas por curso escolar, cobros y recibos PDF.</span>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
+                                    <span class="text-xs text-gray-500 text-center">Cuotas, cobros y recibos PDF.</span>
                                 </button>
 
-                                <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
-                                    <div class="bg-indigo-50 p-5 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                                        <i class="fas fa-graduation-cap text-4xl px-1"></i>
+                                <button @click="activeTab = 'examenes'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-indigo-50 p-4 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                        <i class="fas fa-graduation-cap text-3xl"></i>
                                     </div>
-                                    <span class="text-xl font-extrabold text-[#243c7a]">Exámenes</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Consultar calendario y registrar notas.</span>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Exámenes</span>
+                                    <span class="text-xs text-gray-500 text-center">Consultar calendario y notas.</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- FICHA ACADÉMICA COMPLETA -->
-                        <form v-if="activeTab === 'ficha'" class="p-8 space-y-8 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
-                            <section class="grid grid-cols-4 gap-6">
-                                <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
+                        <!-- FICHA ACADÉMICA COMPLETA RESPONSIVE -->
+                        <form v-if="activeTab === 'ficha'" class="p-4 sm:p-8 space-y-6 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
+                            <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
                                 <input v-model="form.nombre" placeholder="Nombre" class="p-3 rounded-lg border bg-gray-50 outline-none">
                                 <input v-model="form.apellidos" placeholder="Apellidos" class="p-3 rounded-lg border bg-gray-50 outline-none">
                                 <input v-model="form.dni" placeholder="DNI/NIE" class="p-3 rounded-lg border bg-gray-50 outline-none">
                                 <input type="date" v-model="form.nacimiento" class="p-3 rounded-lg border bg-gray-50 outline-none">
                             </section>
                             
-                            <section class="grid grid-cols-2 gap-6 bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                                <div class="col-span-2 font-bold text-[#2b94cc] border-b border-blue-200 pb-2"><i class="fas fa-laptop-code"></i> ACCESO AULES</div>
+                            <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50 p-4 sm:p-6 rounded-2xl border border-blue-100">
+                                <div class="col-span-1 sm:col-span-2 font-bold text-[#2b94cc] border-b border-blue-200 pb-2"><i class="fas fa-laptop-code"></i> ACCESO AULES</div>
                                 <div>
                                     <label class="block text-xs font-bold text-blue-800 mb-1">Usuario</label>
-                                    <input v-model="form.usuario_aules" placeholder="Ej: lozano_leo" class="w-full p-3 rounded-lg border bg-white outline-none focus:border-[#2b94cc]">
+                                    <input v-model="form.usuario_aules" placeholder="Ej: lozano_leo" class="w-full p-3 rounded-lg border bg-white outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-blue-800 mb-1">Contraseña</label>
-                                    <input v-model="form.pass_aules" placeholder="Contraseña de Aules" class="w-full p-3 rounded-lg border bg-white outline-none focus:border-[#2b94cc]">
+                                    <input v-model="form.pass_aules" placeholder="Contraseña" class="w-full p-3 rounded-lg border bg-white outline-none">
                                 </div>
                             </section>
 
-                            <section class="grid grid-cols-6 gap-6">
-                                <div class="col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
-                                <input v-model="form.direccion" placeholder="Domicilio" class="col-span-3 p-3 rounded-lg border bg-gray-50">
+                            <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.provincia" placeholder="Provincia" class="p-3 rounded-lg border bg-gray-50">
                             </section>
 
-                            <section class="grid grid-cols-3 gap-6">
-                                <div class="col-span-3 font-bold text-[#243c7a] border-b pb-2">ACADÉMICO</div>
+                            <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="col-span-1 sm:col-span-3 font-bold text-[#243c7a] border-b pb-2">ACADÉMICO</div>
                                 <input v-model="form.colegio" placeholder="Colegio" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.curso" placeholder="Curso" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
                             </section>
 
                             <!-- DATOS FAMILIARES -->
-                            <section class="grid grid-cols-2 gap-8">
-                                <div class="bg-green-50 p-6 rounded-2xl border border-green-200">
+                            <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-green-50 p-4 sm:p-6 rounded-2xl border border-green-200">
                                     <div class="font-bold text-green-800 mb-4">FAMILIAR 1</div>
                                     <div class="space-y-3">
-                                        <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
-                                        <select v-model="form.fam1_relacion" class="w-full p-2 border rounded bg-white">
+                                        <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
+                                        <select v-model="form.fam1_relacion" class="w-full p-2.5 border rounded bg-white">
                                             <option value="" disabled>Relación...</option>
                                             <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
                                         </select>
                                         <div class="flex gap-2">
-                                            <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
+                                            <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
                                             <a v-if="form.fam1_tlf" :href="'https://wa.me/34'+String(form.fam1_tlf).replace(/\s/g,'')" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600"><i class="fab fa-whatsapp"></i></a>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="bg-gray-100 p-6 rounded-2xl border border-gray-200">
+                                <div class="bg-gray-100 p-4 sm:p-6 rounded-2xl border border-gray-200">
                                     <div class="font-bold text-gray-600 mb-4">FAMILIAR 2</div>
                                     <div class="space-y-3">
-                                        <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
-                                        <select v-model="form.fam2_relacion" class="w-full p-2 border rounded bg-white">
+                                        <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
+                                        <select v-model="form.fam2_relacion" class="w-full p-2.5 border rounded bg-white">
                                             <option value="" disabled>Relación...</option>
                                             <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
                                         </select>
                                         <div class="flex gap-2">
-                                            <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
+                                            <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
                                             <a v-if="form.fam2_tlf" :href="'https://wa.me/34'+String(form.fam2_tlf).replace(/\s/g,'')" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500"><i class="fab fa-whatsapp"></i></a>
                                         </div>
                                     </div>
@@ -365,41 +387,40 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS DEL ALUMNO -->
-                        <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
+                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS -->
+                        <div v-if="activeTab === 'pagos'" class="p-4 sm:p-8 space-y-6 bg-gray-50 flex-1">
                             
                             <!-- SECCIÓN: CUOTAS FIJAS POR CURSOS ESCOLARES -->
-                            <div class="bg-white p-6 rounded-xl border shadow-sm">
-                                <div class="flex justify-between items-center border-b pb-3 mb-5">
-                                    <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2">
-                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i> Cuotas por Cursos Escolares ({{ form.nombre }})
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
+                                    <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2 text-xs sm:text-sm">
+                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i> Cuotas Cursos Escolares ({{ form.nombre }})
                                     </h3>
                                     <button @click="generarSiguienteMes" class="bg-pink-50 text-[#fa65c3] border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold text-xs flex items-center gap-2 transition shadow-sm">
-                                        <i class="fas fa-plus"></i> Generar Siguiente Mes
+                                        <i class="fas fa-plus"></i> Generar Mes
                                     </button>
                                 </div>
 
-                                <!-- CARPETAS POR CURSO ESCOLAR (SEP - JUL/AGO) -->
                                 <div class="space-y-4">
                                     <div v-for="(mesesCurso, cursoKey) in mesesAgrupadosPorCursoEscolar" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                        <div @click="toggleCurso(cursoKey)" class="bg-gray-100 p-4 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
-                                            <div class="flex items-center gap-3">
+                                        <div @click="toggleCurso(cursoKey)" class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
+                                            <div class="flex items-center gap-2 sm:gap-3">
                                                 <i class="fas fa-folder-open text-[#fa65c3]" v-if="cursoAbierto[cursoKey]"></i>
                                                 <i class="fas fa-folder text-gray-400" v-else></i>
-                                                <span>Curso Escolar {{ cursoKey }}</span>
-                                                <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }} meses</span>
+                                                <span>Curso {{ cursoKey }}</span>
+                                                <span class="text-[10px] sm:text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }}m</span>
                                             </div>
                                             <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                         </div>
 
-                                        <div v-if="cursoAbierto[cursoKey]" class="p-3 overflow-x-auto">
-                                            <table class="w-full border-collapse text-xs">
+                                        <div v-if="cursoAbierto[cursoKey]" class="p-2 sm:p-3 overflow-x-auto">
+                                            <table class="w-full border-collapse text-xs min-w-[320px]">
                                                 <thead>
                                                     <tr class="bg-gray-50 text-gray-600 uppercase">
                                                         <th class="p-2 border text-left">Mes</th>
-                                                        <th class="p-2 border text-center w-36">Cuota (€)</th>
-                                                        <th class="p-2 border text-center w-28">Pagado</th>
-                                                        <th class="p-2 border text-center w-24">Acciones</th>
+                                                        <th class="p-2 border text-center w-28 sm:w-36">Cuota (€)</th>
+                                                        <th class="p-2 border text-center w-20 sm:w-28">Pagado</th>
+                                                        <th class="p-2 border text-center w-20">Acciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -411,7 +432,7 @@
                                                                 @input="updateCuotaLocal(form.nombre + ' ' + form.apellidos, mes, $event.target.value)"
                                                                 @change="guardarCeldaIngresosFijos(form.nombre + ' ' + form.apellidos, mes)"
                                                                 placeholder=""
-                                                                class="w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
+                                                                class="w-full sm:w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
                                                         </td>
                                                         <td class="p-2 border text-center" :class="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
                                                             <input type="checkbox" 
@@ -419,9 +440,9 @@
                                                                 @change="togglePagadoIngresosFijos(form.nombre + ' ' + form.apellidos, mes, $event.target.checked)"
                                                                 class="w-5 h-5 accent-green-600 rounded cursor-pointer">
                                                         </td>
-                                                        <td class="p-2 border text-center space-x-2">
-                                                            <button @click="abrirModalEditar(mes)" title="Modificar nombre del mes" class="text-blue-500 hover:text-blue-700 p-1.5 transition"><i class="fas fa-edit text-sm"></i></button>
-                                                            <button @click="abrirModalEliminar(mes)" title="Eliminar mes" class="text-red-500 hover:text-red-700 p-1.5 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+                                                        <td class="p-2 border text-center space-x-1 sm:space-x-2">
+                                                            <button @click="abrirModalEditar(mes)" title="Modificar" class="text-blue-500 hover:text-blue-700 p-1"><i class="fas fa-edit text-sm"></i></button>
+                                                            <button @click="abrirModalEliminar(mes)" title="Eliminar" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt text-sm"></i></button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -432,15 +453,15 @@
                             </div>
 
                             <!-- SECCIÓN: REGISTRAR PAGO Y RECIBO PDF -->
-                            <div class="bg-white p-6 rounded-xl border shadow-sm relative">
-                                <div class="flex justify-between items-center border-b pb-3 mb-5">
-                                    <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro y Generar Factura</h3>
-                                    <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe || importeCalculado === 0" class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg hover:bg-gray-300 font-bold text-xs flex items-center gap-2 disabled:opacity-50">
-                                        <i class="fas fa-print"></i> Imprimir y Guardar en Drive
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
+                                    <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
+                                    <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe || importeCalculado === 0" class="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-bold text-xs flex justify-center items-center gap-2 disabled:opacity-50">
+                                        <i class="fas fa-print"></i> Imprimir Recibo
                                     </button>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-5 mb-5">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Fecha de Pago</label>
                                         <input type="date" v-model="nuevoPago.fecha" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3]">
@@ -454,19 +475,19 @@
                                 </div>
 
                                 <!-- SELECCIÓN DE MÉTODO DE PAGO -->
-                                <div class="mb-5 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
-                                    <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro (Efectivo / Bizum)</label>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <button type="button" @click="nuevoPago.metodo = 'Efectivo'" class="py-3 px-4 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-2" :class="nuevoPago.metodo === 'Efectivo' ? 'border-[#243c7a] bg-blue-50 text-[#243c7a]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
-                                            <i class="fas fa-money-bill-wave"></i> Efectivo (Sin Factura)
+                                <div class="mb-4 p-3 sm:p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
+                                    <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button type="button" @click="nuevoPago.metodo = 'Efectivo'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'Efectivo' ? 'border-[#243c7a] bg-blue-50 text-[#243c7a]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-money-bill-wave"></i> Efectivo
                                         </button>
-                                        <button type="button" @click="nuevoPago.metodo = 'Bizum'" class="py-3 px-4 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-2" :class="nuevoPago.metodo === 'Bizum' ? 'border-[#fa65c3] bg-pink-50 text-[#fa65c3]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
-                                            <i class="fas fa-mobile-alt"></i> Bizum (Genera Factura PDF)
+                                        <button type="button" @click="nuevoPago.metodo = 'Bizum'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'Bizum' ? 'border-[#fa65c3] bg-pink-50 text-[#fa65c3]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-mobile-alt"></i> Bizum
                                         </button>
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-5 mb-5">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
@@ -489,18 +510,18 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center justify-between border-t pt-5 mt-2 bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl">
-                                    <div class="flex flex-col">
-                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe a Registrar</span>
-                                        <span class="text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
+                                <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
+                                    <div class="flex flex-col w-full sm:w-auto text-center sm:text-left">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
+                                        <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
-                                    <div class="flex items-center gap-4">
-                                        <button @click="registrarPago" :disabled="savingPago || !nuevoPago.importe" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2 disabled:opacity-50">
+                                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                                        <button @click="registrarPago" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#2b94cc] text-white px-6 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
                                             <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
                                             {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
                                         </button>
-                                        <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe" class="bg-[#fa65c3] text-white px-6 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex items-center gap-2 disabled:opacity-50">
-                                            <i class="fas fa-file-pdf"></i> Imprimir Recibo y Drive
+                                        <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-5 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50">
+                                            <i class="fas fa-file-pdf"></i> Recibo PDF
                                         </button>
                                     </div>
                                 </div>
@@ -508,9 +529,9 @@
                         </div>
 
                         <!-- EXÁMENES -->
-                        <div v-if="activeTab === 'examenes'" class="p-8 flex-1 bg-white">
+                        <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
-                                <h3 class="font-extrabold text-indigo-800 uppercase text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes y Notas</h3>
+                                <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes</h3>
                                 <button @click="actualizarExamenes" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
                                     <i class="fas fa-sync-alt" :class="{'fa-spin': loadingExamenes}"></i> Actualizar
                                 </button>
@@ -536,11 +557,12 @@
                     </div>
                 </div>
                 
-                <div v-else-if="activeTab !== 'gestor_examenes'" class="h-full flex flex-col items-center justify-center text-gray-400 select-none">
-                    <div class="bg-white p-10 rounded-full shadow-lg mb-6 animate-pulse">
-                        <i class="fas fa-folder-open text-6xl text-[#2b94cc] opacity-50"></i>
+                <!-- ESTADO VACÍO (INICIO) -->
+                <div v-else-if="activeTab !== 'gestor_examenes'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
+                    <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
+                        <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-[#243c7a]">Selecciona un alumno del listado izquierdo</h2>
+                    <h2 class="text-lg sm:text-xl font-bold text-[#243c7a]">Selecciona un alumno del listado</h2>
                 </div>
             </div>
         </div>
@@ -651,8 +673,6 @@
                     const y_raw = parts[1];
                     const yearNum = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
                     const monthIdx = monthOrder[m_name] || 1;
-                    
-                    // Curso Escolar: SEP-DIC pertenecen al año de inicio (ej. Sep 26 -> 2026/2027), ENE-AGO pertenecen al curso que inició el año anterior (ej. Jun 27 -> 2026/2027)
                     let startYear = (monthIdx >= 1 && monthIdx <= 4) ? yearNum : yearNum - 1;
                     const cursoKey = `${startYear}/${startYear + 1}`;
                     return { cursoKey, monthIdx };
@@ -660,14 +680,7 @@
                 return { cursoKey: '2025/2026', monthIdx: 1 };
             },
             pagoVacio() {
-                return { 
-                    fecha: new Date().toISOString().split('T')[0], 
-                    mes: '', 
-                    tarifa: '', 
-                    extras: '', 
-                    importe: '', 
-                    metodo: 'Bizum' 
-                };
+                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -681,7 +694,7 @@
 
                 if (error) {
                     this.loginError = true;
-                    this.errorMsg = 'Credenciales inválidas o error de acceso.';
+                    this.errorMsg = 'Credenciales inválidas.';
                     this.loading = false;
                     return;
                 }
@@ -748,27 +761,14 @@
                 if (reg) {
                     reg.cuota = valor === '' ? null : Number(valor);
                 } else {
-                    this.ingresosFijosList.push({
-                        alumno: nombreAlumno,
-                        mes: mes,
-                        cuota: valor === '' ? null : Number(valor),
-                        pagado: false
-                    });
+                    this.ingresosFijosList.push({ alumno: nombreAlumno, mes: mes, cuota: valor === '' ? null : Number(valor), pagado: false });
                 }
             },
             async guardarCeldaIngresosFijos(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
                 if (!reg) return;
-
                 const cuotaFinal = (reg.cuota === '' || reg.cuota === null || isNaN(reg.cuota)) ? 0 : Number(reg.cuota);
-
-                await _supabase.from('ingresos_fijos').upsert({
-                    alumno: nombreAlumno,
-                    mes: mes,
-                    cuota: cuotaFinal,
-                    pagado: Boolean(reg.pagado)
-                }, { onConflict: 'alumno,mes' });
-
+                await _supabase.from('ingresos_fijos').upsert({ alumno: nombreAlumno, mes: mes, cuota: cuotaFinal, pagado: Boolean(reg.pagado) }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
             },
             isPagadoTrue(nombreAlumno, mes) {
@@ -778,21 +778,13 @@
             async togglePagadoIngresosFijos(nombreAlumno, mes, nuevoEstado) {
                 let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
                 const cuotaActual = reg && reg.cuota !== null ? Number(reg.cuota) : 0;
-
-                await _supabase.from('ingresos_fijos').upsert({
-                    alumno: nombreAlumno,
-                    mes: mes,
-                    cuota: cuotaActual,
-                    pagado: nuevoEstado
-                }, { onConflict: 'alumno,mes' });
-
+                await _supabase.from('ingresos_fijos').upsert({ alumno: nombreAlumno, mes: mes, cuota: cuotaActual, pagado: nuevoEstado }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
             },
             async generarSiguienteMes() {
                 const meses = this.listaMesesDinamicos;
                 if (meses.length === 0) return;
                 const ultimoMes = meses[meses.length - 1];
-                
                 const parts = ultimoMes.replace(/'/g, "").trim().split(' ');
                 const mName = parts[0];
                 const yRaw = parts[1];
@@ -816,22 +808,16 @@
                 }
 
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
-                await _supabase.from('ingresos_fijos').upsert({
-                    alumno: nombreCompleto,
-                    mes: siguienteMesStr,
-                    cuota: 0,
-                    pagado: false
-                }, { onConflict: 'alumno,mes' });
-                
+                await _supabase.from('ingresos_fijos').upsert({ alumno: nombreCompleto, mes: siguienteMesStr, cuota: 0, pagado: false }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
-                this.successMessage = `¡Mes de ${siguienteMesStr} generado correctamente!`;
+                this.successMessage = `¡Mes de ${siguienteMesStr} generado!`;
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             abrirModalEditar(mes) {
                 this.modalType = 'edit';
                 this.modalTitle = 'Modificar Mes';
-                this.modalMessage = `Introduce el nombre corregido para el mes "${mes}". Se actualizará en los registros de todos los alumnos.`;
+                this.modalMessage = `Introduce el nuevo nombre para "${mes}". Se actualizará para todos los alumnos.`;
                 this.modalInputVal = mes;
                 this.modalTargetMes = mes;
                 this.showCustomModal = true;
@@ -839,35 +825,23 @@
             abrirModalEliminar(mes) {
                 this.modalType = 'delete';
                 this.modalTitle = 'Eliminar Mes';
-                this.modalMessage = `¿Estás completamente seguro de eliminar el mes "${mes}"? Se borrarán todas las cuotas y estados asociados para todos los alumnos. Esta acción no se puede deshacer.`;
+                this.modalMessage = `¿Seguro que deseas eliminar el mes "${mes}" para todos los alumnos? Esta acción no se puede deshacer.`;
                 this.modalTargetMes = mes;
                 this.showCustomModal = true;
             },
-            cerrarCustomModal() {
-                this.showCustomModal = false;
-            },
+            cerrarCustomModal() { this.showCustomModal = false; },
             async ejecutarAccionModal() {
                 if (this.modalType === 'edit') {
                     const nuevoNombre = this.modalInputVal.toUpperCase().trim();
-                    if (!nuevoNombre || nuevoNombre === this.modalTargetMes) {
-                        this.showCustomModal = false;
-                        return;
-                    }
+                    if (!nuevoNombre || nuevoNombre === this.modalTargetMes) { this.showCustomModal = false; return; }
                     const { error } = await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
-                    if (error) {
-                        alert("Error al actualizar: " + error.message);
-                        return;
-                    }
+                    if (error) { alert("Error: " + error.message); return; }
                     this.successMessage = "Mes modificado correctamente";
                 } else if (this.modalType === 'delete') {
                     const { error } = await _supabase.from('ingresos_fijos').delete().eq('mes', this.modalTargetMes);
-                    if (error) {
-                        alert("Error al eliminar: " + error.message);
-                        return;
-                    }
-                    this.successMessage = `Mes ${this.modalTargetMes} eliminado correctamente`;
+                    if (error) { alert("Error: " + error.message); return; }
+                    this.successMessage = `Mes ${this.modalTargetMes} eliminado`;
                 }
-
                 this.showCustomModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
