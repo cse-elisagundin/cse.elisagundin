@@ -879,12 +879,14 @@
             },
             getNextFacturaId() {
                 if (!this.pagosList || this.pagosList.length === 0) return 1;
-                const numeros = this.pagosList.map(p => {
-                    const val = p.factura_id || p.id_factura || 0;
-                    return Number(val) || 0;
-                });
-                const max = Math.max(...numeros);
-                return max > 0 ? max + 1 : 1;
+                const numeros = this.pagosList
+                    .map(p => p.factura_id)
+                    .filter(id => id !== null && id !== undefined && id !== '')
+                    .map(id => Number(id))
+                    .filter(n => !isNaN(n));
+                
+                if (numeros.length === 0) return 1;
+                return Math.max(...numeros) + 1;
             },
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
@@ -1174,7 +1176,6 @@
                 
                 const { error } = await _supabase.from('pagos').insert([{
                     factura_id: nextId,
-                    id_factura: nextId,
                     alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa,
                     extras: this.nuevoPago.extras,
@@ -1203,7 +1204,6 @@
                     
                     const { error } = await _supabase.from('pagos').insert([{
                         factura_id: nextId,
-                        id_factura: nextId,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1220,7 +1220,6 @@
                         return;
                     }
 
-                    // Limpiar mes para Drive (ej: "SEPTIEMBRE 25'" -> "SEPTIEMBRE 2025")
                     let mesDrive = String(this.nuevoPago.mes || '').replace(/'/g, '').trim();
                     if (/^\w+\s+\d{2}$/.test(mesDrive)) {
                         mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
@@ -1269,14 +1268,14 @@
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
-                const facturaNum = pago.factura_id || pago.id_factura || '2026';
+                const facturaNum = pago.factura_id ? pago.factura_id : 'S/N';
                 this.generarReciboHTML({
                     fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
                     metodo: pago.metodo_pago || 'Efectivo',
                     tarifa: pago.tarifa,
                     extras: pago.extras,
                     importe: pago.importe,
-                    id: 'REC-' + facturaNum
+                    id: facturaNum !== 'S/N' ? 'REC-' + facturaNum : 'S/N'
                 });
                 setTimeout(() => { window.print(); }, 400);
             },
