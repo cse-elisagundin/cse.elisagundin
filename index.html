@@ -594,8 +594,8 @@
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
-                                    <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe || importeCalculado === 0" class="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-bold text-xs flex justify-center items-center gap-2 disabled:opacity-50">
-                                        <i class="fas fa-print"></i> Imprimir Recibo
+                                    <button @click="imprimirTicketRapido" :disabled="savingPago || !nuevoPago.importe || importeCalculado === 0" class="w-full sm:w-auto bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-bold text-xs flex justify-center items-center gap-2 disabled:opacity-50">
+                                        <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-print"></i> Imprimir Recibo
                                     </button>
                                 </div>
 
@@ -877,11 +877,10 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            // NUEVO MOTOR ULTRA-BLINDADO DE CÁLCULO DE ID (EVITA NULOS Y COLISIONES HISTÓRICAS)
+            // MOTOR BLINDADO DE CÁLCULO DE ID (EXCLUYE NULOS Y GARANTIZA SECUENCIA)
             async obtenerSiguienteFacturaIdReal() {
                 let maxFacturaId = 0;
                 try {
-                    // Excluimos estrictamente los nulos mediante .gt('factura_id', 0)
                     const { data, error } = await _supabase
                         .from('pagos')
                         .select('factura_id')
@@ -899,7 +898,6 @@
                     console.error("Error consultando ID máximo:", e);
                 }
 
-                // Revisión secundaria en memoria local con pagosList
                 if (this.pagosList && this.pagosList.length > 0) {
                     const numerosLocales = this.pagosList
                         .map(p => Number(p.factura_id))
@@ -912,8 +910,6 @@
                         }
                     }
 
-                    // SEGURIDAD ABSOLUTA: Si los registros antiguos tienen factura_id en null, 
-                    // el ID siguiente será como mínimo el número total de pagos existentes + 1 (ej. 107 si hay 106 pagos)
                     if (maxFacturaId < this.pagosList.length) {
                         maxFacturaId = this.pagosList.length;
                     }
@@ -1266,7 +1262,6 @@
                         mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
                     }
 
-                    // ENVÍO EXACTO CON EL ID CORRECTO A GOOGLE DRIVE
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
@@ -1299,8 +1294,42 @@
                     this.savingPago = false;
                 }
             },
+            // IMPRIMIR RECIBO (AHORA GUARDA PRIMERO EN SUPABASE PARA BLOQUEAR EL ID EXACTO Y COINCIDIR CON TABLE EDITOR)
             async imprimirTicketRapido() {
+                if (!this.form || !this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor selecciona un alumno válido.");
+                    return;
+                }
+                if (!this.nuevoPago.importe || this.importeCalculado === 0) {
+                    alert("Introduce un importe válido para imprimir el recibo.");
+                    return;
+                }
+
+                this.savingPago = true;
                 const nextId = await this.obtenerSiguienteFacturaIdReal();
+
+                // Guardado obligatorio en Supabase antes de imprimir para garantizar que el ID es real y coincida
+                const { error } = await _supabase.from('pagos').insert([{
+                    factura_id: nextId,
+                    alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: this.nuevoPago.tarifa,
+                    extras: this.nuevoPago.extras,
+                    importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha,
+                    mes: this.nuevoPago.mes,
+                    metodo_pago: this.nuevoPago.metodo,
+                    registrado: true
+                }]);
+
+                if (error) {
+                    alert("Error al registrar el pago en Supabase: " + error.message);
+                    this.savingPago = false;
+                    return;
+                }
+
+                await this.cargarDatosSupabase();
+                this.savingPago = false;
+
                 this.generarReciboHTML({
                     fecha: this.nuevoPago.fecha,
                     metodo: this.nuevoPago.metodo,
@@ -1309,6 +1338,11 @@
                     importe: this.importeCalculado,
                     id: 'REC-' + nextId
                 });
+
+                this.showSuccess = true;
+                this.successMessage = `¡Recibo REC-${nextId} guardado e impreso!`;
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
