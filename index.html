@@ -3,560 +3,1081 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSE Elisa Gundín - Panel de Gestión</title>
-    <!-- Tailwind CSS -->
+    <title>Gestión CSE Elisa Gundín</title>
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
+        :root { --c-primary: #243c7a; --c-secondary: #2b94cc; --c-accent: #fa65c3; --bg-body: #f4f6f9; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-body); }
+        .login-container { background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(36, 60, 122, 0.12); }
+        .btn-corp { background-color: var(--c-primary); transition: 0.3s; }
+        .btn-corp:hover { background-color: #1a2e5e; transform: translateY(-2px); }
+        .input-corp { border: 2px solid #e1e9f0; transition: 0.3s; color: var(--c-primary); font-weight: 600; }
+        .input-corp:focus { border-color: var(--c-secondary); outline: none; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .pop-enter-active, .pop-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .pop-enter-from, .pop-leave-to { opacity: 0; transform: scale(0.8) translateY(20px); }
+        @keyframes loading-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+        .loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #e0e7ff; overflow: hidden; }
+        .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         @media print {
-            body * { visibility: hidden; }
-            #zona-impresion, #zona-impresion * { visibility: visible; }
-            #zona-impresion { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            #app-main-content { display: none !important; }
+            #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
         }
+        .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 15px 0; transition: background 0.2s; }
+        .timeline-row:last-child { border-bottom: none; }
+        .timeline-row:hover { background-color: #fafbff; }
+        .date-col { width: 90px; flex-shrink: 0; text-align: center; border-right: 2px solid #f0f0f0; margin-right: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .date-col .day-num { font-size: 28px; font-weight: 900; color: var(--c-primary); line-height: 1; }
+        .date-col .day-name { font-size: 13px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 4px; }
+        .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .exam-pill { display: inline-flex; flex-direction: column; background: white; border: 1px solid #e0e0e0; border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .pill-subject { font-size: 11px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
+        .pill-grade { font-size: 14px; font-weight: 700; color: #333; }
+        .pill-pending { font-size: 12px; color: #999; font-style: italic; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-900 font-sans min-h-screen flex flex-col">
+<body class="h-screen overflow-hidden text-sm">
 
-    <!-- CABECERA CORPORATIVA -->
-    <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div>
-                <h1 class="text-lg font-black tracking-wider uppercase">CSE ELISA GUNDÍN</h1>
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Sistema de Gestión y Control Integral</p>
-            </div>
-            <!-- PESTAÑAS DE NAVEGACIÓN -->
-            <div class="flex space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                <button onclick="cambiarPestana('alumnos')" id="btn-tab-alumnos" class="px-4 py-1.5 rounded-md text-xs font-bold transition bg-slate-700 text-white shadow-sm">
-                    Alumnos y Expedientes
-                </button>
-                <button onclick="cambiarPestana('pagos')" id="btn-tab-pagos" class="px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white">
-                    Control de Pagos
-                </button>
-            </div>
-        </div>
-    </header>
+<div id="zona-impresion" class="hidden bg-white font-sans">
+    <div id="ticket-data"></div>
+</div>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <main class="max-w-7xl mx-auto p-6 flex-grow w-full space-y-6">
-        
-        <!-- ================= SECCIÓN ALUMNOS (VISTA PRINCIPAL) ================= -->
-        <section id="seccion-alumnos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- COLUMNA IZQUIERDA: Buscador y Listado -->
-            <div class="bg-white border border-slate-300 rounded-xl shadow-sm p-4 flex flex-col h-[750px]">
-                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                    <h2 class="text-sm font-black uppercase text-slate-800 tracking-wider">Listado de Alumnos</h2>
-                    <span id="contador-alumnos" class="text-xs bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-600">0</span>
-                </div>
-                <!-- Buscador -->
-                <div class="mb-3">
-                    <input type="text" id="input-buscar-alumno" oninput="filtrarAlumnos()" placeholder="🔍 Buscar por nombre o DNI..." class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none">
-                </div>
-                <!-- Listado scrollable -->
-                <div id="lista-alumnos-sidebar" class="flex-grow overflow-y-auto space-y-1.5 pr-1">
-                    <p class="text-xs text-slate-400 text-center py-6">Cargando base de datos...</p>
+<div id="app" class="h-full flex flex-col relative">
+    <div id="app-main-content" class="h-full flex flex-col relative w-full">
+
+        <transition name="pop">
+            <div v-if="showSuccess" class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+                <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[300px]">
+                    <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
+                    <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
+                    <p class="text-gray-500 font-semibold">{{ successMessage }}</p>
                 </div>
             </div>
+        </transition>
 
-            <!-- COLUMNA DERECHA: Expediente Completo -->
-            <div class="lg:col-span-2 bg-white border border-slate-300 rounded-xl shadow-sm p-6 flex flex-col h-[750px] overflow-y-auto">
-                <div id="expediente-vacio" class="m-auto text-center text-slate-400 py-20">
-                    <p class="text-3xl mb-2">📋</p>
-                    <p class="text-xs font-semibold uppercase tracking-wider">Selecciona un alumno para consultar su expediente, pagos y exámenes.</p>
-                </div>
-
-                <div id="expediente-contenido" class="hidden space-y-6">
-                    <!-- Cabecera del Alumno -->
-                    <div class="flex justify-between items-start border-b border-slate-200 pb-4">
-                        <div>
-                            <h2 id="exp-nombre" class="text-xl font-black text-slate-900 uppercase">Nombre del Alumno</h2>
-                            <p class="text-xs text-slate-500 mt-1">DNI: <span id="exp-dni" class="font-mono font-bold text-slate-700">-</span> | Colegio: <span id="exp-colegio" class="font-medium text-slate-700">-</span> | Curso: <span id="exp-curso" class="font-medium text-slate-700">-</span></p>
-                        </div>
-                        <span id="exp-estado" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase">Activo</span>
+        <transition name="fade">
+            <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
+                <div class="login-container p-10 w-full max-w-md text-center relative overflow-hidden">
+                    <div v-if="loading" class="loading-line"><div class="loading-progress"></div></div>
+                    <div class="mb-6 mt-2">
+                        <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-20 mx-auto mb-2 object-contain">
+                        <div class="h-1 w-20 mx-auto mt-4 bg-gradient-to-r from-[#243c7a] via-[#2b94cc] to-[#fa65c3] rounded-full"></div>
                     </div>
-
-                    <!-- Datos Académicos y Contacto -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs">
-                        <div>
-                            <span class="text-slate-400 block uppercase font-bold text-[9px]">Teléfono</span>
-                            <span id="exp-tlf" class="font-semibold text-slate-800">-</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 block uppercase font-bold text-[9px]">Usuario Aules</span>
-                            <span id="exp-aules" class="font-mono font-semibold text-slate-800">-</span>
-                        </div>
-                        <div class="col-span-2">
-                            <span class="text-slate-400 block uppercase font-bold text-[9px]">Dirección</span>
-                            <span id="exp-direccion" class="font-semibold text-slate-800">-</span>
-                        </div>
-                    </div>
-
-                    <!-- Historial de Pagos del Alumno -->
-                    <div>
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2">Historial de Pagos</h3>
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-100 text-slate-600 text-[10px] uppercase tracking-wider border-b border-slate-200">
-                                        <th class="p-2.5">Factura ID</th>
-                                        <th class="p-2.5">Concepto</th>
-                                        <th class="p-2.5">Fecha</th>
-                                        <th class="p-2.5">Importe</th>
-                                        <th class="p-2.5 text-center">Método</th>
-                                        <th class="p-2.5 text-center">Recibo</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="exp-tabla-pagos" class="divide-y divide-slate-100 text-xs">
-                                    <tr><td colspan="6" class="p-4 text-center text-slate-400">Sin pagos registrados.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Historial de Exámenes del Alumno -->
-                    <div>
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2">Exámenes y Calificaciones</h3>
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-100 text-slate-600 text-[10px] uppercase tracking-wider border-b border-slate-200">
-                                        <th class="p-2.5">Fecha</th>
-                                        <th class="p-2.5">Asignatura</th>
-                                        <th class="p-2.5 text-center">Calificación</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="exp-tabla-examenes" class="divide-y divide-slate-100 text-xs">
-                                    <tr><td colspan="3" class="p-4 text-center text-slate-400">Sin exámenes registrados.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
-
-        <!-- ================= SECCIÓN PAGOS GLOBAL ================= -->
-        <section id="seccion-pagos" class="space-y-6 hidden">
-            <div class="flex justify-between items-center bg-white border border-slate-300 rounded-xl shadow-sm p-6">
-                <div>
-                    <h2 class="text-base font-black uppercase text-slate-800 tracking-wider">Control Global de Pagos</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Registro fiscal, Bizum con numeración automática y recibos oficiales.</p>
-                </div>
-                <button onclick="abrirModalPago()" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm">
-                    + Nuevo Pago
-                </button>
-            </div>
-
-            <div class="bg-white border border-slate-300 rounded-xl shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
-                                <th class="p-3.5 font-semibold">Factura ID</th>
-                                <th class="p-3.5 font-semibold">Alumno</th>
-                                <th class="p-3.5 font-semibold">Tarifa / Extras</th>
-                                <th class="p-3.5 font-semibold">Fecha</th>
-                                <th class="p-3.5 font-semibold">Importe</th>
-                                <th class="p-3.5 font-semibold">Mes</th>
-                                <th class="p-3.5 font-semibold text-center">Método</th>
-                                <th class="p-3.5 font-semibold text-center">Registrado</th>
-                                <th class="p-3.5 font-semibold text-center">Recibo</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-pagos-body" class="divide-y divide-slate-100 text-sm">
-                            <tr><td colspan="9" class="p-6 text-center text-slate-400">Cargando pagos...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= VISOR DE RECIBO INTEGRADO (Plano, estilo script) ================= -->
-        <section id="seccion-recibo" class="space-y-6 hidden">
-            <div class="flex justify-between items-center bg-white border border-slate-300 rounded-xl shadow-sm p-6">
-                <div>
-                    <h2 class="text-base font-black uppercase text-slate-800 tracking-wider">Visor de Recibo Oficial</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Comprobante con formato oficial listo para imprimir o guardar.</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="cambiarPestana('pagos')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-4 py-2 rounded-lg transition">
-                        ← Volver
+                    
+                    <h2 class="text-2xl font-extrabold text-[#243c7a] mb-2 uppercase">Acceso Privado</h2>
+                    <p v-if="!hasDeviceToken" class="text-xs font-bold text-orange-500 mb-4 bg-orange-50 p-2 rounded border border-orange-200">🔒 Equipo no vinculado</p>
+                    
+                    <input type="password" v-model="passwordInput" @keyup.enter="login" placeholder="Contraseña..." class="w-full p-4 rounded-xl input-corp text-center text-lg mb-4 bg-gray-50">
+                    <button @click="login" :disabled="loading" class="w-full py-4 text-white font-bold rounded-xl btn-corp uppercase shadow-lg disabled:opacity-50">
+                        {{ loading ? 'Verificando...' : 'Entrar' }}
                     </button>
-                    <button onclick="window.print()" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm">
-                        🖨️ Imprimir / Guardar PDF
+                    
+                    <p v-if="loginError" class="mt-4 text-red-500 font-bold text-xs animate-pulse">{{ errorMsg }}</p>
+                </div>
+            </div>
+        </transition>
+
+        <div v-if="authenticated" class="flex h-full animate-opacity duration-700">
+            <div class="w-1/4 bg-white border-r flex flex-col shadow-xl z-20">
+                <div class="p-5 bg-[#243c7a] text-white">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white p-1 rounded-lg shadow-sm">
+                            <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-8 w-auto object-contain">
+                        </div>
+                        <h1 class="font-bold text-lg leading-tight">Gestión<br><span class="text-[#fa65c3]">Alumnos</span></h1>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 border-b space-y-3">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input v-model="search" type="text" placeholder="Buscar..." class="w-full pl-9 pr-8 p-2.5 rounded-lg border focus:border-[#2b94cc] outline-none shadow-sm">
+                        <button v-if="search" @click="search = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 px-1 select-none">
+                        <input type="checkbox" v-model="showInactive" id="showInactive" class="rounded text-[#fa65c3] focus:ring-[#fa65c3] cursor-pointer">
+                        <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
+                    </div>
+                    <button @click="createNew" class="w-full bg-[#2b94cc] text-white py-2.5 rounded-lg hover:bg-[#207bb0] font-bold flex justify-center gap-2 shadow">
+                        <i class="fas fa-plus"></i> Nueva Ficha
+                    </button>
+                    <button @click="abrirGestorExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-lg hover:bg-indigo-100 font-bold flex justify-center gap-2 shadow-sm transition">
+                        <i class="fas fa-calendar-alt"></i> Gestor de Exámenes
                     </button>
                 </div>
-            </div>
-
-            <div class="flex justify-center bg-slate-200 p-8 rounded-xl border border-slate-300">
-                <div id="zona-impresion" class="bg-white border-2 border-black w-full max-w-[700px] p-8 box-sizing text-black flex flex-col justify-between shadow-lg" style="min-height: 850px;">
-                    <div id="recibo-contenido-interno"></div>
+                <div class="flex-1 overflow-y-auto">
+                    <div v-for="s in filteredList" :key="s.id" @click="selectStudent(s)"
+                        class="p-4 border-b hover:bg-blue-50 cursor-pointer transition relative"
+                        :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
+                        <div class="flex justify-between items-start">
+                            <div class="font-bold text-base" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'">{{ s.apellidos }}, {{ s.nombre }}</div>
+                            <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">BAJA</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 flex justify-between uppercase">
+                            <span>{{ s.curso }}</span><span>{{ s.dni }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-2 border-t bg-gray-50 text-center flex justify-between px-4">
+                    <button @click="logout" class="text-xs font-bold text-gray-400 hover:text-red-500">CERRAR SESIÓN</button>
+                    <span class="text-xs font-bold text-green-500" title="Conexión Cifrada y Segura"><i class="fas fa-shield-alt"></i> API Segura</span>
                 </div>
             </div>
-        </section>
 
-    </main>
+            <div class="w-3/4 bg-[#f4f6f9] h-full flex flex-col relative">
+                
+                <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-8 pb-24 animate-fade">
+                    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
+                        <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                            <h2 class="text-2xl font-extrabold text-indigo-800 flex items-center gap-3">
+                                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-tasks"></i></div>
+                                Gestor Masivo de Exámenes
+                            </h2>
+                            <button @click="activeTab = 'menu'" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar Gestor</button>
+                        </div>
+                        
+                        <div class="p-8 bg-indigo-50/50 border-b">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-800 mb-1 uppercase">Fecha del Examen</label>
+                                    <input type="date" v-model="gestorExamenes.fecha" class="w-full p-3 rounded-xl border border-indigo-200 outline-none focus:border-indigo-500 bg-white shadow-sm text-indigo-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-800 mb-1 uppercase">Asignatura</label>
+                                    <input type="text" v-model="gestorExamenes.asignatura" placeholder="Ej: Matemáticas" class="w-full p-3 rounded-xl border border-indigo-200 outline-none focus:border-indigo-500 bg-white shadow-sm font-bold text-indigo-900">
+                                </div>
+                            </div>
+                        </div>
 
-    <!-- MODAL NUEVO PAGO -->
-    <div id="modal-pago" class="fixed inset-0 bg-black/40 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-lg rounded-xl shadow-2xl p-6 border border-slate-300">
-            <h3 class="text-sm font-black uppercase text-slate-800 tracking-wider mb-4">Registrar Nuevo Pago</h3>
-            <form id="form-nuevo-pago" onsubmit="procesarNuevoPago(event)" class="space-y-3.5">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Nombre del Alumno</label>
-                    <input type="text" id="input-pago-alumno" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none" placeholder="Ej: Manu Vila Rico">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Tarifa</label>
-                        <input type="text" id="input-tarifa" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none" placeholder="Ej: Opción 4 (85€)">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Extras</label>
-                        <input type="text" id="input-extras" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none" placeholder="Ej: Material (10€)">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Importe Total</label>
-                        <input type="text" id="input-importe" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none" placeholder="Ej: 85,00 €">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Fecha de Pago</label>
-                        <input type="date" id="input-fecha" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Mes Correspondiente</label>
-                        <input type="text" id="input-mes" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none" placeholder="Ej: Octubre 2025">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Método de Pago</label>
-                        <select id="input-metodo" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-slate-900 outline-none bg-white">
-                            <option value="BIZUM">Bizum (Genera Factura)</option>
-                            <option value="EFECTIVO">Efectivo (Sin Factura)</option>
-                        </select>
+                        <div class="p-8">
+                            <h3 class="font-bold text-gray-700 mb-3">Selecciona los alumnos:</h3>
+                            
+                            <div class="flex justify-between items-center mb-4 gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                <div class="flex-1 relative">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                    <input v-model="searchGestor" type="text" placeholder="Filtrar por nombre..." class="w-full pl-9 pr-4 py-2 rounded-lg border outline-none focus:border-indigo-400 shadow-sm text-sm">
+                                    <button v-if="searchGestor" @click="searchGestor = ''" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="flex gap-2 shrink-0">
+                                    <button @click="seleccionarTodos(true)" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-100 px-3 py-2 rounded-lg transition">Marcar Visibles</button>
+                                    <button @click="seleccionarTodos(false)" class="text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-200 px-3 py-2 rounded-lg transition">Desmarcar Todos</button>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-2">
+                                <label v-for="a in alumnosFiltradosGestor" :key="a.id" class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-indigo-50 transition" :class="gestorExamenes.alumnosSeleccionados.includes(a.nombre + ' ' + a.apellidos) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white'">
+                                    <input type="checkbox" :value="a.nombre + ' ' + a.apellidos" v-model="gestorExamenes.alumnosSeleccionados" class="w-5 h-5 accent-indigo-600 rounded">
+                                    <span class="font-semibold text-sm text-gray-800">{{ a.nombre }} {{ a.apellidos }}</span>
+                                </label>
+                            </div>
+                            <div v-if="alumnosFiltradosGestor.length === 0" class="text-center py-6 text-gray-400 italic">
+                                No se encontraron alumnos con esa búsqueda.
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 border-t bg-gray-50 flex justify-end items-center">
+                            <span class="text-sm font-bold text-gray-500 mr-4">{{ gestorExamenes.alumnosSeleccionados.length }} alumnos seleccionados</span>
+                            <button @click="guardarExamenesMasivos" :disabled="savingExamenes || !gestorExamenes.fecha || !gestorExamenes.asignatura || gestorExamenes.alumnosSeleccionados.length === 0" class="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 font-bold shadow-lg flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i v-if="savingExamenes" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
+                                {{ savingExamenes ? 'Creando...' : 'CREAR EXÁMENES' }}
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-200">
-                    <button type="button" onclick="cerrarModalPago()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-black transition shadow-sm">Guardar Pago</button>
+
+                <div v-if="selected" class="flex-1 overflow-y-auto p-8 pb-24">
+                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[700px] flex flex-col">
+                        
+                        <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                            <div class="flex items-center gap-4">
+                                <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
+                                    <i class="fas fa-arrow-left"></i> Volver al menú
+                                </button>
+                                
+                                <h2 class="text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
+                                    {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
+                                </h2>
+                                <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha Académica</span>
+                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos</span>
+                                <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div v-if="activeTab === 'ficha'" class="flex items-center gap-2 mr-4 bg-gray-100 p-1.5 rounded-lg select-none">
+                                    <span class="text-[10px] font-bold uppercase" :class="!form.baja ? 'text-green-600' : 'text-gray-400'">Alta</span>
+                                    <button @click="form.baja = !form.baja" class="relative w-10 h-5 rounded-full transition-colors focus:outline-none" :class="form.baja ? 'bg-gray-400' : 'bg-[#25D366]'">
+                                        <div class="absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform" :class="form.baja ? 'translate-x-5' : 'translate-x-0'"></div>
+                                    </button>
+                                </div>
+                                <button @click="cerrarFicha" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
+                                <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-6 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2">
+                                    <i v-if="saving" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
+                                    {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50">
+                            <h3 class="text-3xl font-black text-[#243c7a] mb-2">Panel del Alumno</h3>
+                            <p class="text-gray-500 mb-10 font-medium">¿Qué deseas gestionar para {{ form.nombre }}?</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl">
+                                <button @click="activeTab = 'ficha'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
+                                    <div class="bg-blue-50 p-5 rounded-full text-[#2b94cc] group-hover:bg-[#2b94cc] group-hover:text-white transition-colors duration-300">
+                                        <i class="fas fa-id-card text-4xl"></i>
+                                    </div>
+                                    <span class="text-xl font-extrabold text-[#243c7a]">Ficha Académica</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Modificar datos, contactos y credenciales.</span>
+                                </button>
+
+                                <button @click="activeTab = 'pagos'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
+                                    <div class="bg-pink-50 p-5 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors duration-300">
+                                        <i class="fas fa-euro-sign text-4xl px-2"></i>
+                                    </div>
+                                    <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Registrar cobros, recibos e ingresos fijos.</span>
+                                </button>
+
+                                <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
+                                    <div class="bg-indigo-50 p-5 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                                        <i class="fas fa-graduation-cap text-4xl px-1"></i>
+                                    </div>
+                                    <span class="text-xl font-extrabold text-[#243c7a]">Exámenes</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Consultar calendario y registrar notas.</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <form v-if="activeTab === 'ficha'" class="p-8 space-y-8 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
+                            <section class="grid grid-cols-4 gap-6">
+                                <div class="col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
+                                <input v-model="form.nombre" placeholder="Nombre" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input v-model="form.apellidos" placeholder="Apellidos" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input v-model="form.dni" placeholder="DNI/NIE" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input type="date" v-model="form.nacimiento" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                            </section>
+                            
+                            <section class="grid grid-cols-2 gap-6 bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                                <div class="col-span-2 font-bold text-[#2b94cc] border-b border-blue-200 pb-2"><i class="fas fa-laptop-code"></i> ACCESO AULES</div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 mb-1">Usuario</label>
+                                    <input v-model="form.usuario_aules" placeholder="Ej: lozano_leo" class="w-full p-3 rounded-lg border bg-white outline-none focus:border-[#2b94cc]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 mb-1">Contraseña</label>
+                                    <input v-model="form.pass_aules" placeholder="Contraseña de Aules" class="w-full p-3 rounded-lg border bg-white outline-none focus:border-[#2b94cc]">
+                                </div>
+                            </section>
+
+                            <section class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <input v-model="form.direccion" placeholder="Domicilio" class="col-span-3 p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.provincia" placeholder="Provincia" class="p-3 rounded-lg border bg-gray-50">
+                            </section>
+                            <section class="grid grid-cols-3 gap-6">
+                                <div class="col-span-3 font-bold text-[#243c7a] border-b pb-2">ACADÉMICO</div>
+                                <input v-model="form.colegio" placeholder="Colegio" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.curso" placeholder="Curso" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
+                            </section>
+                            <section class="grid grid-cols-2 gap-8">
+                                <div class="bg-green-50 p-6 rounded-2xl border border-green-200">
+                                    <div class="font-bold text-green-800 mb-4">FAMILIAR 1</div>
+                                    <div class="space-y-3">
+                                        <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
+                                        <select v-model="form.fam1_relacion" class="w-full p-2 border rounded bg-white"><option value="" disabled>Relación...</option><option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option></select>
+                                        <div class="flex gap-2">
+                                            <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
+                                            <a v-if="form.fam1_tlf" :href="'https://wa.me/34'+String(form.fam1_tlf).replace(/\s/g,'')" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600"><i class="fab fa-whatsapp"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-100 p-6 rounded-2xl border border-gray-200">
+                                    <div class="font-bold text-gray-600 mb-4">FAMILIAR 2</div>
+                                    <div class="space-y-3">
+                                        <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2 border rounded bg-white">
+                                        <select v-model="form.fam2_relacion" class="w-full p-2 border rounded bg-white"><option value="" disabled>Relación...</option><option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option></select>
+                                        <div class="flex gap-2">
+                                            <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2 border rounded">
+                                            <a v-if="form.fam2_tlf" :href="'https://wa.me/34'+String(form.fam2_tlf).replace(/\s/g,'')" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500"><i class="fab fa-whatsapp"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </form>
+
+                        <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
+                            
+                            <div class="bg-white p-6 rounded-xl border shadow-sm relative">
+                                <div class="flex justify-between items-center border-b pb-3 mb-5">
+                                    <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Pago</h3>
+                                    <button @click="imprimirTicketRapido" :disabled="importeCalculado === 0" class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg hover:bg-gray-300 font-bold text-xs flex items-center gap-2 disabled:opacity-50">
+                                        <i class="fas fa-print"></i> Imprimir Recibo
+                                    </button>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-5 mb-5">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                                        <input type="date" v-model="nuevoPago.fecha" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar</label>
+                                        <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
+                                            <option value="" disabled>Selecciona mes...</option>
+                                            <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div v-if="cuotaDetectada > 0" class="col-span-2 bg-blue-50 p-5 rounded-xl border border-blue-200 flex justify-between items-center mb-5 shadow-inner">
+                                    <div>
+                                        <span class="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Cuota Automática Detectada ({{ nuevoPago.mes }})</span>
+                                        <div class="text-3xl font-black text-[#243c7a]">{{ cuotaDetectada }} €</div>
+                                    </div>
+                                    <div class="text-right bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                                        <span class="text-[10px] font-bold text-gray-400 uppercase">Clasificación en Google Sheets</span><br>
+                                        <span class="text-sm font-bold" :class="tarifaClasificada.esOficial ? 'text-green-600' : 'text-orange-500'">
+                                            <i class="fas" :class="tarifaClasificada.esOficial ? 'fa-check-circle' : 'fa-code-branch'"></i> {{ tarifaClasificada.texto }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div v-if="cuotaDetectada === 0" class="mb-5 animate-fade">
+                                    <div class="bg-red-50 text-red-600 border border-red-200 p-3 rounded-lg text-xs font-bold mb-4 flex items-center gap-2">
+                                        <i class="fas fa-exclamation-triangle"></i> No hay cuota fijada para este mes. Puedes editarla en Ingresos Fijos, o registrar el cobro manualmente aquí:
+                                    </div>
+                                    
+                                    <div class="col-span-3 mb-4">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa / Opción Manual <span class="text-red-500 font-normal ml-1">(Para un extra exclusivo, pon "Sin Tarifa")</span></label>
+                                        <select v-model="nuevoPago.tarifaSelect" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
+                                            <option value="">-- Sin Tarifa Base (Solo Extra) --</option>
+                                            <option value="Opción 1 (40€)">Opción 1 (40€)</option>
+                                            <option value="Opción 2 (50€)">Opción 2 (50€)</option>
+                                            <option value="Opción 3 (80€)">Opción 3 (80€)</option>
+                                            <option value="Opción 4 (85€)">Opción 4 (85€)</option>
+                                            <option value="Opción 5 (110€)">Opción 5 (110€)</option>
+                                            <option value="Opción 6 (135€)">Opción 6 (135€)</option>
+                                            <option value="personalizada">✏️ Otra cantidad (Personalizada...)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div v-if="nuevoPago.tarifaSelect === 'personalizada'" class="col-span-3 grid grid-cols-3 gap-5 bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                        <div class="col-span-2">
+                                            <label class="block text-xs font-bold text-orange-600 mb-1">Concepto Personalizado</label>
+                                            <input v-model="nuevoPago.tarifaPersConcepto" placeholder="Ej: Medio mes Abril..." class="w-full p-2 rounded border border-orange-300 outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-orange-600 mb-1">Importe Tarifa (€)</label>
+                                            <input type="number" step="0.01" v-model="nuevoPago.tarifaPersImporte" placeholder="0.00" class="w-full p-2 rounded border border-orange-300 outline-none font-bold">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-4 gap-5 mb-4 p-5 border border-gray-100 rounded-xl bg-gray-50/50">
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-bold text-[#fa65c3] mb-1">Añadir Extra (€)</label>
+                                        <input type="number" step="0.01" v-model="nuevoPago.extraImporte" placeholder="0.00" class="w-full p-2.5 rounded-lg border border-[#fa65c3] outline-none focus:ring focus:ring-pink-200">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-[#fa65c3] mb-1">Concepto del Extra</label>
+                                        <input v-model="nuevoPago.extraConcepto" placeholder="Ej: Material escolar..." class="w-full p-2.5 rounded-lg border border-[#fa65c3] outline-none focus:ring focus:ring-pink-200">
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Método de Pago</label>
+                                        <select v-model="nuevoPago.metodo" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white">
+                                            <option value="" disabled>Método...</option>
+                                            <option>Efectivo</option>
+                                            <option>Tarjeta</option>
+                                            <option>Transferencia</option>
+                                            <option>Bizum</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between border-t pt-5 mt-2 bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-xl">
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total a Cobrar</span>
+                                        <span class="text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
+                                    </div>
+                                    <div class="flex items-center gap-6">
+                                        <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-white rounded-lg transition" :class="nuevoPago.generarPDF ? 'text-[#2b94cc]' : 'text-gray-400'">
+                                            <input type="checkbox" v-model="nuevoPago.generarPDF" class="w-5 h-5 rounded accent-[#2b94cc]">
+                                            <span class="font-extrabold text-xs uppercase select-none">Drive PDF</span>
+                                        </label>
+                                        <button @click="registrarPago" :disabled="savingPago || importeCalculado === 0" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2 transition-transform transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
+                                            {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-xl border border-[#2b94cc] shadow-sm">
+                                <h3 class="font-extrabold text-[#243c7a] mb-4 uppercase flex items-center gap-2 border-b pb-2">
+                                    <i class="fas fa-calendar-check text-[#2b94cc]"></i> Historial de Ingresos Fijos
+                                </h3>
+                                <div v-if="mesesFijosData.length === 0" class="text-gray-500 italic text-sm">El alumno no existe en la base de Ingresos Fijos.</div>
+                                <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div v-for="(mes, idx) in mesesFijosData" :key="idx" class="border rounded-xl p-4 flex flex-col items-center shadow-sm relative overflow-hidden transition-all duration-300" :class="[mes.bgClass, mes.cargando ? 'opacity-50 cursor-not-allowed' : '']">
+                                        <div class="text-xs font-extrabold text-gray-500 uppercase mb-1">{{ mes.mesNombre }}</div>
+                                        
+                                        <div v-if="!mes.cuota" class="flex flex-col items-center w-full mt-2">
+                                            <span class="text-xs text-gray-400 font-bold mb-1">SIN CUOTA</span>
+                                            <div class="flex gap-1 w-full">
+                                                <input type="number" v-model="mes.inputCuota" placeholder="€" :disabled="mes.cargando" class="w-full p-1 text-center border rounded font-bold text-[#243c7a] text-sm disabled:opacity-50">
+                                                <button @click="actualizarFijo(mes.mesNombre, 'cuota', mes.inputCuota, mes)" :disabled="mes.cargando" class="bg-[#2b94cc] text-white px-2 rounded hover:bg-[#207bb0] disabled:opacity-50"><i class="fas fa-save"></i></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div v-else class="flex flex-col items-center w-full">
+                                            <div v-if="!mes.unlocked" class="text-2xl font-black mb-2 relative group flex items-center gap-2" :class="mes.pagado ? 'text-green-700' : 'text-gray-700'">
+                                                {{ mes.cuota }}€
+                                                <button @click="mes.unlocked = true" title="Editar cuota" class="text-gray-300 hover:text-orange-500 transition opacity-0 group-hover:opacity-100 text-sm"><i class="fas fa-lock"></i></button>
+                                            </div>
+                                            <div v-else class="flex gap-1 w-full mb-2 animate-pop">
+                                                <input type="number" v-model="mes.inputCuota" :placeholder="mes.cuota" class="w-full p-1 text-center border-2 border-orange-300 rounded font-bold text-orange-600 outline-none">
+                                                <button @click="actualizarFijo(mes.mesNombre, 'cuota', mes.inputCuota || mes.cuota, mes)" class="bg-orange-500 text-white px-2 rounded hover:bg-orange-600"><i class="fas fa-save"></i></button>
+                                                <button @click="mes.unlocked = false" class="bg-gray-300 text-gray-700 px-2 rounded hover:bg-gray-400"><i class="fas fa-times"></i></button>
+                                            </div>
+
+                                            <button v-if="mes.pagado" @click="actualizarFijo(mes.mesNombre, 'estado', false, mes)" :disabled="mes.cargando" class="w-full py-1.5 bg-green-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-green-600 transition flex justify-center items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <i v-if="mes.cargando" class="fas fa-spinner fa-spin"></i><template v-else><i class="fas fa-check-circle"></i> PAGADO</template>
+                                            </button>
+                                            <button v-else @click="actualizarFijo(mes.mesNombre, 'estado', true, mes)" :disabled="mes.cargando" class="w-full py-1.5 bg-red-100 text-red-600 border border-red-300 rounded-lg font-bold text-xs uppercase hover:bg-red-200 transition flex justify-center items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <i v-if="mes.cargando" class="fas fa-spinner fa-spin"></i><template v-else>PENDIENTE</template>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="activeTab === 'examenes'" class="p-8 flex-1 bg-white">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-extrabold text-indigo-800 uppercase text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes y Notas</h3>
+                                <button @click="actualizarExamenes" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fas fa-sync-alt" :class="{'fa-spin': loadingExamenes}"></i> Actualizar
+                                </button>
+                            </div>
+
+                            <div v-if="loadingExamenes" class="text-center py-10 text-gray-400 font-semibold animate-pulse">
+                                Obteniendo datos seguros...
+                            </div>
+                            
+                            <div v-else-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">
+                                No se encontraron exámenes para este alumno.
+                            </div>
+
+                            <div v-else class="flex flex-col">
+                                <div v-for="(grupo, fecha) in examenesAgrupados" :key="fecha" class="timeline-row">
+                                    <div class="date-col">
+                                        <span class="day-num">{{ fecha.split('-')[2] }}</span>
+                                        <span class="day-name">{{ obtenerNombreMesCorto(fecha) }}</span>
+                                    </div>
+                                    <div class="exams-col">
+                                        <div v-for="(ex, index) in grupo" :key="index" class="exam-pill group">
+                                            <span class="pill-subject">{{ ex.asignatura }}</span>
+                                            
+                                            <div v-if="!ex.isEditing" class="flex items-center justify-between gap-2 mt-1 min-h-[24px]">
+                                                <span v-if="ex.nota" class="pill-grade" :class="Number(ex.nota.replace(',','.')) >= 5 ? 'text-green-600' : 'text-red-600'">
+                                                    Nota: {{ ex.nota }}
+                                                </span>
+                                                <span v-else class="pill-pending">Pendiente...</span>
+                                                <button @click="ex.isEditing = true" class="text-gray-300 hover:text-indigo-500 transition opacity-0 group-hover:opacity-100" title="Editar Examen">
+                                                    <i class="fas fa-pencil-alt text-xs"></i>
+                                                </button>
+                                            </div>
+
+                                            <div v-else class="flex flex-col gap-2 mt-2 animate-fade bg-indigo-50 p-3 rounded-lg border border-indigo-100 min-w-[200px] shadow-inner">
+                                                <div class="grid grid-cols-1 gap-2">
+                                                    <div>
+                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Fecha</label>
+                                                        <input type="date" v-model="ex.editFecha" class="w-full p-1 border border-indigo-200 rounded text-xs outline-none bg-white">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Asignatura</label>
+                                                        <input type="text" v-model="ex.editAsignatura" class="w-full p-1 border border-indigo-200 rounded text-xs outline-none bg-white">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[9px] font-bold text-indigo-800 uppercase mb-0.5">Nota (Vacío = Pendiente)</label>
+                                                        <div class="flex gap-1">
+                                                            <input type="text" v-model="ex.editNota" placeholder="Ej: 7.5" class="w-full p-1 border border-indigo-200 rounded text-xs font-bold outline-none bg-white" @keyup.enter="guardarNotaExamen(ex)">
+                                                            <button @click="guardarNotaExamen(ex)" :disabled="ex.saving" class="bg-indigo-500 text-white w-8 rounded hover:bg-indigo-600 disabled:opacity-50">
+                                                                <i v-if="ex.saving" class="fas fa-spinner fa-spin text-xs"></i><i v-else class="fas fa-check text-xs"></i>
+                                                            </button>
+                                                            <button @click="cancelarEdicionExamen(ex)" :disabled="ex.saving" class="bg-gray-300 text-gray-700 w-8 rounded hover:bg-gray-400 disabled:opacity-50">
+                                                                <i class="fas fa-times text-xs"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-            </form>
+                
+                <div v-else-if="activeTab !== 'gestor_examenes'" class="h-full flex flex-col items-center justify-center text-gray-400 select-none">
+                    <div class="bg-white p-10 rounded-full shadow-lg mb-6 animate-pulse">
+                        <i class="fas fa-folder-open text-6xl text-[#2b94cc] opacity-50"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-[#243c7a]">Selecciona un alumno</h2>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- SCRIPT DE LÓGICA Y CONEXIÓN -->
-    <script>
-        const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+    const { createApp } = Vue;
+    const ENCRYPTED_URL = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6T3hlWmIzTVotY21WZG5GMjBERmtXN0Vrem9aeXVLNlp3bExpSmltbWdsYjVpTXJDV3NCQWdGYndXTXJGN25ja3kvZXhlYw==";
+    
+    createApp({
+        data() {
+            return {
+                authenticated: false, passwordInput: '', sessionPass: '', loginError: false, errorMsg: '',
+                hasDeviceToken: false, apiUrl: '', 
+                list: [], fijosRaw: [], search: '', selected: null, isNew: false, 
+                loading: false, saving: false, savingPago: false,
+                showSuccess: false, successMessage: '', form: {}, showInactive: false,
+                activeTab: 'menu', 
+                nuevoPago: this.pagoVacio(),
+                mesesFijosData: [],
+                
+                examenesList: [],
+                loadingExamenes: false,
+                savingExamenes: false,
+                searchGestor: '',
+                gestorExamenes: {
+                    fecha: '',
+                    asignatura: '',
+                    alumnosSeleccionados: []
+                }
+            }
+        },
+        computed: {
+            filteredList() {
+                const t = this.normalizeName(this.search);
+                return this.list.filter(s => {
+                    if (!this.showInactive && s.baja) return false;
+                    const nombreCompleto = this.normalizeName(`${s.nombre || ""} ${s.apellidos || ""}`);
+                    return nombreCompleto.includes(t) || (s.dni || "").toLowerCase().includes(t);
+                });
+            },
 
-        let globalAlumnos = [];
-        let globalPagos = [];
-        let globalExamenes = [];
+            alumnosFiltradosGestor() {
+                const t = this.normalizeName(this.searchGestor);
+                return this.list.filter(a => {
+                    if (a.baja) return false;
+                    const nombreCompleto = this.normalizeName(`${a.nombre} ${a.apellidos}`);
+                    return nombreCompleto.includes(t);
+                });
+            },
+            
+            cuotaDetectada() {
+                if(!this.nuevoPago.mes || this.mesesFijosData.length === 0) return 0;
+                const m = this.mesesFijosData.find(x => x.mesNombre.toLowerCase().includes(this.nuevoPago.mes.toLowerCase()));
+                return m && m.cuota ? Number(m.cuota) : 0;
+            },
+            
+            tarifaClasificada() {
+                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
+                if(this.cuotaDetectada === 0) return { texto: "---", esOficial: false };
+                if(mapTarifas[this.cuotaDetectada]) return { texto: `Tarifa: ${mapTarifas[this.cuotaDetectada]}`, esOficial: true };
+                return { texto: "Clasificará como Extra", esOficial: false };
+            },
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarDatosGlobales();
-        });
+            importeCalculado() {
+                let tarifaBase = 0;
+                if (this.cuotaDetectada > 0) {
+                    tarifaBase = this.cuotaDetectada;
+                } else {
+                    if (this.nuevoPago.tarifaSelect === 'personalizada') {
+                        tarifaBase = Number(this.nuevoPago.tarifaPersImporte) || 0;
+                    } else if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') {
+                        const match = this.nuevoPago.tarifaSelect.match(/\((-?\d+(?:\.\d+)?)€\)/);
+                        if(match) tarifaBase = Number(match[1]);
+                    }
+                }
+                const extra = Number(this.nuevoPago.extraImporte) || 0;
+                return parseFloat((tarifaBase + extra).toFixed(2));
+            },
 
-        async function cargarDatosGlobales() {
-            try {
-                const resAlumnos = await _supabase.from('listado_alumnos').select('*');
-                globalAlumnos = resAlumnos.data || [];
+            examenesAlumno() {
+                if (!this.selected) return [];
+                const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                return this.examenesList.filter(ex => this.normalizeName(ex.alumno) === nombreLimpio);
+            },
 
-                const resPagos = await _supabase.from('pagos').select('*').order('id', { ascending: false });
-                globalPagos = resPagos.data || [];
+            examenesAgrupados() {
+                const grupos = {};
+                this.examenesAlumno.forEach(ex => {
+                    let fechaOrd = ex.fecha.replace(/\//g, '-');
+                    if (!grupos[fechaOrd]) grupos[fechaOrd] = [];
+                    grupos[fechaOrd].push(ex);
+                });
+                return Object.keys(grupos).sort((a,b) => new Date(b) - new Date(a)).reduce((obj, key) => {
+                    obj[key] = grupos[key];
+                    return obj;
+                }, {});
+            }
+        },
+        watch: {
+            'nuevoPago.fecha'(newFecha) {
+                if(newFecha) {
+                    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                    const mIndex = new Date(newFecha).getMonth();
+                    this.nuevoPago.mes = meses[mIndex];
+                }
+            },
+            'nuevoPago.metodo'(newMetodo) {
+                if(newMetodo === 'Bizum') this.nuevoPago.generarPDF = true;
+                if(newMetodo === 'Efectivo') this.nuevoPago.generarPDF = false;
+            },
+            fijosRaw: {
+                handler() { this.buildMesesFijos(); },
+                deep: true
+            }
+        },
+        methods: {
+            normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
+            pagoVacio() {
+                const hoy = new Date().toISOString().split('T')[0];
+                const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                return { fecha: hoy, mes: meses[new Date().getMonth()], metodo: '', tarifaSelect: '', tarifaPersConcepto: '', tarifaPersImporte: '', extraConcepto: '', extraImporte: '', generarPDF: false };
+            },
+            
+            parseDateToISO(dStr) {
+                if(!dStr) return "";
+                let cleanStr = String(dStr).trim().split(' ')[0]; 
+                if(cleanStr.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/)) {
+                    let p = cleanStr.split(/[\/\-]/);
+                    return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                }
+                if(cleanStr.includes('T')) return cleanStr.split('T')[0];
+                return cleanStr;
+            },
+            
+            buildMesesFijos() {
+                this.mesesFijosData = [];
+                if(!this.form.nombre || this.fijosRaw.length === 0) return;
+                const headers = this.fijosRaw[0];
+                const nombreCompleto = this.normalizeName(this.form.nombre + " " + this.form.apellidos);
+                
+                const filaAlumno = this.fijosRaw.find((row, idx) => idx > 0 && this.normalizeName(row[1]) === nombreCompleto);
+                if(!filaAlumno) return;
+
+                let meses = [];
+                for(let i = 2; i < headers.length; i += 2) {
+                    if(headers[i]) {
+                        const valCuota = filaAlumno[i] !== "" ? filaAlumno[i] : null;
+                        const estaPagado = String(filaAlumno[i+1]).toUpperCase() === 'TRUE' || filaAlumno[i+1] === true;
+                        let bg = valCuota ? (estaPagado ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200') : 'bg-gray-100 border-dashed border-gray-300';
+                        meses.push({ mesNombre: headers[i], cuota: valCuota, pagado: estaPagado, inputCuota: '', cargando: false, bgClass: bg, unlocked: false });
+                    }
+                }
+                this.mesesFijosData = meses;
+            },
+
+            async login() {
+                if (!this.passwordInput) return;
+                this.loading = true;
+                this.loginError = false;
+                this.apiUrl = atob(ENCRYPTED_URL);
+
+                if (this.passwordInput.includes('ACTIVAR')) {
+                    try {
+                        const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'activate', code: this.passwordInput }) });
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            localStorage.setItem('academia_device_token', json.token);
+                            this.hasDeviceToken = true;
+                            this.passwordInput = '';
+                            alert('✅ Dispositivo VINCULADO de forma segura.');
+                        } else {
+                            this.loginError = true; this.errorMsg = 'Código de activación incorrecto o expirado.';
+                        }
+                    } catch (e) { this.loginError = true; this.errorMsg = 'Error conectando con el servidor.'; }
+                    this.loading = false;
+                    return;
+                }
+
+                const savedToken = localStorage.getItem('academia_device_token');
+                if (!savedToken) {
+                    this.loginError = true; this.errorMsg = 'ACCESO DENEGADO. Equipo no vinculado.';
+                    this.loading = false; return;
+                }
 
                 try {
-                    const resEx = await _supabase.from('examenes').select('*');
-                    globalExamenes = resEx.data || [];
-                } catch(e) { globalExamenes = []; }
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'fetch_data', pass: this.passwordInput, device_token: savedToken }) });
+                    const json = await res.json();
+                    
+                    if (json.status === 'success') {
+                        this.sessionPass = this.passwordInput; 
+                        this.list = json.data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
+                        this.fijosRaw = json.fijos || [];
+                        
+                        this.procesarExamenesSeguros(json.examenes || []);
 
-                document.getElementById('contador-alumnos').innerText = globalAlumnos.length;
-                renderizarSidebarAlumnos(globalAlumnos);
-                renderizarTablaPagosGlobal(globalPagos);
-            } catch (err) {
-                console.error("Error de carga:", err);
-            }
-        }
+                        this.authenticated = true;
+                    } else {
+                        this.loginError = true; this.errorMsg = json.message;
+                        this.passwordInput = '';
+                    }
+                } catch (e) { this.loginError = true; this.errorMsg = 'Error de conexión con la base de datos segura.'; }
+                this.loading = false;
+            },
 
-        function cambiarPestana(pestana) {
-            const secAlumnos = document.getElementById('seccion-alumnos');
-            const secPagos = document.getElementById('seccion-pagos');
-            const secRecibo = document.getElementById('seccion-recibo');
-            const btnAlumnos = document.getElementById('btn-tab-alumnos');
-            const btnPagos = document.getElementById('btn-tab-pagos');
+            logout() { 
+                this.sessionPass = '';
+                location.reload(); 
+            },
+            
+            getSecurePayload(action, extraData = {}) {
+                return {
+                    action: action,
+                    pass: this.sessionPass,
+                    device_token: localStorage.getItem('academia_device_token'),
+                    ...extraData
+                };
+            },
 
-            secAlumnos.classList.add('hidden');
-            secPagos.classList.add('hidden');
-            secRecibo.classList.add('hidden');
+            abrirGestorExamenes() {
+                this.selected = null;
+                this.activeTab = 'gestor_examenes';
+                this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; 
+                this.searchGestor = ''; 
+            },
 
-            if (pestana === 'alumnos') {
-                secAlumnos.classList.remove('hidden');
-                btnAlumnos.className = "px-4 py-1.5 rounded-md text-xs font-bold transition bg-slate-700 text-white shadow-sm";
-                btnPagos.className = "px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
-            } else if (pestana === 'pagos') {
-                secPagos.classList.remove('hidden');
-                btnPagos.className = "px-4 py-1.5 rounded-md text-xs font-bold transition bg-slate-700 text-white shadow-sm";
-                btnAlumnos.className = "px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
-            } else if (pestana === 'recibo') {
-                secRecibo.classList.remove('hidden');
-            }
-        }
-
-        function renderizarSidebarAlumnos(alumnos) {
-            const contenedor = document.getElementById('lista-alumnos-sidebar');
-            contenedor.innerHTML = '';
-
-            if (alumnos.length === 0) {
-                contenedor.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No se encontraron alumnos.</p>`;
-                return;
-            }
-
-            alumnos.forEach(alum => {
-                const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`.trim();
-                const div = document.createElement('div');
-                div.className = "p-2.5 rounded-lg border border-slate-200 hover:border-slate-900 hover:bg-slate-50 cursor-pointer transition flex justify-between items-center";
-                div.onclick = () => seleccionarAlumno(alum);
-                div.innerHTML = `
-                    <div>
-                        <p class="text-xs font-bold text-slate-800">${nombreCompleto}</p>
-                        <p class="text-[10px] text-slate-500 font-mono">${alum.dni || 'Sin DNI'}</p>
-                    </div>
-                    <span class="w-2 h-2 rounded-full ${alum.baja ? 'bg-red-400' : 'bg-emerald-500'}"></span>
-                `;
-                contenedor.appendChild(div);
-            });
-        }
-
-        function filtrarAlumnos() {
-            const texto = document.getElementById('input-buscar-alumno').value.toLowerCase();
-            const filtrados = globalAlumnos.filter(alum => {
-                const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`.toLowerCase();
-                const dni = String(alum.dni || '').toLowerCase();
-                return nombreCompleto.includes(texto) || dni.includes(texto);
-            });
-            renderizarSidebarAlumnos(filtrados);
-        }
-
-        function seleccionarAlumno(alum) {
-            document.getElementById('expediente-vacio').classList.add('hidden');
-            document.getElementById('expediente-contenido').classList.remove('hidden');
-
-            const nombreCompleto = `${alum.nombre || ''} ${alum.apellidos || ''}`;
-            document.getElementById('exp-nombre').innerText = nombreCompleto;
-            document.getElementById('exp-dni').innerText = alum.dni || '-';
-            document.getElementById('exp-colegio').innerText = alum.colegio || '-';
-            document.getElementById('exp-curso').innerText = alum.curso || '-';
-            document.getElementById('exp-tlf').innerText = alum.tlf || '-';
-            document.getElementById('exp-aules').innerText = alum.usuario_aules || 'Sin usuario';
-            document.getElementById('exp-direccion').innerText = `${alum.direccion || ''} (${alum.poblacion || ''})`;
-
-            const badgeEstado = document.getElementById('exp-estado');
-            badgeEstado.innerText = alum.baja ? 'Baja' : 'Activo';
-            badgeEstado.className = `px-2.5 py-1 rounded text-[10px] font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}`;
-
-            // Pagos del alumno
-            const pagosAlumno = globalPagos.filter(p => normalizeName(p.alumno) === normalizeName(nombreCompleto));
-            const tbodyPagos = document.getElementById('exp-tabla-pagos');
-            tbodyPagos.innerHTML = '';
-            if (pagosAlumno.length === 0) {
-                tbodyPagos.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Sin pagos registrados.</td></tr>`;
-            } else {
-                pagosAlumno.forEach(p => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="p-2.5 font-mono text-[10px] font-bold">${p.factura_id || 'S/F'}</td>
-                        <td class="p-2.5"><strong>${p.tarifa}</strong>${p.extras ? '<br><span class="text-slate-400 text-[10px]">'+p.extras+'</span>' : ''}</td>
-                        <td class="p-2.5 text-slate-600">${p.fecha_pago}</td>
-                        <td class="p-2.5 font-bold">${p.importe}</td>
-                        <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.metodo_pago==='BIZUM'?'bg-blue-100 text-blue-700':'bg-emerald-100 text-emerald-800'}">${p.metodo_pago}</span></td>
-                        <td class="p-2.5 text-center">
-                            <button onclick='mostrarReciboEnPantalla(${JSON.stringify(p)})' class="bg-slate-100 hover:bg-slate-900 hover:text-white p-1.5 rounded transition text-[10px] font-bold">🖨️</button>
-                        </td>
-                    `;
-                    tbodyPagos.appendChild(tr);
-                });
-            }
-
-            // Exámenes del alumno
-            const examenesAlumno = globalExamenes.filter(ex => normalizeName(ex.alumno) === normalizeName(nombreCompleto));
-            const tbodyEx = document.getElementById('exp-tabla-examenes');
-            tbodyEx.innerHTML = '';
-            if (examenesAlumno.length === 0) {
-                tbodyEx.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400">Sin exámenes registrados.</td></tr>`;
-            } else {
-                examenesAlumno.forEach(ex => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="p-2.5 text-slate-600">${ex.fecha}</td>
-                        <td class="p-2.5 font-semibold">${ex.asignatura}</td>
-                        <td class="p-2.5 text-center font-bold">${ex.nota || 'Pendiente'}</td>
-                    `;
-                    tbodyEx.appendChild(tr);
-                });
-            }
-        }
-
-        function normalizeName(str) {
-            return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ");
-        }
-
-        function renderizarTablaPagosGlobal(pagos) {
-            const tbody = document.getElementById('tabla-pagos-body');
-            tbody.innerHTML = '';
-
-            if (!pagos || pagos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No hay pagos registrados.</td></tr>`;
-                return;
-            }
-
-            pagos.forEach(pago => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-                tr.innerHTML = `
-                    <td class="p-3.5 font-mono text-xs font-bold text-slate-700">${pago.factura_id || '<span class="text-slate-400 italic">Sin factura</span>'}</td>
-                    <td class="p-3.5 font-semibold text-slate-800">${pago.alumno}</td>
-                    <td class="p-3.5 text-slate-600 text-xs">
-                        <span class="font-medium">${pago.tarifa}</span>
-                        ${pago.extras ? `<br><span class="text-slate-400">${pago.extras}</span>` : ''}
-                    </td>
-                    <td class="p-3.5 text-slate-600 text-xs">${pago.fecha_pago}</td>
-                    <td class="p-3.5 font-bold text-slate-900">${pago.importe}</td>
-                    <td class="p-3.5 text-slate-600 text-xs">${pago.mes}</td>
-                    <td class="p-3.5 text-center">
-                        <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase ${pago.metodo_pago === 'BIZUM' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-800'}">
-                            ${pago.metodo_pago}
-                        </span>
-                    </td>
-                    <td class="p-3.5 text-center">
-                        <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-slate-900 rounded cursor-pointer">
-                    </td>
-                    <td class="p-3.5 text-center">
-                        <button onclick='mostrarReciboEnPantalla(${JSON.stringify(pago)})' class="bg-slate-100 hover:bg-slate-900 hover:text-white p-2 rounded-lg transition text-xs font-bold">
-                            🖨️ Recibo
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function actualizarRegistrado(idPago, valor) {
-            const { error } = await _supabase.from('pagos').update({ registrado: valor }).eq('id', idPago);
-            if (error) alert("Error al actualizar: " + error.message);
-        }
-
-        function abrirModalPago() {
-            document.getElementById('form-nuevo-pago').reset();
-            document.getElementById('input-fecha').valueAsDate = new Date();
-            document.getElementById('modal-pago').classList.remove('hidden');
-        }
-        function cerrarModalPago() { document.getElementById('modal-pago').classList.add('hidden'); }
-
-        async function generarFacturaIdAutomatico(nombreAlumno, fechaPago) {
-            const fecha = new Date(fechaPago);
-            const mesIndex = fecha.getMonth();
-            const { data } = await _supabase.from('pagos').select('factura_id');
-            let maxGen = 0; let maxAlumno = 0;
-            const nomAbrev = String(nombreAlumno).substring(0, 3).toUpperCase();
-            const mesesAbrev = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-            const mesAbrev = mesesAbrev[mesIndex];
-
-            (data || []).forEach(row => {
-                let fid = row.factura_id;
-                if (fid) {
-                    let mGen = fid.match(/^(\d+)-/);
-                    if (mGen) maxGen = Math.max(maxGen, parseInt(mGen[1]));
-                    let mAlu = fid.match(new RegExp(`-${nomAbrev}-${mesAbrev}-(\\d+)`));
-                    if (mAlu) maxAlumno = Math.max(maxAlumno, parseInt(mAlu[1]));
+            seleccionarTodos(marcar) {
+                if(marcar) {
+                    this.alumnosFiltradosGestor.forEach(a => {
+                        const nombreCompleto = a.nombre + ' ' + a.apellidos;
+                        if (!this.gestorExamenes.alumnosSeleccionados.includes(nombreCompleto)) {
+                            this.gestorExamenes.alumnosSeleccionados.push(nombreCompleto);
+                        }
+                    });
+                } else {
+                    this.gestorExamenes.alumnosSeleccionados = [];
                 }
-            });
-            return `${maxGen + 1}-${nomAbrev}-${mesAbrev}-${(maxAlumno + 1).toString().padStart(2, '0')}`;
-        }
+            },
 
-        async function procesarNuevoPago(event) {
-            event.preventDefault();
-            const alumno = document.getElementById('input-pago-alumno').value.trim();
-            const tarifa = document.getElementById('input-tarifa').value.trim();
-            const extras = document.getElementById('input-extras').value.trim();
-            const importe = document.getElementById('input-importe').value.trim();
-            const fecha_pago = document.getElementById('input-fecha').value;
-            const mes = document.getElementById('input-mes').value.trim();
-            const metodo_pago = document.getElementById('input-metodo').value;
+            cerrarFicha() {
+                this.selected = null;
+                this.activeTab = 'menu';
+            },
 
-            let facturaIdFinal = null;
-            if (metodo_pago === 'BIZUM') {
-                facturaIdFinal = await generarFacturaIdAutomatico(alumno, fecha_pago);
+            createNew() {
+                this.isNew = true; 
+                this.activeTab = 'ficha';
+                this.form = { nombre:'', apellidos:'', dni:'', nacimiento:'', direccion:'', cp:'', poblacion:'', provincia:'', colegio:'', curso:'', tlf:'', fam1_nombre:'', fam1_relacion:'', fam1_tlf:'', fam2_nombre:'', fam2_relacion:'', fam2_tlf:'', baja: false, usuario_aules:'', pass_aules:'' };
+                this.selected = { id: 'TEMP' };
+                this.buildMesesFijos(); 
+            },
+            
+            selectStudent(s) {
+                try {
+                    this.form = JSON.parse(JSON.stringify(s));
+                    this.isNew = false; 
+                    this.activeTab = 'menu'; 
+                    this.selected = s;
+                    
+                    this.buildMesesFijos(); 
+                    
+                    this.nuevoPago = this.pagoVacio(); 
+                    const mesActual = this.nuevoPago.mes;
+                    this.nuevoPago.mes = ''; 
+                    this.$nextTick(() => { this.nuevoPago.mes = mesActual; });
+                    
+                    this.form.fam1_tlf = String(this.form.fam1_tlf || ''); this.form.fam2_tlf = String(this.form.fam2_tlf || ''); this.form.tlf = String(this.form.tlf || '');
+                    try {
+                        let val = this.form.nacimiento;
+                        if (val && typeof val === 'string') {
+                            if (val.includes('/')) { const p = val.trim().split('/'); if (p.length === 3) this.form.nacimiento = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; } 
+                            else if (val.includes('T')) this.form.nacimiento = val.split('T')[0];
+                        }
+                    } catch(errDate) { this.form.nacimiento = ''; }
+                } catch(e) {}
+            },
+
+            async saveData() {
+                this.saving = true;
+                const payload = this.getSecurePayload(this.isNew ? 'create' : 'update', { ...this.form, id: this.selected.id });
+                try {
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        this.showSuccess = true; this.successMessage = 'Ficha Guardada'; 
+                        
+                        const res2 = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(this.getSecurePayload('fetch_data')) });
+                        const json2 = await res2.json();
+                        if(json2.status === 'success') {
+                            this.list = json2.data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
+                            this.fijosRaw = json2.fijos || [];
+                        }
+                        
+                        setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
+                    } else { alert("Servidor rechazó la acción: " + json.message); this.saving = false; }
+                } catch (e) { alert('Error de red al guardar la ficha'); this.saving = false; }
+            },
+
+            async actualizarFijo(mesHeader, tipo, valor, objRef) {
+                if(tipo === 'cuota' && !valor) return alert("Introduce una cuota válida");
+                objRef.cargando = true;
+                const payload = this.getSecurePayload('update_ingreso_fijo', { alumno: this.form.nombre + ' ' + this.form.apellidos, mes_header: mesHeader, tipo: tipo, valor: valor });
+                try {
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                         const res2 = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(this.getSecurePayload('fetch_data')) });
+                         const json2 = await res2.json();
+                         if(json2.status === 'success') this.fijosRaw = json2.fijos || [];
+                    } else alert("Servidor rechazó la acción: " + json.message);
+                } catch (e) { alert('Error de red actualizando estado'); }
+                objRef.cargando = false;
+                objRef.unlocked = false; 
+            },
+
+            async registrarPago() {
+                this.savingPago = true;
+                
+                let tarifaFinal = "";
+                let partesExtra = [];
+                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
+
+                if (this.cuotaDetectada > 0) {
+                    if (mapTarifas[this.cuotaDetectada]) {
+                        tarifaFinal = `${mapTarifas[this.cuotaDetectada]} (${this.cuotaDetectada}€)`;
+                    } else {
+                        partesExtra.push(`Cuota mensual (${this.cuotaDetectada}€)`);
+                    }
+                } 
+                else {
+                    if (this.nuevoPago.tarifaSelect === 'personalizada') {
+                        let numTarifa = Number(this.nuevoPago.tarifaPersImporte);
+                        if (numTarifa && numTarifa !== 0) { 
+                            let conceptoPers = this.nuevoPago.tarifaPersConcepto ? this.nuevoPago.tarifaPersConcepto.trim() : "Tarifa";
+                            tarifaFinal = `${conceptoPers} (${numTarifa}€)`;
+                        }
+                    } else if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') { 
+                        tarifaFinal = this.nuevoPago.tarifaSelect; 
+                    }
+                }
+
+                let numExtraManual = Number(this.nuevoPago.extraImporte) || 0;
+                if (numExtraManual > 0) {
+                    let concepto = (this.nuevoPago.extraConcepto || 'Extra').trim();
+                    partesExtra.push(`${concepto} (${numExtraManual}€)`);
+                }
+
+                let extraFinal = partesExtra.join(" + ");
+
+                const payload = this.getSecurePayload('create_pago', {
+                    alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: tarifaFinal, 
+                    fecha: this.nuevoPago.fecha, 
+                    extras: extraFinal,
+                    importe: this.importeCalculado, 
+                    mes: this.nuevoPago.mes, 
+                    metodo: this.nuevoPago.metodo, 
+                    generarPDF: this.nuevoPago.generarPDF
+                });
+
+                try {
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        this.showSuccess = true; this.successMessage = '¡Pago registrado correctamente!';
+                        this.nuevoPago = this.pagoVacio(); 
+                        setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
+                    } else { alert("Servidor rechazó el pago:\n\n" + json.message); this.savingPago = false; }
+                } catch (e) { alert('Error de conexión enviando el pago'); this.savingPago = false; }
+            },
+            
+            imprimirTicketRapido() {
+                const numRecibo = `TEMP-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}).replace(':','')}`;
+                const fechaE = new Date(this.nuevoPago.fecha).toLocaleDateString('es-ES');
+                const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
+                
+                let filasHTML = '';
+                const importeTotalStr = this.importeCalculado.toFixed(2).replace('.', ',') + " €";
+                
+                let tarifaFinal = "";
+                let partesExtra = [];
+                const mapTarifas = { 40: "Opción 1", 50: "Opción 2", 80: "Opción 3", 85: "Opción 4", 110: "Opción 5", 135: "Opción 6" };
+
+                if (this.cuotaDetectada > 0) {
+                    if (mapTarifas[this.cuotaDetectada]) {
+                        tarifaFinal = `${mapTarifas[this.cuotaDetectada]} (${this.cuotaDetectada}€)`;
+                        filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${mapTarifas[this.cuotaDetectada]}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${this.cuotaDetectada.toFixed(2).replace('.',',')} €</td></tr>`;
+                    } else {
+                        partesExtra.push({concepto: "Cuota mensual", importe: this.cuotaDetectada});
+                    }
+                } else {
+                    if (this.nuevoPago.tarifaSelect && this.nuevoPago.tarifaSelect !== '') {
+                        let numTarifa = Number(this.nuevoPago.tarifaPersImporte);
+                        if (!(this.nuevoPago.tarifaSelect === 'personalizada' && (!numTarifa || numTarifa === 0))) {
+                            let desc = this.nuevoPago.tarifaSelect === 'personalizada' ? (this.nuevoPago.tarifaPersConcepto || 'Tarifa') : this.nuevoPago.tarifaSelect;
+                            let tarifaNum = this.nuevoPago.tarifaSelect === 'personalizada' ? numTarifa.toFixed(2).replace('.', ',') : this.nuevoPago.tarifaSelect.match(/\((-?\d+(?:\.\d+)?)€\)/)[1].replace('.', ',');
+                            filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${desc}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${tarifaNum} €</td></tr>`;
+                        }
+                    }
+                }
+
+                let numExtraManual = Number(this.nuevoPago.extraImporte) || 0;
+                if (numExtraManual > 0) {
+                    partesExtra.push({concepto: (this.nuevoPago.extraConcepto || 'Extra').trim(), importe: numExtraManual});
+                }
+
+                partesExtra.forEach(ext => {
+                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${ext.concepto}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${ext.importe.toFixed(2).replace('.', ',')} €</td></tr>`;
+                });
+                
+                document.getElementById('ticket-data').innerHTML = `
+                    <div style="font-family: 'Helvetica', sans-serif; margin: 0; padding: 30px; color: #000; min-height: 850px; display: flex; flex-direction: column; border: 2px solid #000; position: relative; background: #fff;">
+                        <img src="${logoUrl}" style="position: absolute; top: 300px; left: 50%; margin-left: -200px; width: 400px; opacity: 0.05; filter: grayscale(100%); z-index: -1;" />
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="padding:15px; vertical-align: top;"><img src="${logoUrl}" style="width: 120px; filter: grayscale(100%);" /></td><td style="text-align: right; font-size: 11px; padding:15px; vertical-align: top;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td></tr></table>
+                        <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; padding:10px 0;"><tr><td style="padding:10px; vertical-align: top;">Nº RECIBO<span style="display: block; font-size: 14px; margin-top: 4px;">${numRecibo}</span></td><td style="text-align:center;padding:10px; vertical-align: top;">FECHA EMISIÓN<span style="display: block; font-size: 14px; margin-top: 4px;">${fechaE}</span></td><td style="text-align:right;padding:10px; vertical-align: top;">FORMA DE PAGO<span style="display: block; font-size: 14px; margin-top: 4px;">${(this.nuevoPago.metodo || 'NO ESPECIFICADA').toUpperCase()}</span></td></tr></table>
+                        <div style="border-bottom: 2px solid #000; padding: 15px;"><p style="font-size:10px;margin:0">RECIBÍ DE:</p><h3 style="margin:5px 0;text-transform:uppercase">${this.form.nombre} ${this.form.apellidos}</h3></div>
+                        <table style="width: 100%; border-collapse: collapse;"><tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>${filasHTML}<tr style="height: 250px;"><td colspan="2"></td></tr><tr><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 12px; padding: 15px;">TOTAL EUROS</td><td style="border-top: 2px solid #000; border-bottom: 2px solid #000; background: #eee; font-weight: bold; font-size: 20px; text-align: right; padding: 15px;">${importeTotalStr}</td></tr></table>
+                        <table style="margin-top: 30px; margin-bottom: 20px; width: 100%; border-collapse: collapse;"><tr><td style="font-size:10px;font-weight:bold;width:60%;padding:15px; vertical-align: top;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</td><td style="text-align:center;position:relative;padding:15px; vertical-align: top;"><div style="border-top:1px dashed #000;margin-top:40px;font-size:10px;display:inline-block;padding-top:10px;width: 150px;">FDO. CSE ELISA GUNDÍN</div></td></tr></table>
+                        <div style="font-size: 8px; text-align: justify; padding-top: 15px; margin-top: auto; border-top: 2px solid #000; line-height: 1.2; width: 100%; box-sizing: border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
+                    </div>`;
+                window.print();
+            },
+
+            procesarExamenesSeguros(examenesArray) {
+                this.examenesList = examenesArray.map(row => {
+                    let isoDate = this.parseDateToISO(row[0]);
+                    let asig = row[1];
+                    let notaEx = row[3];
+                    return {
+                        fecha: isoDate,
+                        asignatura: asig,
+                        alumno: row[2],
+                        nota: notaEx,
+                        isEditing: false, 
+                        editFecha: isoDate,
+                        editAsignatura: asig,
+                        editNota: notaEx,
+                        saving: false 
+                    };
+                }).filter(item => item.alumno !== "");
+            },
+
+            async actualizarExamenes() {
+                this.loadingExamenes = true;
+                try {
+                    const payload = this.getSecurePayload('fetch_data');
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    
+                    if (json.status === 'success') {
+                        this.procesarExamenesSeguros(json.examenes || []);
+                    }
+                } catch (e) {
+                    console.error("Error recargando exámenes de forma segura.");
+                }
+                this.loadingExamenes = false;
+            },
+
+            async guardarExamenesMasivos() {
+                this.savingExamenes = true;
+                const payload = this.getSecurePayload('create_examenes_masivos', {
+                    fecha: this.gestorExamenes.fecha,
+                    asignatura: this.gestorExamenes.asignatura,
+                    alumnos: this.gestorExamenes.alumnosSeleccionados
+                });
+
+                try {
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    
+                    if (json.status === 'success') {
+                        this.showSuccess = true; 
+                        this.successMessage = `Se han creado ${this.gestorExamenes.alumnosSeleccionados.length} exámenes correctamente.`;
+                        
+                        this.gestorExamenes.asignatura = '';
+                        this.gestorExamenes.alumnosSeleccionados = [];
+                        this.searchGestor = ''; 
+                        this.actualizarExamenes();
+
+                        setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 3000);
+                    } else { 
+                        alert("Servidor rechazó la acción:\n" + json.message); 
+                        this.savingExamenes = false; 
+                    }
+                } catch (e) { 
+                    alert('Error de red creando exámenes masivos'); 
+                    this.savingExamenes = false; 
+                }
+            },
+
+            async guardarNotaExamen(ex) {
+                ex.saving = true;
+                const payload = this.getSecurePayload('update_nota_examen', {
+                    alumno: ex.alumno,
+                    old_fecha: ex.fecha,           
+                    old_asignatura: ex.asignatura,   
+                    new_fecha: ex.editFecha,         
+                    new_asignatura: ex.editAsignatura, 
+                    nota: ex.editNota
+                });
+
+                try {
+                    const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    
+                    if (json.status === 'success') {
+                        ex.nota = ex.editNota; 
+                        ex.fecha = ex.editFecha;
+                        ex.asignatura = ex.editAsignatura;
+                        ex.isEditing = false;
+                    } else {
+                        alert("Error desde Google Sheets:\n" + json.message);
+                    }
+                } catch (e) { 
+                    alert("Error de conexión guardando la nota."); 
+                }
+                ex.saving = false;
+            },
+
+            cancelarEdicionExamen(ex) {
+                ex.isEditing = false; 
+                ex.editNota = ex.nota;
+                ex.editFecha = ex.fecha;
+                ex.editAsignatura = ex.asignatura;
+            },
+
+            obtenerNombreMesCorto(fechaIso) {
+                try {
+                    const date = new Date(fechaIso);
+                    return date.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
+                } catch (e) {
+                    return "";
+                }
             }
-
-            const { error } = await _supabase.from('pagos').insert([{
-                alumno, tarifa, fecha_pago, extras: extras || null, importe, mes, metodo_pago, registrado: false, factura_id: facturaIdFinal
-            }]);
-
-            if (error) {
-                alert("Error al guardar pago: " + error.message);
-                return;
-            }
-            cerrarModalPago();
-            cargarDatosGlobales();
+        },
+        mounted() { 
+            this.hasDeviceToken = !!localStorage.getItem('academia_device_token');
         }
-
-        function mostrarReciboEnPantalla(pago) {
-            const contenedor = document.getElementById('recibo-contenido-interno');
-            contenedor.innerHTML = `
-                <div>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td><strong>CENTRO DE ESTUDIOS</strong></td>
-                            <td style="text-align: right; font-size: 11px;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
-                        </tr>
-                    </table>
-                    <table style="width: 100%; border-collapse: collapse; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 10px; text-transform: uppercase; margin-top: 20px;">
-                        <tr>
-                            <td style="padding: 10px;">Nº RECIBO<br><span style="font-size: 14px;">${pago.factura_id || 'S/N (Efectivo)'}</span></td>
-                            <td style="text-align: center; padding: 10px;">FECHA EMISIÓN<br><span style="font-size: 14px;">${pago.fecha_pago}</span></td>
-                            <td style="text-align: right; padding: 10px;">FORMA DE PAGO<br><span style="font-size: 14px;">${pago.metodo_pago}</span></td>
-                        </tr>
-                    </table>
-                    <div style="border-bottom: 2px solid #000; padding: 15px 0;">
-                        <p style="font-size: 10px; margin: 0;">RECIBÍ DE:</p>
-                        <h3 style="margin: 5px 0; text-transform: uppercase;">${pago.alumno}</h3>
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr>
-                            <th style="text-align: left; border-bottom: 1px solid #000; padding: 10px 0; font-size: 11px;">CONCEPTO</th>
-                            <th style="text-align: right; border-bottom: 1px solid #000; padding: 10px 0; font-size: 11px;">IMPORTE</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;"><strong>${pago.tarifa}</strong><br><small style="color:#555;">Curso académico vigente</small></td>
-                            <td style="text-align: right; font-weight: bold; padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;">${pago.importe}</td>
-                        </tr>
-                        ${pago.extras ? `<tr><td style="padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;"><strong>${pago.extras}</strong></td><td style="text-align: right; font-weight: bold; padding: 12px 0; border-bottom: 1px solid #000; font-size: 12px;">Incluido</td></tr>` : ''}
-                        <tr style="height: 150px;"><td colspan="2"></td></tr>
-                        <tr style="background: #eee;">
-                            <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px; font-weight: bold; font-size: 12px;">TOTAL EUROS</td>
-                            <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px; font-weight: bold; font-size: 18px; text-align: right;">${pago.importe}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div>
-                    <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-                        <div style="font-size: 9px; font-weight: bold; width: 60%;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</div>
-                        <div style="text-align: center; border-top: 1px dashed #000; width: 150px; padding-top: 5px; font-size: 10px;">FDO. CSE ELISA GUNDÍN</div>
-                    </div>
-                    <div style="font-size: 8px; text-align: justify; padding-top: 15px; margin-top: 20px; border-top: 2px solid #000; line-height: 1.2;">
-                        PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD)...
-                    </div>
-                </div>
-            `;
-            cambiarPestana('recibo');
-        }
-    </script>
+    }).mount('#app');
+</script>
 </body>
 </html>
