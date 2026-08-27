@@ -179,7 +179,7 @@
                             <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ pagoAEliminar?.importe }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ pagoAEliminar?.mes }}</strong>?</p>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ pagoAEliminar?.importe }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ formatMesUnificado(pagoAEliminar?.mes) }}</strong>?</p>
                     <div class="flex gap-3 pt-3 border-t">
                         <button @click="showDeletePagoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">
                             Cancelar
@@ -568,7 +568,7 @@
                                         <tbody>
                                             <tr v-for="pago in pagosAlumnoActual" :key="pago.id" class="hover:bg-blue-50/40 transition">
                                                 <td class="p-2 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
-                                                <td class="p-2 border font-bold text-[#243c7a]">{{ pago.mes || '-' }}</td>
+                                                <td class="p-2 border font-bold text-[#243c7a]">{{ formatMesUnificado(pago.mes) }}</td>
                                                 <td class="p-2 border text-gray-600">
                                                     <span class="font-bold">{{ pago.tarifa }}</span>
                                                     <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
@@ -828,6 +828,20 @@
                 if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 return f;
             },
+            formatMesUnificado(mesStr) {
+                if (!mesStr) return '-';
+                let limpio = String(mesStr).toUpperCase().trim();
+                let parts = limpio.replace(/'/g, '').split(' ');
+                if (parts.length >= 2) {
+                    let mes = parts[0];
+                    let anio = parts[parts.length - 1];
+                    if (anio.length === 4) {
+                        anio = anio.slice(-2);
+                    }
+                    return `${mes} ${anio}'`;
+                }
+                return limpio;
+            },
             calcularImporteTotalPago() {
                 let base = 0;
                 if (this.nuevoPago.tarifa) {
@@ -862,6 +876,15 @@
             },
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
+            },
+            getNextFacturaId() {
+                if (!this.pagosList || this.pagosList.length === 0) return 1;
+                const numeros = this.pagosList.map(p => {
+                    const val = p.factura_id || p.id_factura || 0;
+                    return Number(val) || 0;
+                });
+                const max = Math.max(...numeros);
+                return max > 0 ? max + 1 : 1;
             },
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
@@ -1147,10 +1170,11 @@
             },
             async registrarPago() {
                 this.savingPago = true;
-                const nextFacturaId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                const nextId = this.getNextFacturaId();
                 
                 const { error } = await _supabase.from('pagos').insert([{
-                    factura_id: nextFacturaId,
+                    factura_id: nextId,
+                    id_factura: nextId,
                     alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa,
                     extras: this.nuevoPago.extras,
@@ -1175,10 +1199,11 @@
             async registrarYGenerarPDF() {
                 this.savingPago = true;
                 try {
-                    const nextFacturaId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                    const nextId = this.getNextFacturaId();
                     
                     const { error } = await _supabase.from('pagos').insert([{
-                        factura_id: nextFacturaId,
+                        factura_id: nextId,
+                        id_factura: nextId,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1232,7 +1257,7 @@
                 }
             },
             imprimirTicketRapido() {
-                const nextId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                const nextId = this.getNextFacturaId();
                 this.generarReciboHTML({
                     fecha: this.nuevoPago.fecha,
                     metodo: this.nuevoPago.metodo,
@@ -1241,10 +1266,10 @@
                     importe: this.importeCalculado,
                     id: 'REC-' + nextId
                 });
-                window.print();
+                setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
-                const facturaNum = pago.factura_id || pago.id || '2026';
+                const facturaNum = pago.factura_id || pago.id_factura || '2026';
                 this.generarReciboHTML({
                     fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
                     metodo: pago.metodo_pago || 'Efectivo',
@@ -1253,7 +1278,7 @@
                     importe: pago.importe,
                     id: 'REC-' + facturaNum
                 });
-                window.print();
+                setTimeout(() => { window.print(); }, 400);
             },
             generarReciboHTML(datos) {
                 const numRecibo = datos.id || `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
