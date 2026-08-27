@@ -3,95 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSE Elisa Gundín - Gestión de Pagos</title>
-    <!-- Tailwind CSS para diseño moderno -->
+    <title>CSE Elisa Gundín - Panel de Gestión</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#243c7a',
+                            pink: '#fa65c3',
+                            pinkHover: '#e052af'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex flex-col">
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="max-w-7xl mx-auto p-6">
-        
-        <!-- CABECERA -->
-        <header class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm mb-6">
-            <div>
-                <h1 class="text-2xl font-black text-gray-800 tracking-tight">CSE ELISA GUNDÍN</h1>
-                <p class="text-xs text-gray-500 uppercase tracking-widest mt-1">Módulo de Control y Gestión de Pagos</p>
+    <!-- BARRA DE NAVEGACIÓN CORPORATIVA -->
+    <nav class="bg-brand-navy text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="bg-brand-pink text-white text-xs font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider">CSE</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight">ELISA GUNDÍN</h1>
+                    <p class="text-[10px] text-gray-300 uppercase tracking-widest">Sistema de Gestión Integral</p>
+                </div>
             </div>
-            <button onclick="abrirModalPago()" class="bg-black hover:bg-gray-800 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition shadow-md">
-                + Nuevo Pago
-            </button>
-        </header>
-
-        <!-- TABLA DE PAGOS -->
-        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
-                            <th class="p-4 font-semibold">Factura ID</th>
-                            <th class="p-4 font-semibold">Alumno</th>
-                            <th class="p-4 font-semibold">Tarifa / Extras</th>
-                            <th class="p-4 font-semibold">Fecha</th>
-                            <th class="p-4 font-semibold">Importe</th>
-                            <th class="p-4 font-semibold">Mes</th>
-                            <th class="p-4 font-semibold text-center">Método</th>
-                            <th class="p-4 font-semibold text-center">Registrado</th>
-                            <th class="p-4 font-semibold text-center">Recibo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-pagos-body" class="divide-y divide-gray-100 text-sm">
-                        <!-- Los datos se cargan dinámicamente desde Supabase -->
-                    </tbody>
-                </table>
+            <!-- PESTAÑAS DE NAVEGACIÓN -->
+            <div class="flex space-x-2 bg-black/20 p-1.5 rounded-xl">
+                <button onclick="cambiarPestana('alumnos')" id="btn-tab-alumnos" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm">
+                    Alumnos
+                </button>
+                <button onclick="cambiarPestana('pagos')" id="btn-tab-pagos" class="px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white">
+                    Pagos y Recibos
+                </button>
             </div>
         </div>
+    </nav>
 
-    </div>
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="max-w-7xl mx-auto p-6 flex-grow w-full">
+        
+        <!-- ================= SECCIÓN ALUMNOS ================= -->
+        <section id="seccion-alumnos" class="space-y-6">
+            <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                <div>
+                    <h2 class="text-xl font-black text-brand-navy">Base de Datos de Alumnos</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Gestión de fichas académicas, datos de contacto y credenciales Aules.</p>
+                </div>
+                <button onclick="alert('Módulo de inserción de alumnos activo')" class="bg-brand-navy hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
+                    + Nuevo Alumno
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                                <th class="p-4 font-semibold">Nombre y Apellidos</th>
+                                <th class="p-4 font-semibold">DNI</th>
+                                <th class="p-4 font-semibold">Curso / Colegio</th>
+                                <th class="p-4 font-semibold">Teléfono</th>
+                                <th class="p-4 font-semibold">Aules (Usuario)</th>
+                                <th class="p-4 font-semibold text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-alumnos-body" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="6" class="p-6 text-center text-gray-400">Cargando alumnos desde Supabase...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECCIÓN PAGOS ================= -->
+        <section id="seccion-pagos" class="space-y-6 hidden">
+            <div class="flex justify-between items-center bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                <div>
+                    <h2 class="text-xl font-black text-brand-navy">Control de Pagos y Facturación</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Registro fiscal, Bizum con numeración automática y recibos oficiales.</p>
+                </div>
+                <button onclick="abrirModalPago()" class="bg-brand-pink hover:bg-brand-pinkHover text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-md">
+                    + Nuevo Pago
+                </button>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                                <th class="p-4 font-semibold">Factura ID</th>
+                                <th class="p-4 font-semibold">Alumno</th>
+                                <th class="p-4 font-semibold">Tarifa / Extras</th>
+                                <th class="p-4 font-semibold">Fecha</th>
+                                <th class="p-4 font-semibold">Importe</th>
+                                <th class="p-4 font-semibold">Mes</th>
+                                <th class="p-4 font-semibold text-center">Método</th>
+                                <th class="p-4 font-semibold text-center">Registrado</th>
+                                <th class="p-4 font-semibold text-center">Recibo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-pagos-body" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="9" class="p-6 text-center text-gray-400">Cargando pagos desde Supabase...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
 
     <!-- MODAL NUEVO PAGO -->
     <div id="modal-pago" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-gray-100">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Registrar Nuevo Pago</h3>
+            <h3 class="text-lg font-bold text-brand-navy mb-4">Registrar Nuevo Pago</h3>
             
             <form id="form-nuevo-pago" onsubmit="procesarNuevoPago(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nombre del Alumno</label>
-                    <input type="text" id="input-alumno" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Ej: Manu Vila Rico">
+                    <input type="text" id="input-alumno" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Manu Vila Rico">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tarifa</label>
-                        <input type="text" id="input-tarifa" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Ej: Opción 4 (85€)">
+                        <input type="text" id="input-tarifa" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Opción 4 (85€)">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Extras</label>
-                        <input type="text" id="input-extras" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Ej: Material (10€)">
+                        <input type="text" id="input-extras" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Material (10€)">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Importe Total</label>
-                        <input type="text" id="input-importe" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Ej: 85,00 €">
+                        <input type="text" id="input-importe" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: 85,00 €">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Fecha de Pago</label>
-                        <input type="date" id="input-fecha" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none">
+                        <input type="date" id="input-fecha" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mes Correspondiente</label>
-                        <input type="text" id="input-mes" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Ej: Octubre 2025">
+                        <input type="text" id="input-mes" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none" placeholder="Ej: Octubre 2025">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Método de Pago</label>
-                        <select id="input-metodo" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-black outline-none bg-white">
+                        <select id="input-metodo" class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-navy outline-none bg-white">
                             <option value="BIZUM">Bizum (Genera Factura)</option>
                             <option value="EFECTIVO">Efectivo (Sin Factura)</option>
                         </select>
@@ -100,52 +171,92 @@
 
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                     <button type="button" onclick="cerrarModalPago()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition">Cancelar</button>
-                    <button type="submit" class="px-5 py-2 bg-black text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition shadow-md">Guardar Pago</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-pink text-white text-sm font-bold rounded-xl hover:bg-brand-pinkHover transition shadow-md">Guardar Pago</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPT DE CONEXIÓN Y LÓGICA -->
+    <!-- SCRIPT DE CONEXIÓN Y LÓGICA GENERAL -->
     <script>
-        // CONFIGURACIÓN DE SUPABASE (Credenciales integradas)
         const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Al cargar la página, cargamos los pagos
         document.addEventListener('DOMContentLoaded', () => {
+            cargarAlumnos();
             cargarPagos();
         });
 
-        // --- 1. CARGAR Y RENDERIZAR PAGOS ---
+        // --- CONTROL DE PESTAÑAS ---
+        function cambiarPestana(pestana) {
+            const secAlumnos = document.getElementById('seccion-alumnos');
+            const secPagos = document.getElementById('seccion-pagos');
+            const btnAlumnos = document.getElementById('btn-tab-alumnos');
+            const btnPagos = document.getElementById('btn-tab-pagos');
+
+            if (pestana === 'alumnos') {
+                secAlumnos.classList.remove('hidden');
+                secPagos.classList.add('hidden');
+                btnAlumnos.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm";
+                btnPagos.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white";
+            } else {
+                secPagos.classList.remove('hidden');
+                secAlumnos.classList.add('hidden');
+                btnPagos.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-brand-pink text-white shadow-sm";
+                btnAlumnos.className = "px-4 py-2 rounded-lg text-xs font-bold transition text-gray-300 hover:text-white";
+            }
+        }
+
+        // --- 1. CARGAR ALUMNOS ---
+        async function cargarAlumnos() {
+            // Nota: Conéctalo a tu tabla de alumnos en Supabase (ej: 'alumnos')
+            const { data, error } = await _supabase.from('alumnos').select('*').limit(50);
+            const tbody = document.getElementById('tabla-alumnos-body');
+            tbody.innerHTML = '';
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">No se encontraron alumnos o la tabla está pendiente de conexión.</td></tr>`;
+                return;
+            }
+
+            data.forEach(alum => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-gray-800">${alum.nombre || ''} ${alum.apellidos || ''}</td>
+                    <td class="p-4 text-xs font-mono text-gray-600">${alum.dni || '-'}</td>
+                    <td class="p-4 text-xs text-gray-600">${alum.curso || '-'} (${alum.colegio || '-'})</td>
+                    <td class="p-4 text-xs text-gray-600">${alum.tlf || '-'}</td>
+                    <td class="p-4 text-xs font-mono text-brand-navy">${alum.usuario_aules || 'Sin usuario'}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                            ${alum.baja ? 'Baja' : 'Activo'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- 2. CARGAR PAGOS ---
         async function cargarPagos() {
             const { data, error } = await _supabase
                 .from('pagos')
                 .select('*')
                 .order('id', { ascending: false });
 
-            if (error) {
-                console.error("Error al cargar pagos:", error.message);
-                return;
-            }
-
-            renderizarTablaPagos(data);
-        }
-
-        function renderizarTablaPagos(pagos) {
             const tbody = document.getElementById('tabla-pagos-body');
             tbody.innerHTML = '';
 
-            if (!pagos || pagos.length === 0) {
+            if (error || !data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400">No hay pagos registrados.</td></tr>`;
                 return;
             }
 
-            pagos.forEach(pago => {
+            data.forEach(pago => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50/80 transition border-b border-gray-100";
-                
+                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
                 tr.innerHTML = `
                     <td class="p-4 font-mono text-xs font-bold text-gray-700">${pago.factura_id || '<span class="text-gray-400 italic">Sin factura</span>'}</td>
                     <td class="p-4 font-semibold text-gray-800">${pago.alumno}</td>
@@ -162,10 +273,10 @@
                         </span>
                     </td>
                     <td class="p-4 text-center">
-                        <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-black rounded cursor-pointer">
+                        <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
                     </td>
                     <td class="p-4 text-center">
-                        <button onclick='imprimirRecibo(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-black hover:text-white p-2 rounded-xl transition text-xs font-bold">
+                        <button onclick='imprimirRecibo(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
                             🖨️ Recibo
                         </button>
                     </td>
@@ -174,20 +285,14 @@
             });
         }
 
-        // --- 2. ACTUALIZAR CHECKBOX REGISTRADO ---
         async function actualizarRegistrado(idPago, valor) {
-            const { error } = await _supabase
-                .from('pagos')
-                .update({ registrado: valor })
-                .eq('id', idPago);
-
+            const { error } = await _supabase.from('pagos').update({ registrado: valor }).eq('id', idPago);
             if (error) {
                 alert("Error al actualizar el estado: " + error.message);
-                cargarPagos(); // Recarga para revertir visualmente si falla
+                cargarPagos();
             }
         }
 
-        // --- 3. MODAL CONTROLES ---
         function abrirModalPago() {
             document.getElementById('form-nuevo-pago').reset();
             document.getElementById('input-fecha').valueAsDate = new Date();
@@ -198,12 +303,9 @@
             document.getElementById('modal-pago').classList.add('hidden');
         }
 
-        // --- 4. GENERADOR AUTOMÁTICO DE FACTURA_ID (Bizum) ---
         async function generarFacturaIdAutomatico(nombreAlumno, fechaPago) {
             const fecha = new Date(fechaPago);
-            const year = fecha.getFullYear();
             const mesIndex = fecha.getMonth();
-            
             const { data, error } = await _supabase.from('pagos').select('factura_id');
             if (error) return null;
 
@@ -218,7 +320,6 @@
                 if (fid) {
                     let mGen = fid.match(/^(\d+)-/);
                     if (mGen) maxGen = Math.max(maxGen, parseInt(mGen[1]));
-                    
                     let mAlu = fid.match(new RegExp(`-${nomAbrev}-${mesAbrev}-(\\d+)`));
                     if (mAlu) maxAlumno = Math.max(maxAlumno, parseInt(mAlu[1]));
                 }
@@ -227,10 +328,8 @@
             return `${maxGen + 1}-${nomAbrev}-${mesAbrev}-${(maxAlumno + 1).toString().padStart(2, '0')}`;
         }
 
-        // --- 5. PROCESAR NUEVO PAGO ---
         async function procesarNuevoPago(event) {
             event.preventDefault();
-
             const alumno = document.getElementById('input-alumno').value.trim();
             const tarifa = document.getElementById('input-tarifa').value.trim();
             const extras = document.getElementById('input-extras').value.trim();
@@ -244,19 +343,9 @@
                 facturaIdFinal = await generarFacturaIdAutomatico(alumno, fecha_pago);
             }
 
-            const { error } = await _supabase
-                .from('pagos')
-                .insert([{
-                    alumno,
-                    tarifa,
-                    fecha_pago,
-                    extras: extras || null,
-                    importe,
-                    mes,
-                    metodo_pago,
-                    registrado: false,
-                    factura_id: facturaIdFinal
-                }]);
+            const { error } = await _supabase.from('pagos').insert([{
+                alumno, tarifa, fecha_pago, extras: extras || null, importe, mes, metodo_pago, registrado: false, factura_id: facturaIdFinal
+            }]);
 
             if (error) {
                 alert("Error al guardar el pago: " + error.message);
@@ -267,7 +356,7 @@
             cargarPagos();
         }
 
-        // --- 6. IMPRESIÓN DE RECIBOS OFICIALES ---
+        // --- IMPRESIÓN BLINDADA CON BLOB (Evita bloqueadores de pop-up) ---
         function imprimirRecibo(pago) {
             let contenidoHTML = `
                 <!DOCTYPE html>
@@ -318,7 +407,7 @@
                             <tr style="height: 200px;"><td colspan="2"></td></tr>
                             <tr class="total-row">
                                 <td style="font-size:12px;">TOTAL EUROS</td>
-                               <td>${pago.importe}</td>
+                                <td>${pago.importe}</td>
                             </tr>
                         </table>
                         <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
@@ -334,10 +423,13 @@
                 </html>
             `;
 
-            let ventana = window.open('', '_PRINT', 'height=650,width=800');
-            ventana.document.write(contenidoHTML);
-            ventana.document.close();
-            ventana.focus();
+            // Uso de Blob para evitar restricciones de seguridad y bloqueadores de pop-up
+            const blob = new Blob([contenidoHTML], { type: 'text/html;charset=utf-8' });
+            const blobUrl = URL.createObjectURL(blob);
+            let ventana = window.open(blobUrl, '_blank', 'height=650,width=800');
+            if (!ventana) {
+                alert("Tu navegador ha bloqueado la ventana emergente del recibo. Por favor, permite las ventanas emergentes para este sitio.");
+            }
         }
     </script>
 </body>
