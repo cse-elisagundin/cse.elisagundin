@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSE Elisa Gundín - Panel de Gestión</title>
+    <title>CSE Elisa Gundín - Panel de Gestión Integral</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
@@ -77,7 +77,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-alumnos-body" class="divide-y divide-gray-100 text-sm">
-                            <tr><td colspan="6" class="p-6 text-center text-gray-400">Cargando alumnos desde Supabase...</td></tr>
+                            <tr><td colspan="6" class="p-6 text-center text-gray-400">Cargando alumnos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -113,7 +113,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabla-pagos-body" class="divide-y divide-gray-100 text-sm">
-                            <tr><td colspan="9" class="p-6 text-center text-gray-400">Cargando pagos desde Supabase...</td></tr>
+                            <tr><td colspan="9" class="p-6 text-center text-gray-400">Cargando pagos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -177,18 +177,18 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE CONEXIÓN Y LÓGICA GENERAL -->
+    <!-- SCRIPT DE CONEXIÓN Y LÓGICA GENERAL BLINDADO -->
     <script>
         const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.addEventListener('DOMContentLoaded', () => {
-            cargarAlumnos();
-            cargarPagos();
+            cargarAlumnosSeguro();
+            cargarPagosSeguro();
         });
 
-        // --- CONTROL DE PESTAÑAS ---
+        // --- CONTROL DE PESTAÑAS ROBUSTO ---
         function cambiarPestana(pestana) {
             const secAlumnos = document.getElementById('seccion-alumnos');
             const secPagos = document.getElementById('seccion-pagos');
@@ -208,88 +208,95 @@
             }
         }
 
-        // --- 1. CARGAR ALUMNOS ---
-        async function cargarAlumnos() {
-            // Nota: Conéctalo a tu tabla de alumnos en Supabase (ej: 'alumnos')
-            const { data, error } = await _supabase.from('alumnos').select('*').limit(50);
-            const tbody = document.getElementById('tabla-alumnos-body');
-            tbody.innerHTML = '';
+        // --- 1. CARGAR ALUMNOS (Conectado a listado_alumnos) ---
+        async function cargarAlumnosSeguro() {
+            try {
+                const { data, error } = await _supabase.from('listado_alumnos').select('*').limit(100);
+                const tbody = document.getElementById('tabla-alumnos-body');
+                tbody.innerHTML = '';
 
-            if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">No se encontraron alumnos o la tabla está pendiente de conexión.</td></tr>`;
-                return;
+                if (error || !data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 italic">No se han encontrado registros en listado_alumnos.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(alum => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                    tr.innerHTML = `
+                        <td class="p-4 font-semibold text-gray-800">${alum.nombre || ''} ${alum.apellidos || ''}</td>
+                        <td class="p-4 text-xs font-mono text-gray-600">${alum.dni || '-'}</td>
+                        <td class="p-4 text-xs text-gray-600">${alum.curso || '-'} (${alum.colegio || '-'})</td>
+                        <td class="p-4 text-xs text-gray-600">${alum.tlf || '-'}</td>
+                        <td class="p-4 text-xs font-mono text-brand-navy">${alum.usuario_aules || 'Sin usuario'}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                ${alum.baja ? 'Baja' : 'Activo'}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.warn("Aviso al cargar alumnos: ", err);
             }
-
-            data.forEach(alum => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
-                tr.innerHTML = `
-                    <td class="p-4 font-semibold text-gray-800">${alum.nombre || ''} ${alum.apellidos || ''}</td>
-                    <td class="p-4 text-xs font-mono text-gray-600">${alum.dni || '-'}</td>
-                    <td class="p-4 text-xs text-gray-600">${alum.curso || '-'} (${alum.colegio || '-'})</td>
-                    <td class="p-4 text-xs text-gray-600">${alum.tlf || '-'}</td>
-                    <td class="p-4 text-xs font-mono text-brand-navy">${alum.usuario_aules || 'Sin usuario'}</td>
-                    <td class="p-4 text-center">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${alum.baja ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                            ${alum.baja ? 'Baja' : 'Activo'}
-                        </span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
         }
 
-        // --- 2. CARGAR PAGOS ---
-        async function cargarPagos() {
-            const { data, error } = await _supabase
-                .from('pagos')
-                .select('*')
-                .order('id', { ascending: false });
+        // --- 2. CARGAR PAGOS (Blindado) ---
+        async function cargarPagosSeguro() {
+            try {
+                const { data, error } = await _supabase
+                    .from('pagos')
+                    .select('*')
+                    .order('id', { ascending: false });
 
-            const tbody = document.getElementById('tabla-pagos-body');
-            tbody.innerHTML = '';
+                const tbody = document.getElementById('tabla-pagos-body');
+                tbody.innerHTML = '';
 
-            if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400">No hay pagos registrados.</td></tr>`;
-                return;
+                if (error || !data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 italic">No hay pagos registrados o la tabla está vacía.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(pago => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                    tr.innerHTML = `
+                        <td class="p-4 font-mono text-xs font-bold text-gray-700">${pago.factura_id || '<span class="text-gray-400 italic">Sin factura</span>'}</td>
+                        <td class="p-4 font-semibold text-gray-800">${pago.alumno}</td>
+                        <td class="p-4 text-gray-600 text-xs">
+                            <span class="font-medium">${pago.tarifa}</span>
+                            ${pago.extras ? `<br><span class="text-gray-400">${pago.extras}</span>` : ''}
+                        </td>
+                        <td class="p-4 text-gray-600 text-xs">${pago.fecha_pago}</td>
+                        <td class="p-4 font-bold text-gray-900">${pago.importe}</td>
+                        <td class="p-4 text-gray-600 text-xs">${pago.mes}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${pago.metodo_pago === 'BIZUM' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
+                                ${pago.metodo_pago}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick='imprimirRecibo(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
+                                🖨️ Recibo
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error al cargar pagos:", err);
             }
-
-            data.forEach(pago => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
-                tr.innerHTML = `
-                    <td class="p-4 font-mono text-xs font-bold text-gray-700">${pago.factura_id || '<span class="text-gray-400 italic">Sin factura</span>'}</td>
-                    <td class="p-4 font-semibold text-gray-800">${pago.alumno}</td>
-                    <td class="p-4 text-gray-600 text-xs">
-                        <span class="font-medium">${pago.tarifa}</span>
-                        ${pago.extras ? `<br><span class="text-gray-400">${pago.extras}</span>` : ''}
-                    </td>
-                    <td class="p-4 text-gray-600 text-xs">${pago.fecha_pago}</td>
-                    <td class="p-4 font-bold text-gray-900">${pago.importe}</td>
-                    <td class="p-4 text-gray-600 text-xs">${pago.mes}</td>
-                    <td class="p-4 text-center">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${pago.metodo_pago === 'BIZUM' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
-                            ${pago.metodo_pago}
-                        </span>
-                    </td>
-                    <td class="p-4 text-center">
-                        <input type="checkbox" ${pago.registrado ? 'checked' : ''} onchange="actualizarRegistrado(${pago.id}, this.checked)" class="w-4 h-4 accent-brand-pink rounded cursor-pointer">
-                    </td>
-                    <td class="p-4 text-center">
-                        <button onclick='imprimirRecibo(${JSON.stringify(pago)})' class="bg-gray-100 hover:bg-brand-navy hover:text-white p-2 rounded-xl transition text-xs font-bold">
-                            🖨️ Recibo
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
         }
 
         async function actualizarRegistrado(idPago, valor) {
             const { error } = await _supabase.from('pagos').update({ registrado: valor }).eq('id', idPago);
             if (error) {
                 alert("Error al actualizar el estado: " + error.message);
-                cargarPagos();
+                cargarPagosSeguro();
             }
         }
 
@@ -353,10 +360,10 @@
             }
 
             cerrarModalPago();
-            cargarPagos();
+            cargarPagosSeguro();
         }
 
-        // --- IMPRESIÓN BLINDADA CON BLOB (Evita bloqueadores de pop-up) ---
+        // --- IMPRESIÓN BLINDADA CON BLOB ---
         function imprimirRecibo(pago) {
             let contenidoHTML = `
                 <!DOCTYPE html>
@@ -423,7 +430,6 @@
                 </html>
             `;
 
-            // Uso de Blob para evitar restricciones de seguridad y bloqueadores de pop-up
             const blob = new Blob([contenidoHTML], { type: 'text/html;charset=utf-8' });
             const blobUrl = URL.createObjectURL(blob);
             let ventana = window.open(blobUrl, '_blank', 'height=650,width=800');
