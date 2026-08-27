@@ -877,39 +877,49 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-            // FUNCIÓN MAESTRA BLINDADA DE OBTENCIÓN DE ID EN TIEMPO REAL
+            // NUEVO MOTOR ULTRA-BLINDADO DE CÁLCULO DE ID (EVITA NULOS Y COLISIONES HISTÓRICAS)
             async obtenerSiguienteFacturaIdReal() {
+                let maxFacturaId = 0;
                 try {
-                    // Consulta directa a Supabase ordenando y filtrando nulos
+                    // Excluimos estrictamente los nulos mediante .gt('factura_id', 0)
                     const { data, error } = await _supabase
                         .from('pagos')
-                        .select('factura_id, id_factura, id')
-                        .not('factura_id', 'is', null)
+                        .select('factura_id')
+                        .gt('factura_id', 0)
                         .order('factura_id', { ascending: false })
-                        .limit(50);
+                        .limit(1);
 
-                    if (!error && data && data.length > 0) {
-                        const numeros = data
-                            .map(p => Number(p.factura_id || p.id_factura || p.id))
-                            .filter(n => !isNaN(n) && n > 0);
-                        if (numeros.length > 0) {
-                            return Math.max(...numeros) + 1;
+                    if (!error && data && data.length > 0 && data[0].factura_id) {
+                        const val = Number(data[0].factura_id);
+                        if (!isNaN(val) && val > maxFacturaId) {
+                            maxFacturaId = val;
                         }
                     }
                 } catch (e) {
-                    console.error("Error consultando Supabase en directo:", e);
+                    console.error("Error consultando ID máximo:", e);
                 }
 
-                // Respaldo secundario local robusto
+                // Revisión secundaria en memoria local con pagosList
                 if (this.pagosList && this.pagosList.length > 0) {
                     const numerosLocales = this.pagosList
-                        .map(p => Number(p.factura_id || p.id_factura || p.id))
+                        .map(p => Number(p.factura_id))
                         .filter(n => !isNaN(n) && n > 0);
+                    
                     if (numerosLocales.length > 0) {
-                        return Math.max(...numerosLocales) + 1;
+                        const maxLocal = Math.max(...numerosLocales);
+                        if (maxLocal > maxFacturaId) {
+                            maxFacturaId = maxLocal;
+                        }
+                    }
+
+                    // SEGURIDAD ABSOLUTA: Si los registros antiguos tienen factura_id en null, 
+                    // el ID siguiente será como mínimo el número total de pagos existentes + 1 (ej. 107 si hay 106 pagos)
+                    if (maxFacturaId < this.pagosList.length) {
+                        maxFacturaId = this.pagosList.length;
                     }
                 }
-                return 1;
+
+                return maxFacturaId > 0 ? maxFacturaId + 1 : 1;
             },
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
@@ -1256,7 +1266,7 @@
                         mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
                     }
 
-                    // ENVÍO EXACTO Y VERIFICADO DE LA factura_id AL SCRIPT DE GOOGLE DRIVE
+                    // ENVÍO EXACTO CON EL ID CORRECTO A GOOGLE DRIVE
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
