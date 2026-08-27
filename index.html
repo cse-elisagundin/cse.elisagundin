@@ -84,7 +84,7 @@
 
                     <div v-if="modalType === 'edit'" class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-500 uppercase">Nombre del Mes</label>
-                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 26'">
+                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 27'">
                     </div>
 
                     <div class="flex gap-3 pt-3 border-t">
@@ -379,7 +379,7 @@
                                     </button>
                                 </div>
 
-                                <!-- CARPETAS POR CURSO ESCOLAR (SEP - JUL) -->
+                                <!-- CARPETAS POR CURSO ESCOLAR (SEP - JUL/AGO) -->
                                 <div class="space-y-4">
                                     <div v-for="(mesesCurso, cursoKey) in mesesAgrupadosPorCursoEscolar" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
                                         <div @click="toggleCurso(cursoKey)" class="bg-gray-100 p-4 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
@@ -435,7 +435,7 @@
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro y Generar Factura</h3>
-                                    <button @click="imprimirTicketRapido" :disabled="importeCalculado === 0" class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg hover:bg-gray-300 font-bold text-xs flex items-center gap-2 disabled:opacity-50">
+                                    <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe || importeCalculado === 0" class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg hover:bg-gray-300 font-bold text-xs flex items-center gap-2 disabled:opacity-50">
                                         <i class="fas fa-print"></i> Imprimir y Guardar en Drive
                                     </button>
                                 </div>
@@ -470,6 +470,7 @@
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
+                                            <option value="" disabled>Selecciona tarifa...</option>
                                             <option value="Opción 1 (40€)">Opción 1 (40€)</option>
                                             <option value="Opción 2 (50€)">Opción 2 (50€)</option>
                                             <option value="Opción 3 (80€)">Opción 3 (80€)</option>
@@ -484,7 +485,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Importe Total (€)</label>
-                                        <input type="number" step="0.01" v-model="nuevoPago.importe" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
+                                        <input type="number" step="0.01" v-model="nuevoPago.importe" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
                                     </div>
                                 </div>
 
@@ -494,11 +495,11 @@
                                         <span class="text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
                                     <div class="flex items-center gap-4">
-                                        <button @click="registrarPago" :disabled="savingPago" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2">
+                                        <button @click="registrarPago" :disabled="savingPago || !nuevoPago.importe" class="bg-[#2b94cc] text-white px-8 py-3 rounded-xl hover:bg-[#207bb0] font-bold shadow-lg flex items-center gap-2 disabled:opacity-50">
                                             <i v-if="savingPago" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-paper-plane"></i>
                                             {{ savingPago ? 'Guardando...' : 'GUARDAR PAGO' }}
                                         </button>
-                                        <button @click="imprimirTicketRapido" class="bg-[#fa65c3] text-white px-6 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex items-center gap-2">
+                                        <button @click="imprimirTicketRapido" :disabled="!nuevoPago.importe" class="bg-[#fa65c3] text-white px-6 py-3 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex items-center gap-2 disabled:opacity-50">
                                             <i class="fas fa-file-pdf"></i> Imprimir Recibo y Drive
                                         </button>
                                     </div>
@@ -600,7 +601,7 @@
                     return nombreCompleto.includes(t);
                 });
             },
-            importeCalculado() { return Number(this.nuevoPago.importe) || 85.00; },
+            importeCalculado() { return Number(this.nuevoPago.importe) || 0; },
             examenesAlumno() {
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
@@ -651,12 +652,8 @@
                     const yearNum = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
                     const monthIdx = monthOrder[m_name] || 1;
                     
-                    // Definir curso escolar (Septiembre a Agosto del año siguiente)
-                    // Ej: Septiembre 25 -> Curso 2025/2026. Enero 26 -> Curso 2025/2026. Julio 26 -> Curso 2025/2026.
-                    let startYear = (monthIdx >= 1 && monthIdx <= 4) ? yearNum - 1 : yearNum; // Sep-Dic pertenecen al año de inicio del curso
-                    if (m_name === 'ENERO' || m_name === 'FEBRERO' || m_name === 'MARZO' || m_name === 'ABRIL' || m_name === 'MAYO' || m_name === 'JUNIO' || m_name === 'JULIO' || m_name === 'AGOSTO') {
-                        startYear = yearNum - 1;
-                    }
+                    // Curso Escolar: SEP-DIC pertenecen al año de inicio (ej. Sep 26 -> 2026/2027), ENE-AGO pertenecen al curso que inició el año anterior (ej. Jun 27 -> 2026/2027)
+                    let startYear = (monthIdx >= 1 && monthIdx <= 4) ? yearNum : yearNum - 1;
                     const cursoKey = `${startYear}/${startYear + 1}`;
                     return { cursoKey, monthIdx };
                 }
@@ -665,10 +662,10 @@
             pagoVacio() {
                 return { 
                     fecha: new Date().toISOString().split('T')[0], 
-                    mes: 'JUNIO 26\'', 
-                    tarifa: 'Opción 4 (85€)', 
+                    mes: '', 
+                    tarifa: '', 
                     extras: '', 
-                    importe: 85, 
+                    importe: '', 
                     metodo: 'Bizum' 
                 };
             },
@@ -725,18 +722,17 @@
             },
             abrirSeccionPagos() {
                 this.activeTab = 'pagos';
-                // Autocomlean el último pago registrado de este alumno
                 const nombreCompleto = this.normalizeName(this.form.nombre + " " + this.form.apellidos);
                 const pagosAlumno = this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreCompleto);
                 
                 if (pagosAlumno.length > 0) {
-                    // Ordenar por fecha o ID descendente para obtener el más reciente
                     const ultimo = pagosAlumno[pagosAlumno.length - 1];
-                    this.nuevoPago.tarifa = ultimo.tarifa || 'Opción 4 (85€)';
-                    this.nuevoPago.importe = ultimo.importe || 85;
-                    this.nuevoPago.mes = ultimo.mes || (this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'JUNIO 26\'');
+                    this.nuevoPago.tarifa = ultimo.tarifa || '';
+                    this.nuevoPago.importe = ultimo.importe || '';
+                    this.nuevoPago.mes = ultimo.mes || (this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || '');
                 } else {
-                    // Si no tiene pagos previos, poner por defecto el último mes disponible
+                    this.nuevoPago.tarifa = '';
+                    this.nuevoPago.importe = '';
                     if (this.listaMesesDinamicos.length > 0) {
                         this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
                     }
@@ -809,7 +805,6 @@
                     if (idx === 11) {
                         siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}'`;
                     } else {
-                        // Si pasamos de Diciembre a Enero, incrementamos año
                         if (mName === 'DICIEMBRE') {
                             siguienteMesStr = `${listaNombres[idx + 1]} ${anioNum + 1}'`;
                         } else {
@@ -817,7 +812,7 @@
                         }
                     }
                 } catch(e) {
-                    siguienteMesStr = "JULIO 26'";
+                    siguienteMesStr = "JUNIO 27'";
                 }
 
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
