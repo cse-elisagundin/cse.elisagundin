@@ -1147,7 +1147,10 @@
             },
             async registrarPago() {
                 this.savingPago = true;
+                const nextFacturaId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                
                 const { error } = await _supabase.from('pagos').insert([{
+                    factura_id: nextFacturaId,
                     alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa,
                     extras: this.nuevoPago.extras,
@@ -1172,7 +1175,10 @@
             async registrarYGenerarPDF() {
                 this.savingPago = true;
                 try {
+                    const nextFacturaId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                    
                     const { error } = await _supabase.from('pagos').insert([{
+                        factura_id: nextFacturaId,
                         alumno: this.form.nombre + ' ' + this.form.apellidos,
                         tarifa: this.nuevoPago.tarifa,
                         extras: this.nuevoPago.extras,
@@ -1189,6 +1195,12 @@
                         return;
                     }
 
+                    // Limpiar mes para Drive (ej: "SEPTIEMBRE 25'" -> "SEPTIEMBRE 2025")
+                    let mesDrive = String(this.nuevoPago.mes || '').replace(/'/g, '').trim();
+                    if (/^\w+\s+\d{2}$/.test(mesDrive)) {
+                        mesDrive = mesDrive.replace(/(\d{2})$/, '20$1');
+                    }
+
                     const payload = {
                         pass: "010523",
                         device_token: "SECURE-TOKEN-CSE-2026-X89WQ",
@@ -1198,7 +1210,7 @@
                         fecha: this.nuevoPago.fecha,
                         extras: this.nuevoPago.extras,
                         importe: this.importeCalculado,
-                        mes: this.nuevoPago.mes,
+                        mes: mesDrive,
                         metodo: this.nuevoPago.metodo,
                         generarPDF: true
                     };
@@ -1219,14 +1231,27 @@
                     this.savingPago = false;
                 }
             },
+            imprimirTicketRapido() {
+                const nextId = this.pagosList.length > 0 ? Math.max(...this.pagosList.map(p => Number(p.factura_id || p.id || 0))) + 1 : 1;
+                this.generarReciboHTML({
+                    fecha: this.nuevoPago.fecha,
+                    metodo: this.nuevoPago.metodo,
+                    tarifa: this.nuevoPago.tarifa,
+                    extras: this.nuevoPago.extras,
+                    importe: this.importeCalculado,
+                    id: 'REC-' + nextId
+                });
+                window.print();
+            },
             reimprimirPagoHistorico(pago) {
+                const facturaNum = pago.factura_id || pago.id || '2026';
                 this.generarReciboHTML({
                     fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
                     metodo: pago.metodo_pago || 'Efectivo',
                     tarifa: pago.tarifa,
                     extras: pago.extras,
                     importe: pago.importe,
-                    id: pago.id ? ('REC-' + pago.id) : 'REC-2026'
+                    id: 'REC-' + facturaNum
                 });
                 window.print();
             },
