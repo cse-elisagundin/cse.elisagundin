@@ -43,7 +43,6 @@
         .exam-pill { display: inline-flex; flex-direction: column; background: white; border: 1px solid #e0e0e0; border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .pill-subject { font-size: 11px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
         .pill-grade { font-size: 14px; font-weight: 700; color: #333; }
-        .pill-pending { font-size: 12px; color: #999; font-style: italic; }
     </style>
 </head>
 <body class="h-screen overflow-hidden text-sm">
@@ -115,6 +114,9 @@
                     <button @click="createNew" class="w-full bg-[#2b94cc] text-white py-2.5 rounded-lg hover:bg-[#207bb0] font-bold flex justify-center gap-2 shadow">
                         <i class="fas fa-plus"></i> Nueva Ficha
                     </button>
+                    <button @click="abrirIngresosFijosMatriz" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2.5 rounded-lg hover:bg-pink-100 font-bold flex justify-center gap-2 shadow-sm transition">
+                        <i class="fas fa-table"></i> Ingresos Fijos (Matriz)
+                    </button>
                     <button @click="abrirGestorExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-lg hover:bg-indigo-100 font-bold flex justify-center gap-2 shadow-sm transition">
                         <i class="fas fa-calendar-alt"></i> Gestor de Exámenes
                     </button>
@@ -140,6 +142,71 @@
 
             <div class="w-3/4 bg-[#f4f6f9] h-full flex flex-col relative">
                 
+                <!-- VISTA MATRIZ DINÁMICA E INFINITA DE INGRESOS FIJOS -->
+                <div v-if="activeTab === 'ingresos_fijos_matriz'" class="flex-1 overflow-y-auto p-8 pb-24 animate-fade">
+                    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
+                        <div class="p-6 border-b flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
+                            <div class="flex items-center gap-4">
+                                <h2 class="text-2xl font-extrabold text-[#243c7a] flex items-center gap-3">
+                                    <div class="bg-pink-100 p-2 rounded-lg text-[#fa65c3]"><i class="fas fa-table"></i></div>
+                                    Matriz Dinámica de Ingresos Fijos (Infinito)
+                                </h2>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button @click="agregarNuevoMes" class="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 font-bold text-xs flex items-center gap-2 shadow">
+                                    <i class="fas fa-plus"></i> Añadir Nuevo Mes
+                                </button>
+                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar Matriz</button>
+                            </div>
+                        </div>
+
+                        <div class="p-6 overflow-x-auto">
+                            <table class="w-full border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-[#243c7a] text-white uppercase text-center">
+                                        <th class="p-3 border text-left sticky left-0 bg-[#243c7a] z-10 min-w-[200px]">Alumno</th>
+                                        <template v-for="mes in listaMesesDinamicos" :key="mes">
+                                            <th colspan="2" class="p-2 border bg-[#1a2e5e]">{{ mes }}</th>
+                                        </template>
+                                    </tr>
+                                    <tr class="bg-gray-100 text-gray-700 text-center font-bold">
+                                        <th class="p-2 border text-left sticky left-0 bg-gray-100 z-10"></th>
+                                        <template v-for="mes in listaMesesDinamicos" :key="mes">
+                                            <th class="p-2 border">Cuota</th>
+                                            <th class="p-2 border">Pagado</th>
+                                        </template>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="alumno in list.filter(a => !a.baja)" :key="alumno.id" class="hover:bg-blue-50/50 transition">
+                                        <td class="p-3 border font-bold text-[#243c7a] sticky left-0 bg-white z-10 shadow-sm">
+                                            {{ alumno.nombre }} {{ alumno.apellidos }}
+                                        </td>
+                                        <template v-for="mes in listaMesesDinamicos" :key="mes">
+                                            <!-- Columna Cuota (vacía si no hay valor) -->
+                                            <td class="p-1.5 border text-center">
+                                                <input type="number" step="0.01" 
+                                                    :value="getCuotaValor(alumno.nombre + ' ' + alumno.apellidos, mes)" 
+                                                    @input="updateCuotaLocal(alumno.nombre + ' ' + alumno.apellidos, mes, $event.target.value)"
+                                                    @change="guardarCeldaIngresosFijos(alumno.nombre + ' ' + alumno.apellidos, mes)"
+                                                    placeholder=""
+                                                    class="w-20 p-1 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
+                                            </td>
+                                            <!-- Columna Pagado (Checkbox) -->
+                                            <td class="p-1.5 border text-center" :class="isPagadoTrue(alumno.nombre + ' ' + alumno.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
+                                                <input type="checkbox" 
+                                                    :checked="isPagadoTrue(alumno.nombre + ' ' + alumno.apellidos, mes)" 
+                                                    @change="togglePagadoIngresosFijos(alumno.nombre + ' ' + alumno.apellidos, mes, $event.target.checked)"
+                                                    class="w-5 h-5 accent-green-600 rounded cursor-pointer">
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- GESTOR MASIVO DE EXÁMENES -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-8 pb-24 animate-fade">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
@@ -211,7 +278,7 @@
                                     {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
                                 </h2>
                                 <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha Académica</span>
-                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos e Ingresos Fijos</span>
+                                <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos</span>
                                 <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
                             </div>
 
@@ -249,7 +316,7 @@
                                         <i class="fas fa-euro-sign text-4xl px-2"></i>
                                     </div>
                                     <span class="text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center px-2">Cobros, recibos PDF e Ingresos Fijos.</span>
+                                    <span class="text-xs text-gray-500 text-center px-2">Cobros y recibos PDF.</span>
                                 </button>
 
                                 <button @click="activeTab = 'examenes'" class="bg-white p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all transform hover:-translate-y-2 flex flex-col items-center gap-4 group">
@@ -332,10 +399,8 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS Y INGRESOS FIJOS -->
+                        <!-- GESTIÓN DE PAGOS E IMPRESIÓN RECIBO -->
                         <div v-if="activeTab === 'pagos'" class="p-8 space-y-8 bg-gray-50 flex-1">
-                            
-                            <!-- REGISTRO DE PAGO RÁPIDO Y RECIBO -->
                             <div class="bg-white p-6 rounded-xl border shadow-sm relative">
                                 <div class="flex justify-between items-center border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase"><i class="fas fa-cash-register mr-2"></i> Registrar Pago y Generar Factura</h3>
@@ -352,13 +417,12 @@
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
-                                            <option value="" disabled>Selecciona mes...</option>
-                                            <option>Octubre 25'</option><option>Noviembre 25'</option><option>Diciembre 25'</option><option>Enero 26'</option><option>Febrero 26'</option><option>Marzo 26'</option><option>Abril 26'</option><option>Mayo 26'</option><option>Junio 26'</option>
+                                            <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <!-- SELECCIÓN DE MÉTODO DE PAGO: EFECTIVO / BIZUM -->
+                                <!-- SELECCIÓN DE MÉTODO DE PAGO -->
                                 <div class="mb-5 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
                                     <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro (Efectivo / Bizum)</label>
                                     <div class="grid grid-cols-2 gap-4">
@@ -409,32 +473,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- MATRIZ DE INGRESOS FIJOS (MES A MES) -->
-                            <div class="bg-white p-6 rounded-xl border border-[#2b94cc] shadow-sm">
-                                <h3 class="font-extrabold text-[#243c7a] mb-4 uppercase flex items-center gap-2 border-b pb-2">
-                                    <i class="fas fa-calendar-check text-[#2b94cc]"></i> Historial de Ingresos Fijos (Matriz Mensual)
-                                </h3>
-                                <div v-if="mesesFijosAlumno.length === 0" class="text-gray-500 italic text-sm">Cargando o sin datos de ingresos fijos para este alumno.</div>
-                                <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div v-for="(mes, idx) in mesesFijosAlumno" :key="idx" class="border rounded-xl p-4 flex flex-col items-center shadow-sm relative overflow-hidden transition-all duration-300" :class="mes.pagado ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
-                                        <div class="text-xs font-extrabold text-gray-500 uppercase mb-1">{{ mes.nombreMes }}</div>
-                                        
-                                        <div class="flex flex-col items-center w-full mb-2">
-                                            <div class="text-2xl font-black mb-2 text-[#243c7a]">
-                                                {{ mes.cuota ? mes.cuota + '€' : '0€' }}
-                                            </div>
-                                            <button v-if="mes.pagado" @click="toggleMesPagado(mes)" class="w-full py-1.5 bg-green-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-green-600 transition flex justify-center items-center gap-1">
-                                                <i class="fas fa-check-circle"></i> PAGADO
-                                            </button>
-                                            <button v-else @click="toggleMesPagado(mes)" class="w-full py-1.5 bg-red-100 text-red-600 border border-red-300 rounded-lg font-bold text-xs uppercase hover:bg-red-200 transition flex justify-center items-center gap-1">
-                                                PENDIENTE
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
 
                         <!-- EXÁMENES -->
@@ -466,11 +504,11 @@
                     </div>
                 </div>
                 
-                <div v-else-if="activeTab !== 'gestor_examenes'" class="h-full flex flex-col items-center justify-center text-gray-400 select-none">
+                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'ingresos_fijos_matriz'" class="h-full flex flex-col items-center justify-center text-gray-400 select-none">
                     <div class="bg-white p-10 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-6xl text-[#2b94cc] opacity-50"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-[#243c7a]">Selecciona un alumno</h2>
+                    <h2 class="text-xl font-bold text-[#243c7a]">Selecciona un alumno o abre la Matriz de Ingresos Fijos</h2>
                 </div>
             </div>
         </div>
@@ -533,30 +571,20 @@
                 });
                 return grupos;
             },
-            mesesFijosAlumno() {
-                if (!this.selected) return [];
-                const nombreCompleto = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
-                const mesesNombres = ["Octubre 25'", "Noviembre 25'", "Diciembre 25'", "Enero 26'", "Febrero 26'", "Marzo 26'", "Abril 26'", "Mayo 26'", "Junio 26'"];
-                
-                let registroFijo = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === nombreCompleto);
-                
-                return mesesNombres.map(mesNombre => {
-                    let cuotaVal = registroFijo ? (registroFijo[mesNombre.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_cuota'] || 85) : 85;
-                    let pagadoVal = registroFijo ? (registroFijo[mesNombre.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_pagado'] || false) : false;
-                    return {
-                        nombreMes: mesNombre,
-                        cuota: cuotaVal,
-                        pagado: pagadoVal,
-                        idRegistro: registroFijo ? registroFijo.id : null
-                    };
-                });
+            listaMesesDinamicos() {
+                // Obtiene todos los meses únicos existentes en la base de datos de forma dinámica e infinita
+                const mesesBD = this.ingresosFijosList.map(f => f.mes);
+                // Si no hay ninguno aún, ponemos por defecto algunos estándar
+                const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
+                const todos = [...new Set([...porDefecto, ...mesesBD])];
+                return todos;
             }
         },
         methods: {
             normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
             pagoVacio() {
                 const hoy = new Date().toISOString().split('T')[0];
-                return { fecha: hoy, mes: 'Octubre 25\'', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
+                return { fecha: hoy, mes: 'OCTUBRE 25\'', tarifa: 'Opción 4 (85€)', extras: '', importe: 85, metodo: 'Bizum' };
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -597,11 +625,84 @@
                 _supabase.auth.signOut();
                 location.reload();
             },
+            abrirIngresosFijosMatriz() {
+                this.selected = null;
+                this.activeTab = 'ingresos_fijos_matriz';
+            },
             abrirGestorExamenes() {
                 this.selected = null;
                 this.activeTab = 'gestor_examenes';
                 this.gestorExamenes.fecha = new Date().toISOString().split('T')[0];
                 this.searchGestor = '';
+            },
+            getCuotaValor(nombreAlumno, mes) {
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                // Si no existe o la cuota es 0 o null, devolvemos cadena vacía para que el input esté en blanco
+                if (!reg || reg.cuota === null || reg.cuota === 0 || reg.cuota === 0.00) return '';
+                return reg.cuota;
+            },
+            updateCuotaLocal(nombreAlumno, mes, valor) {
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                if (reg) {
+                    reg.cuota = valor === '' ? null : Number(valor);
+                } else {
+                    this.ingresosFijosList.push({
+                        alumno: nombreAlumno,
+                        mes: mes,
+                        cuota: valor === '' ? null : Number(valor),
+                        pagado: false
+                    });
+                }
+            },
+            async guardarCeldaIngresosFijos(nombreAlumno, mes) {
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                if (!reg) return;
+
+                const cuotaFinal = (reg.cuota === '' || reg.cuota === null || isNaN(reg.cuota)) ? 0 : Number(reg.cuota);
+
+                await _supabase.from('ingresos_fijos').upsert({
+                    alumno: nombreAlumno,
+                    mes: mes,
+                    cuota: cuotaFinal,
+                    pagado: Boolean(reg.pagado)
+                }, { onConflict: 'alumno,mes' });
+
+                await this.cargarDatosSupabase();
+            },
+            isPagadoTrue(nombreAlumno, mes) {
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                return reg ? Boolean(reg.pagado) : false;
+            },
+            async togglePagadoIngresosFijos(nombreAlumno, mes, nuevoEstado) {
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                const cuotaActual = reg && reg.cuota !== null ? Number(reg.cuota) : 0;
+
+                await _supabase.from('ingresos_fijos').upsert({
+                    alumno: nombreAlumno,
+                    mes: mes,
+                    cuota: cuotaActual,
+                    pagado: nuevoEstado
+                }, { onConflict: 'alumno,mes' });
+
+                await this.cargarDatosSupabase();
+            },
+            async agregarNuevoMes() {
+                const nuevoMes = prompt("Introduce el nombre del nuevo mes (ej: JULIO 26'):");
+                if (!nuevoMes) return;
+                const mesFormateado = nuevoMes.toUpperCase().trim();
+                
+                // Creamos un registro base fantasma para el primer alumno para que aparezca la columna en toda la matriz
+                if (this.list.length > 0) {
+                    const primerAlumno = this.list[0].nombre + ' ' + this.list[0].apellidos;
+                    await _supabase.from('ingresos_fijos').upsert({
+                        alumno: primerAlumno,
+                        mes: mesFormateado,
+                        cuota: 0,
+                        pagado: false
+                    }, { onConflict: 'alumno,mes' });
+                }
+                
+                await this.cargarDatosSupabase();
             },
             seleccionarTodos(marcar) {
                 if(marcar) {
@@ -657,21 +758,6 @@
                 this.showSuccess = true;
                 this.successMessage = '¡Pago registrado correctamente!';
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
-            },
-            async toggleMesPagado(mes) {
-                mes.pagado = !mes.pagado;
-                const nombreCompleto = this.selected.nombre + ' ' + this.selected.apellidos;
-                const campoKey = mes.nombreMes.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_pagado';
-                
-                let registroFijo = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreCompleto));
-                
-                if (registroFijo) {
-                    await _supabase.from('ingresos_fijos').update({ [campoKey]: mes.pagado }).eq('id', registroFijo.id);
-                } else {
-                    let nuevoReg = { alumno: nombreCompleto, [campoKey]: mes.pagado, [mes.nombreMes.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_cuota']: mes.cuota };
-                    await _supabase.from('ingresos_fijos').insert([nuevoReg]);
-                }
-                await this.cargarDatosSupabase();
             },
             imprimirTicketRapido() {
                 const numRecibo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -759,11 +845,6 @@
                 this.gestorExamenes.alumnosSeleccionados = [];
                 await this.cargarDatosSupabase();
                 setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 3000);
-            },
-            obtenerNombreMesCorto(fechaIso) {
-                try {
-                    return new Date(fechaIso).toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
-                } catch(e) { return ""; }
             }
         },
         async mounted() {
