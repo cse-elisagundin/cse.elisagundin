@@ -1220,8 +1220,7 @@
                 const siguienteNum = maxNum + 1;
                 const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
-                // Mantiene las tildes originales en las iniciales (ej: ÉRI en vez de ERI)
-                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
+                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('').normalize("NFC");
                 const mesLimpio = String(mesStr || '').trim().split(' ')[0];
                 const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
                 let dia = "01";
@@ -1285,46 +1284,54 @@
                 this.loadingArchivos = true;
                 try {
                     let allFiles = [];
-                    
-                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 100 });
+                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 500 });
                     if (rootError) throw rootError;
 
                     if (rootItems) {
                         for (const rootItem of rootItems) {
-                            const esCarpetaRoot = rootItem.id === null || (rootItem.metadata === null && !rootItem.updated_at);
-                            if (esCarpetaRoot) {
-                                const cursoFolder = rootItem.name;
-                                const { data: monthItems, error: monthError } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 100 });
+                            const name = rootItem.name;
+                            if (!name || name === '.emptyFolderPlaceholder') continue;
+
+                            const isPdfRoot = name.toLowerCase().endsWith('.pdf');
+                            
+                            if (!isPdfRoot) {
+                                const cursoFolder = name;
+                                const { data: monthItems, error: monthError } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 500 });
+                                
                                 if (!monthError && monthItems) {
                                     for (const monthItem of monthItems) {
-                                        const esCarpetaMes = monthItem.id === null || (monthItem.metadata === null && !monthItem.updated_at);
-                                        const monthFolder = monthItem.name;
-                                        
-                                        if (esCarpetaMes) {
-                                            const fullFolderPath = `${cursoFolder}/${monthFolder}`;
-                                            const { data: pdfItems, error: pdfError } = await _supabase.storage.from('facturas').list(fullFolderPath, { limit: 500 });
+                                        const mName = monthItem.name;
+                                        if (!mName || mName === '.emptyFolderPlaceholder') continue;
+
+                                        const isPdfMonth = mName.toLowerCase().endsWith('.pdf');
+
+                                        if (!isPdfMonth) {
+                                            const fullFolderPath = `${cursoFolder}/${mName}`;
+                                            const { data: pdfItems, error: pdfError } = await _supabase.storage.from('facturas').list(fullFolderPath, { limit: 1000 });
+                                            
                                             if (!pdfError && pdfItems) {
                                                 for (const pdfItem of pdfItems) {
-                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
+                                                    const pName = pdfItem.name;
+                                                    if (pName && pName.toLowerCase().endsWith('.pdf')) {
                                                         allFiles.push({
-                                                            name: pdfItem.name,
-                                                            path: `${fullFolderPath}/${pdfItem.name}`
+                                                            name: pName,
+                                                            path: `${fullFolderPath}/${pName}`
                                                         });
                                                     }
                                                 }
                                             }
-                                        } else if (monthItem.name && monthItem.name.toLowerCase().endsWith('.pdf')) {
+                                        } else {
                                             allFiles.push({
-                                                name: monthItem.name,
-                                                path: `${cursoFolder}/${monthItem.name}`
+                                                name: mName,
+                                                path: `${cursoFolder}/${mName}`
                                             });
                                         }
                                     }
                                 }
-                            } else if (rootItem.name && rootItem.name.toLowerCase().endsWith('.pdf')) {
+                            } else {
                                 allFiles.push({
-                                    name: rootItem.name,
-                                    path: rootItem.name
+                                    name: name,
+                                    path: name
                                 });
                             }
                         }
@@ -1377,7 +1384,7 @@
                 this.loadingArchivos = false;
             },
             analizarTextoParaCursoYMes(pathCompleto) {
-                const pathUp = pathCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                const pathUp = String(pathCompleto).normalize("NFC").toUpperCase();
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
@@ -1405,7 +1412,7 @@
                 };
 
                 for (const [abbr, fullName] of Object.entries(mesesMap)) {
-                    const regex = new RegExp(`(^|[^A-Z])${abbr}([^A-Z]|$)`);
+                    const regex = new RegExp(`(^|[^A-ZÁÉÍÓÚÑ])${abbr}([^A-ZÁÉÍÓÚÑ]|$)`);
                     if (regex.test(pathUp)) {
                         mesDetectado = fullName;
                         break;
@@ -1425,9 +1432,8 @@
                 return total;
             },
             sanitizarNombreArchivo(nombre) {
-                // Conserva estrictamente tildes y caracteres originales (Érika, etc.), 
-                // reemplazando únicamente espacios o símbolos de ruta inválidos.
-                return nombre
+                return String(nombre)
+                    .normalize("NFC")
                     .replace(/[\s\/\\?%*:|"<>]/g, "_")
                     .replace(/__+/g, "_");
             },
@@ -1491,7 +1497,7 @@
                     if (!file.name.toLowerCase().endsWith('.pdf')) continue;
 
                     try {
-                        const rutaCompleta = file.fullPath || file.webkitRelativePath || file.name;
+                        const rutaCompleta = String(file.fullPath || file.webkitRelativePath || file.name).normalize("NFC");
                         const analisis = this.analizarTextoParaCursoYMes(rutaCompleta);
                         const cursoPath = analisis.curso.replace('/', '-');
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
