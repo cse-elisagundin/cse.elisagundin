@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">El sistema eliminará tildes y subirá en formato puro para garantizar compatibilidad 100%.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">La app codificará automáticamente los acentos para máxima compatibilidad web.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -1207,7 +1207,6 @@
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
             
-            // FUNCIÓN ACTUALIZADA: Genera IDs sin tildes para garantizar coincidencia con la nube
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 0;
                 if (this.pagosList && this.pagosList.length > 0) {
@@ -1224,7 +1223,7 @@
                 const siguienteNum = maxNum + 1;
                 let nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 
-                // CRÍTICO: Eliminamos tildes de las iniciales para que Érika pase a ser E
+                // Mantenemos esto porque es seguro (el prefijo 1-, 2-, 3- garantiza que no haya choque aquí)
                 nombreCompleto = nombreCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
@@ -1290,12 +1289,10 @@
                 }
             },
             
-            // FUNCIÓN ACTUALIZADA: Explora hasta 1000 items por carpeta
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
                     let allFiles = [];
-                    // Limit subido a 1000
                     const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 1000 });
                     if (rootError) throw rootError;
 
@@ -1340,10 +1337,13 @@
                     }
                     
                     this.archivosNube = allFiles.map(item => {
-                        const fileName = item.name;
+                        // AQUÍ HACEMOS LA MAGIA AL REVES: Si estaba codificado (%C3%AD), lo pasamos a texto normal visual (í)
+                        let fileName = item.name;
+                        try { fileName = decodeURIComponent(item.name); } catch(e) { }
+
                         const facturaIdLimpio = fileName.replace('.pdf', '');
                         
-                        // CRÍTICO: Comparamos el ID limpio ignorando tildes por completo
+                        // Para emparejar con la base de datos (donde el ID base suele no tener tildes)
                         const idArchivoBuscado = facturaIdLimpio.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                         
                         const pagoEncontrado = this.pagosList.find(p => {
@@ -1383,10 +1383,10 @@
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
-                            name: fileName,
+                            name: fileName, // Esto ya muestra "Factura_María.pdf" 
                             curso: cursoVal,
                             mes: mesVal,
-                            url: urlData.publicUrl
+                            url: urlData.publicUrl // Mantenemos la URL nativa para la nube
                         };
                     });
                 } catch(e) {
@@ -1395,9 +1395,12 @@
                 this.loadingArchivos = false;
             },
             
-            // FUNCIÓN ACTUALIZADA: Analiza rutas quitando tildes previamente para asegurar el match
             analizarTextoParaCursoYMes(pathCompleto) {
-                const pathUp = String(pathCompleto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                // Decodificamos el path por si las carpetas tienen caracteres codificados
+                let decodedPath = pathCompleto;
+                try { decodedPath = decodeURIComponent(pathCompleto); } catch(e) { }
+
+                const pathUp = String(decodedPath).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
@@ -1443,16 +1446,6 @@
                     total += mesesObj[m].length;
                 }
                 return total;
-            },
-            
-            // FUNCIÓN CRÍTICA ACTUALIZADA: Filtro de transliteración agresivo a ASCII
-            sanitizarNombreArchivo(nombre) {
-                return String(nombre)
-                    .normalize("NFD") // Separa la tilde de la vocal (É -> E + ´)
-                    .replace(/[\u0300-\u036f]/g, "") // Elimina completamente la tilde
-                    .replace(/[^a-zA-Z0-9.\-_()]/g, "_") // Cambia todo lo raro por guion bajo
-                    .replace(/_+/g, "_") // Limpia múltiples guiones bajos
-                    .trim(); // Se acabó el problema en la nube
             },
             
             async subirArchivosSeleccionados(event) {
@@ -1519,9 +1512,12 @@
                         const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
                         
-                        // Aplicamos el filtro agresivo para asegurar que Suba
-                        const nombreLimpio = this.sanitizarNombreArchivo(file.name);
-                        const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
+                        // LÓGICA DEFINITIVA DE CODIFICACIÓN (URL ENCODING)
+                        // Convierte "María" en "Mar%C3%ADa", garantizando que Maria y María NUNCA sean lo mismo
+                        // y que Supabase lo trague al 100% porque es texto ASCII.
+                        const nombreCodificado = encodeURIComponent(file.name);
+                        
+                        const path = `${cursoPath}/${analisis.mes}/${nombreCodificado}`;
                         
                         const { error } = await _supabase.storage.from('facturas').upload(path, file, { 
                             upsert: true,
@@ -1794,10 +1790,10 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                // Aplica el mismo filtrado para asegurar la subida
-                const idFinalLimpio = this.sanitizarNombreArchivo(idFinal);
+                // Codificamos el ID generado por seguridad web, aunque es ASCII por naturaleza
+                const idFinalCodificado = encodeURIComponent(idFinal);
 
-                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinalLimpio}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinalCodificado}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago y PDF subidos a la nube!`;
