@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión CSE Elisa Gundín</title>
+    <title>Gestión CSE Elisa Gundín - App</title>
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +73,7 @@
             </div>
         </transition>
 
-        <!-- MODAL PARA EDITAR EXAMEN -->
+        <!-- MODALES DE EDICIÓN Y ELIMINACIÓN -->
         <transition name="pop">
             <div v-if="showEditExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
@@ -110,7 +110,6 @@
             </div>
         </transition>
 
-        <!-- MODAL PARA ELIMINAR EXAMEN -->
         <transition name="pop">
             <div v-if="showDeleteExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -130,7 +129,6 @@
             </div>
         </transition>
 
-        <!-- MODAL PERSONALIZADO (MODIFICAR / ELIMINAR MES) -->
         <transition name="pop">
             <div v-if="showCustomModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -163,7 +161,6 @@
             </div>
         </transition>
 
-        <!-- MODAL PARA EDITAR PAGO HISTÓRICO -->
         <transition name="pop">
             <div v-if="showEditPagoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg border border-gray-100 flex flex-col gap-4">
@@ -232,7 +229,6 @@
             </div>
         </transition>
 
-        <!-- MODAL PARA ELIMINAR PAGO HISTÓRICO -->
         <transition name="pop">
             <div v-if="showDeletePagoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -285,7 +281,7 @@
         <div v-if="authenticated" class="flex flex-col md:flex-row h-full animate-opacity duration-700">
             
             <!-- PANEL LATERAL / LISTADO DE ALUMNOS -->
-            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos'}">
+            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas'}">
                 <div class="p-4 sm:p-5 bg-[#243c7a] text-white">
                     <div class="flex items-center gap-3">
                         <div class="bg-white p-1 rounded-lg shadow-sm">
@@ -294,7 +290,7 @@
                         <h1 class="font-bold text-lg leading-tight">Gestión<br><span class="text-[#fa65c3]">Alumnos</span></h1>
                     </div>
                 </div>
-                <div class="p-3 sm:p-4 bg-gray-50 border-b space-y-3">
+                <div class="p-3 sm:p-4 bg-gray-50 border-b space-y-2.5">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         <input v-model="search" type="text" placeholder="Buscar alumno..." class="w-full pl-9 pr-8 p-2.5 rounded-lg border focus:border-[#2b94cc] outline-none shadow-sm">
@@ -312,6 +308,9 @@
                     </button>
                     <button @click="abrirGestorPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2.5 rounded-lg hover:bg-pink-100 font-bold flex justify-center gap-2 shadow-sm transition">
                         <i class="fas fa-file-invoice-dollar"></i> Historial Global Pagos
+                    </button>
+                    <button @click="abrirExploradorFacturas" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2.5 rounded-lg hover:bg-blue-100 font-bold flex justify-center gap-2 shadow-sm transition">
+                        <i class="fas fa-folder-open"></i> Explorador Facturas Nube
                     </button>
                 </div>
                 <div class="flex-1 overflow-y-auto">
@@ -334,14 +333,86 @@
             </div>
 
             <!-- PANEL DE CONTENIDO PRINCIPAL -->
-            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos'}">
+            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas'}">
 
-                <!-- BOTÓN VOLVER EN MÓVIL (CUANDO HAY ALUMNO SELECCIONADO O GESTOR ACTIVO) -->
-                <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
+                <!-- BOTÓN VOLVER EN MÓVIL -->
+                <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
                     <button @click="cerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Volver al listado
                     </button>
-                    <span class="text-xs font-semibold truncate max-w-[200px]">{{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : 'Historial Pagos')) }}</span>
+                    <span class="text-xs font-semibold truncate max-w-[200px]">
+                        {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : (activeTab === 'gestor_pagos' ? 'Historial Pagos' : 'Explorador Nube'))) }}
+                    </span>
+                </div>
+
+                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (ESTILO DRIVE) -->
+                <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
+                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
+                                <div>
+                                    <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
+                                    <p class="text-xs text-gray-400 font-semibold">Tus recibos organizados por años y meses</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                <button @click="cargarArchivosNube" class="px-4 py-2 text-xs font-bold text-white bg-[#2b94cc] hover:bg-[#207bb0] rounded-lg shadow transition flex items-center gap-2">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                            </div>
+                        </div>
+
+                        <!-- BUSCADOR DE ARCHIVOS NUBE -->
+                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
+                            <div class="w-full relative">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
+                                <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                            </div>
+                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0">
+                                <i class="fas fa-cloud-upload-alt"></i> Subir PDF Externo
+                                <input type="file" accept="application/pdf" @change="subirArchivoDirectoNube" class="hidden">
+                            </label>
+                        </div>
+
+                        <!-- LISTADO ORGANIZADO POR CARPETAS (AÑOS / MESES) -->
+                        <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cargando facturas desde la nube...
+                        </div>
+                        <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
+                            No se encontraron archivos en el almacenamiento. Sube tus facturas antiguas o genera nuevos recibos.
+                        </div>
+                        <div v-else class="space-y-4">
+                            <div v-for="(archivosMes, carpetaKey) in archivosAgrupadosPorCarpeta" :key="carpetaKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center select-none">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-folder text-[#2b94cc]"></i>
+                                        <span>Carpeta: {{ carpetaKey }}</span>
+                                        <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ archivosMes.length }} archivos</span>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        <div v-for="archivo in archivosMes" :key="archivo.name" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2.5 truncate">
+                                                <div class="bg-red-100 text-red-500 p-2 rounded-lg shrink-0"><i class="fas fa-file-pdf"></i></div>
+                                                <div class="truncate">
+                                                    <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.name">{{ archivo.name }}</div>
+                                                    <div class="text-[10px] text-gray-400">PDF • Nube</div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
                 <!-- HISTORIAL GLOBAL DE PAGOS -->
@@ -361,7 +432,6 @@
                             </div>
                         </div>
 
-                        <!-- BARRA DE BÚSQUEDA GLOBAL -->
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
@@ -370,7 +440,6 @@
                             </div>
                         </div>
 
-                        <!-- TABLA GLOBAL DE PAGOS -->
                         <div v-if="pagosFiltradosGlobal.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron pagos registrados con ese criterio.
                         </div>
@@ -416,7 +485,7 @@
                     </div>
                 </div>
 
-                <!-- GESTOR MASIVO DE EXÁMENES / CALENDARIO GENERAL -->
+                <!-- GESTOR MASIVO DE EXÁMENES -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col mb-8">
                         <div class="p-4 sm:p-6 border-b flex justify-between items-center bg-white/95 backdrop-blur">
@@ -442,7 +511,6 @@
 
                         <div class="p-4 sm:p-8">
                             <h3 class="font-bold text-gray-700 mb-3">Selecciona los alumnos:</h3>
-                            
                             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                 <div class="w-full sm:flex-1 relative">
                                     <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
@@ -454,7 +522,6 @@
                                     <button @click="seleccionarTodos(false)" class="text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-200 px-3 py-2 rounded-lg transition">Desmarcar</button>
                                 </div>
                             </div>
-                            
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto pr-2">
                                 <label v-for="a in alumnosFiltradosGestor" :key="a.id" class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-indigo-50 transition" :class="gestorExamenes.alumnosSeleccionados.includes(a.nombre + ' ' + a.apellidos) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white'">
                                     <input type="checkbox" :value="a.nombre + ' ' + a.apellidos" v-model="gestorExamenes.alumnosSeleccionados" class="w-5 h-5 accent-indigo-600 rounded">
@@ -472,7 +539,7 @@
                         </div>
                     </div>
 
-                    <!-- CALENDARIO DE EXÁMENES CON NAVEGACIÓN Y FILTRO -->
+                    <!-- CALENDARIO DE EXÁMENES -->
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
                             <div class="flex items-center gap-3">
@@ -488,14 +555,12 @@
                             </div>
                         </div>
 
-                        <!-- NAVEGADOR DE MESES -->
                         <div class="flex justify-between items-center mb-6 bg-[#243c7a] text-white py-3 px-5 rounded-xl shadow-sm">
                             <button @click="cambiarMesCalendario(-1)" class="bg-white/10 hover:bg-white/20 border-none text-white px-4 py-2 rounded-lg cursor-pointer font-bold transition">&#10094;</button>
                             <span class="text-base sm:text-lg font-extrabold uppercase tracking-wide">{{ mesVisualizadoTexto }}</span>
                             <button @click="cambiarMesCalendario(1)" class="bg-white/10 hover:bg-white/20 border-none text-white px-4 py-2 rounded-lg cursor-pointer font-bold transition">&#10095;</button>
                         </div>
 
-                        <!-- TIMELINE DINÁMICO -->
                         <div class="space-y-2">
                             <div v-for="diaObj in diasMesActual" :key="diaObj.fechaStr" class="timeline-row" :class="diaObj.esHoy ? 'today' : ''">
                                 <div class="date-col">
@@ -504,13 +569,10 @@
                                 </div>
                                 <div class="exams-col">
                                     <div v-if="diaObj.examenes.length > 0" class="flex flex-wrap gap-2">
-                                        <!-- TARJETA DE EXAMEN CON BOTONES NO INTRUSIVOS EN HOVER -->
                                         <div v-for="(ex, i) in diaObj.examenes" :key="i" class="exam-pill group">
                                             <span class="pill-subject">{{ ex.asignatura }}</span>
                                             <span class="pill-student">{{ ex.alumno }}</span>
                                             <span v-if="ex.nota" class="text-[11px] font-bold text-indigo-600 mt-1">Nota: {{ ex.nota }}</span>
-                                            
-                                            <!-- ACCIONES FLOTANTES (APARECEN AL PONER EL RATÓN ENCIMA) -->
                                             <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
                                                 <button @click.stop="abrirEditarExamen(ex)" title="Modificar examen" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit text-xs"></i></button>
                                                 <button @click.stop="abrirEliminarExamen(ex)" title="Eliminar examen" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt text-xs"></i></button>
@@ -528,13 +590,11 @@
                 <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
-                        <!-- BARRA SUPERIOR DE LA FICHA -->
                         <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                             <div class="flex items-center gap-4">
                                 <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
                                     <i class="fas fa-arrow-left"></i> Volver al menú
                                 </button>
-                                
                                 <h2 class="text-xl sm:text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
                                     {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
                                 </h2>
@@ -558,7 +618,6 @@
                             </div>
                         </div>
 
-                        <!-- BARRA DE ACCIÓN MÓVIL PARA FICHA -->
                         <div class="p-4 border-b flex md:hidden justify-between items-center bg-gray-50">
                             <button v-if="activeTab !== 'menu'" @click="activeTab = 'menu'" class="text-xs font-bold text-[#2b94cc] bg-blue-50 px-3 py-2 rounded-lg">
                                 <i class="fas fa-arrow-left"></i> Menú Alumno
@@ -600,7 +659,7 @@
                             </div>
                         </div>
 
-                        <!-- FICHA ACADÉMICA COMPLETA RESPONSIVE -->
+                        <!-- FICHA ACADÉMICA -->
                         <form v-if="activeTab === 'ficha'" class="p-4 sm:p-8 space-y-6 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
@@ -637,7 +696,6 @@
                                 <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
                             </section>
 
-                            <!-- DATOS FAMILIARES -->
                             <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="bg-green-50 p-4 sm:p-6 rounded-2xl border border-green-200">
                                     <div class="font-bold text-green-800 mb-4">FAMILIAR 1</div>
@@ -670,10 +728,8 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS E INGRESOS FIJOS -->
+                        <!-- GESTIÓN DE PAGOS -->
                         <div v-if="activeTab === 'pagos'" class="p-4 sm:p-8 space-y-6 bg-gray-50 flex-1">
-                            
-                            <!-- SECCIÓN: CUOTAS FIJAS POR CURSOS ESCOLARES -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
                                     <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2 text-xs sm:text-sm">
@@ -714,7 +770,6 @@
                                                                 :value="getCuotaValor(form.nombre + ' ' + form.apellidos, mes)" 
                                                                 @input="updateCuotaLocal(form.nombre + ' ' + form.apellidos, mes, $event.target.value)"
                                                                 @change="guardarCeldaIngresosFijos(form.nombre + ' ' + form.apellidos, mes)"
-                                                                placeholder=""
                                                                 class="w-full sm:w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
                                                         </td>
                                                         <td class="p-2 border text-center" :class="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
@@ -735,7 +790,6 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: HISTORIAL DE PAGOS DEL ALUMNO (CON EDITAR Y ELIMINAR) -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
                                 <h3 class="font-extrabold text-[#243c7a] uppercase text-xs sm:text-sm mb-4 flex items-center gap-2 border-b pb-3">
                                     <i class="fas fa-history text-[#2b94cc]"></i> Historial de Pagos Recientes ({{ form.nombre }})
@@ -776,7 +830,6 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: REGISTRAR PAGO (DOS BOTONES SEPARADOS) -->
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
                                 <div class="border-b pb-3 mb-5">
                                     <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
@@ -795,7 +848,6 @@
                                     </div>
                                 </div>
 
-                                <!-- SELECCIÓN DE MÉTODO DE PAGO -->
                                 <div class="mb-4 p-3 sm:p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
                                     <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro</label>
                                     <div class="grid grid-cols-2 gap-3">
@@ -832,20 +884,15 @@
                                     </div>
                                 </div>
 
-                                <!-- DOS BOTONES DE ACCIÓN CLAROS -->
                                 <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
                                     <div class="flex flex-col text-center sm:text-left">
                                         <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
                                         <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
-                                    
                                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                        <!-- Botón 1: Solo registrar en Base de Datos e imprimir (sin subir PDF al Cloud Storage) -->
                                         <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-save"></i> REGISTRAR PAGO (SOLO DATOS)
                                         </button>
-
-                                        <!-- Botón 2: Registrar en Base de Datos + Generar PDF + Subir a Storage -->
                                         <button @click="registrarPagoYSubirNube" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-cloud-upload-alt"></i> GUARDAR Y SUBIR A LA NUBE
                                         </button>
@@ -854,7 +901,7 @@
                             </div>
                         </div>
 
-                        <!-- EXÁMENES (VISTA ESPECÍFICA DEL ALUMNO CON BOTONES DE EDICIÓN Y BORRADO) -->
+                        <!-- EXÁMENES -->
                         <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
@@ -873,8 +920,6 @@
                                         <div v-for="(ex, index) in grupo" :key="index" class="exam-pill group">
                                             <span class="pill-subject">{{ ex.asignatura }}</span>
                                             <span class="pill-grade font-semibold text-gray-800">Nota: {{ ex.nota || 'Pendiente' }}</span>
-                                            
-                                            <!-- ACCIONES FLOTANTES (APARECEN AL PONER EL RATÓN ENCIMA) -->
                                             <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
                                                 <button @click.stop="abrirEditarExamen(ex)" title="Modificar examen" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit text-xs"></i></button>
                                                 <button @click.stop="abrirEliminarExamen(ex)" title="Eliminar examen" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt text-xs"></i></button>
@@ -888,8 +933,8 @@
                     </div>
                 </div>
                 
-                <!-- ESTADO VACÍO (INICIO) -->
-                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
+                <!-- ESTADO VACÍO -->
+                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
                     </div>
@@ -938,16 +983,17 @@
                 showDeletePagoModal: false,
                 editPagoForm: {},
                 pagoAEliminar: null,
-                // Modales para Exámenes
                 showEditExamenModal: false,
                 showDeleteExamenModal: false,
                 editExamenForm: {},
                 examenAEliminar: null,
-                // Calendario general de exámenes
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
-                // Historial global de pagos
-                searchPagosGlobal: ''
+                searchPagosGlobal: '',
+                // Explorador Nube
+                archivosNube: [],
+                loadingArchivos: false,
+                searchExplorador: ''
             }
         },
         watch: {
@@ -1001,11 +1047,23 @@
                     return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
                 }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
             },
+            archivosNubeFiltrados() {
+                const t = this.normalizeName(this.searchExplorador);
+                return this.archivosNube.filter(a => this.normalizeName(a.name).includes(t) || this.normalizeName(a.folder).includes(t));
+            },
+            archivosAgrupadosPorCarpeta() {
+                const grupos = {};
+                this.archivosNubeFiltrados.forEach(a => {
+                    const carpeta = a.folder || 'GENERAL';
+                    if (!grupos[carpeta]) grupos[carpeta] = [];
+                    grupos[carpeta].push(a);
+                });
+                return grupos;
+            },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
                 const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
                 const todos = [...new Set([...porDefecto, ...mesesBD])];
-                
                 return todos.sort((a, b) => {
                     const pa = this.parseMonthOrder(a);
                     const pb = this.parseMonthOrder(b);
@@ -1018,10 +1076,7 @@
                 this.listaMesesDinamicos.forEach(mes => {
                     const parsed = this.parseMonthOrder(mes);
                     const cursoKey = parsed.cursoKey;
-                    
-                    if (!agrupados[cursoKey]) {
-                        agrupados[cursoKey] = [];
-                    }
+                    if (!agrupados[cursoKey]) agrupados[cursoKey] = [];
                     agrupados[cursoKey].push(mes);
                 });
                 return agrupados;
@@ -1048,13 +1103,7 @@
                     });
 
                     if (evs.length > 0 || fStr === hoyStr) {
-                        arrayDias.push({
-                            diaNum: d,
-                            nombreDia: nombreDia,
-                            fechaStr: fStr,
-                            esHoy: fStr === hoyStr,
-                            examenes: evs
-                        });
+                        arrayDias.push({ diaNum: d, nombreDia: nombreDia, fechaStr: fStr, esHoy: fStr === hoyStr, examenes: evs });
                     }
                 }
                 return arrayDias;
@@ -1081,9 +1130,7 @@
                 if (parts.length >= 2) {
                     let mes = parts[0];
                     let anio = parts[parts.length - 1];
-                    if (anio.length === 4) {
-                        anio = anio.slice(-2);
-                    }
+                    if (anio.length === 4) anio = anio.slice(-2);
                     return `${mes} ${anio}'`;
                 }
                 return limpio;
@@ -1128,8 +1175,6 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
-
-            // --- BLOQUE INTOCABLE DE GENERACIÓN DE ID ALFANUMÉRICO (PAGOS) ---
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 0;
                 if (this.pagosList && this.pagosList.length > 0) {
@@ -1156,66 +1201,38 @@
                 }
                 return `${siguienteNum}-${iniciales}-${mesLetras}-${dia}`;
             },
-
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
                 const nombreAlumno = this.form.nombre + ' ' + this.form.apellidos;
                 const mesesOrdenados = [...this.listaMesesDinamicos];
-                
                 let ultimoMesPagadoIdx = -1;
                 for (let i = 0; i < mesesOrdenados.length; i++) {
                     const mes = mesesOrdenados[i];
-                    const reg = this.ingresosFijosList.find(f => 
-                        this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes
-                    );
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
                     const pagadoFijo = reg ? Boolean(reg.pagado) : false;
-                    const tienePago = this.pagosList.some(p => 
-                        this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && 
-                        this.normalizeName(p.mes) === this.normalizeName(mes)
-                    );
-                    
-                    if (pagadoFijo || tienePago) {
-                        ultimoMesPagadoIdx = i;
-                    }
+                    const tienePago = this.pagosList.some(p => this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && this.normalizeName(p.mes) === this.normalizeName(mes));
+                    if (pagadoFijo || tienePago) ultimoMesPagadoIdx = i;
                 }
-                
-                if (ultimoMesPagadoIdx !== -1 && ultimoMesPagadoIdx + 1 < mesesOrdenados.length) {
-                    return mesesOrdenados[ultimoMesPagadoIdx + 1];
-                }
-                
+                if (ultimoMesPagadoIdx !== -1 && ultimoMesPagadoIdx + 1 < mesesOrdenados.length) return mesesOrdenados[ultimoMesPagadoIdx + 1];
                 for (const mes of mesesOrdenados) {
-                    const reg = this.ingresosFijosList.find(f => 
-                        this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes
-                    );
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
                     const pagado = reg ? Boolean(reg.pagado) : false;
-                    const tienePago = this.pagosList.some(p => 
-                        this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && 
-                        this.normalizeName(p.mes) === this.normalizeName(mes)
-                    );
-                    if (!pagado && !tienePago) {
-                        return mes;
-                    }
+                    const tienePago = this.pagosList.some(p => this.normalizeName(p.alumno) === this.normalizeName(nombreAlumno) && this.normalizeName(p.mes) === this.normalizeName(mes));
+                    if (!pagado && !tienePago) return mes;
                 }
-                
                 return mesesOrdenados.length > 0 ? mesesOrdenados[0] : '';
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
                 this.loading = true;
                 this.loginError = false;
-
-                const { data, error } = await _supabase.auth.signInWithPassword({
-                    email: this.loginEmail,
-                    password: this.loginPassword
-                });
-
+                const { data, error } = await _supabase.auth.signInWithPassword({ email: this.loginEmail, password: this.loginPassword });
                 if (error) {
                     this.loginError = true;
                     this.errorMsg = 'Credenciales inválidas.';
                     this.loading = false;
                     return;
                 }
-
                 await this.cargarDatosSupabase();
                 this.authenticated = true;
                 this.loading = false;
@@ -1224,26 +1241,66 @@
                 try {
                     const resAlumnos = await _supabase.from('listado_alumnos').select('*');
                     this.list = (resAlumnos.data || []).sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
-
                     const resEx = await _supabase.from('examenes').select('*');
                     this.examenesList = resEx.data || [];
-
                     const resFijos = await _supabase.from('ingresos_fijos').select('*');
                     this.ingresosFijosList = resFijos.data || [];
-
                     const resPagos = await _supabase.from('pagos').select('*');
                     this.pagosList = resPagos.data || [];
                 } catch(e) {
                     console.error("Error cargando desde Supabase:", e);
                 }
             },
+            async cargarArchivosNube() {
+                this.loadingArchivos = true;
+                try {
+                    const { data, error } = await _supabase.storage.from('facturas').list('', { recursive: true });
+                    if (error) throw error;
+                    
+                    this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
+                        const partes = item.name.split('/');
+                        let folder = "GENERAL";
+                        let fileName = partes[partes.length - 1];
+                        if (partes.length >= 3) {
+                            folder = `${partes[0]} / Mes ${partes[1]}`;
+                        } else if (partes.length === 2) {
+                            folder = partes[0];
+                        }
+                        const fullPath = item.id ? item.name : (partes.length > 1 ? item.name : item.name);
+                        const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
+                        return {
+                            name: fileName,
+                            folder: folder,
+                            url: urlData.publicUrl
+                        };
+                    });
+                } catch(e) {
+                    console.error("Error cargando archivos de la nube:", e);
+                }
+                this.loadingArchivos = false;
+            },
+            async subirArchivoDirectoNube(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const anioActual = new Date().getFullYear();
+                const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
+                const path = `${anioActual}/${mesActual}/${file.name}`;
+                
+                const { error } = await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                if (error) {
+                    alert("Error al subir archivo: " + error.message);
+                    return;
+                }
+                await this.cargarArchivosNube();
+                this.showSuccess = true;
+                this.successMessage = "¡Archivo subido correctamente a la nube!";
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
             logout() {
                 _supabase.auth.signOut();
                 location.reload();
             },
-            toggleCurso(cursoKey) {
-                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
-            },
+            toggleCurso(cursoKey) { this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey]; },
             abrirGestorExamenes() {
                 this.selected = null;
                 this.activeTab = 'gestor_examenes';
@@ -1254,6 +1311,12 @@
                 this.selected = null;
                 this.activeTab = 'gestor_pagos';
                 this.searchPagosGlobal = '';
+            },
+            abrirExploradorFacturas() {
+                this.selected = null;
+                this.activeTab = 'explorador_facturas';
+                this.searchExplorador = '';
+                this.cargarArchivosNube();
             },
             cambiarMesCalendario(d) {
                 const nuevoMes = new Date(this.mesVisualizadoCalendario);
@@ -1266,14 +1329,7 @@
             },
             async guardarEdicionExamen() {
                 const { id, fecha, asignatura, nota } = this.editExamenForm;
-                const { error } = await _supabase.from('examenes').update({
-                    fecha, asignatura, nota
-                }).eq('id', id);
-
-                if (error) {
-                    alert("Error al actualizar el examen: " + error.message);
-                    return;
-                }
+                await _supabase.from('examenes').update({ fecha, asignatura, nota }).eq('id', id);
                 this.showEditExamenModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
@@ -1286,11 +1342,7 @@
             },
             async ejecutarEliminarExamen() {
                 if (!this.examenAEliminar) return;
-                const { error } = await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
-                if (error) {
-                    alert("Error al eliminar el examen: " + error.message);
-                    return;
-                }
+                await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
                 this.showDeleteExamenModal = false;
                 this.examenAEliminar = null;
                 await this.cargarDatosSupabase();
@@ -1302,30 +1354,24 @@
                 this.activeTab = 'pagos';
                 const nombreCompleto = this.normalizeName(this.form.nombre + " " + this.form.apellidos);
                 const pagosAlumno = this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreCompleto);
-                
                 if (pagosAlumno.length > 0) {
-                    const ultimo = pagosAlumno[0];
-                    this.nuevoPago.tarifa = ultimo.tarifa || '';
-                    this.nuevoPago.importe = ultimo.importe || '';
+                    this.nuevoPago.tarifa = pagosAlumno[0].tarifa || '';
+                    this.nuevoPago.importe = pagosAlumno[0].importe || '';
                 } else {
                     this.nuevoPago.tarifa = '';
                     this.nuevoPago.importe = '';
                 }
-                
                 this.nuevoPago.mes = this.calcularSiguienteMesAPagar();
             },
             getCuotaValor(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
-                if (!reg || reg.cuota === null || reg.cuota === 0 || reg.cuota === 0.00) return '';
+                if (!reg || reg.cuota === null || reg.cuota === 0) return '';
                 return reg.cuota;
             },
             updateCuotaLocal(nombreAlumno, mes, valor) {
                 let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
-                if (reg) {
-                    reg.cuota = valor === '' ? null : Number(valor);
-                } else {
-                    this.ingresosFijosList.push({ alumno: nombreAlumno, mes: mes, cuota: valor === '' ? null : Number(valor), pagado: false });
-                }
+                if (reg) reg.cuota = valor === '' ? null : Number(valor);
+                else this.ingresosFijosList.push({ alumno: nombreAlumno, mes: mes, cuota: valor === '' ? null : Number(valor), pagado: false });
             },
             async guardarCeldaIngresosFijos(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
@@ -1352,24 +1398,13 @@
                 const mName = parts[0];
                 const yRaw = parts[1];
                 const listaNombres = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
-                
                 let siguienteMesStr = "";
                 try {
                     let idx = listaNombres.indexOf(mName);
                     let anioNum = Number(yRaw);
-                    if (idx === 11) {
-                        siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}'`;
-                    } else {
-                        if (mName === 'DICIEMBRE') {
-                            siguienteMesStr = `${listaNombres[idx + 1]} ${anioNum + 1}'`;
-                        } else {
-                            siguienteMesStr = `${listaNombres[idx + 1]} ${anioNum}'`;
-                        }
-                    }
-                } catch(e) {
-                    siguienteMesStr = "JUNIO 27'";
-                }
-
+                    if (idx === 11) siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}'`;
+                    else siguienteMesStr = `${listaNombres[idx + 1]} ${mName === 'DICIEMBRE' ? anioNum + 1 : anioNum}'`;
+                } catch(e) { siguienteMesStr = "JUNIO 27'"; }
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
                 await _supabase.from('ingresos_fijos').upsert({ alumno: nombreCompleto, mes: siguienteMesStr, cuota: 0, pagado: false }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
@@ -1388,7 +1423,7 @@
             abrirModalEliminar(mes) {
                 this.modalType = 'delete';
                 this.modalTitle = 'Eliminar Mes';
-                this.modalMessage = `¿Seguro que deseas eliminar el mes "${mes}" para todos los alumnos? Esta acción no se puede deshacer.`;
+                this.modalMessage = `¿Seguro que deseas eliminar el mes "${mes}" para todos los alumnos?`;
                 this.modalTargetMes = mes;
                 this.showCustomModal = true;
             },
@@ -1397,13 +1432,11 @@
                 if (this.modalType === 'edit') {
                     const nuevoNombre = this.modalInputVal.toUpperCase().trim();
                     if (!nuevoNombre || nuevoNombre === this.modalTargetMes) { this.showCustomModal = false; return; }
-                    const { error } = await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
-                    if (error) { alert("Error: " + error.message); return; }
+                    await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
                     this.successMessage = "Mes modificado correctamente";
                 } else if (this.modalType === 'delete') {
-                    const { error } = await _supabase.from('ingresos_fijos').delete().eq('mes', this.modalTargetMes);
-                    if (error) { alert("Error: " + error.message); return; }
-                    this.successMessage = `Mes ${this.modalTargetMes} eliminado`;
+                    await _supabase.from('ingresos_fijos').delete().eq('mes', this.modalTargetMes);
+                    this.successMessage = `Mes eliminado`;
                 }
                 this.showCustomModal = false;
                 await this.cargarDatosSupabase();
@@ -1415,15 +1448,8 @@
                 this.showEditPagoModal = true;
             },
             async guardarEdicionPago() {
-                const { id, alumno, tarifa, extras, importe, fecha_pago, mes, metodo_pago, registrado } = this.editPagoForm;
-                const { error } = await _supabase.from('pagos').update({
-                    tarifa, extras, importe: Number(importe) || 0, fecha_pago, mes, metodo_pago
-                }).eq('id', id);
-
-                if (error) {
-                    alert("Error al actualizar el pago: " + error.message);
-                    return;
-                }
+                const { id, tarifa, extras, importe, fecha_pago, mes, metodo_pago } = this.editPagoForm;
+                await _supabase.from('pagos').update({ tarifa, extras, importe: Number(importe) || 0, fecha_pago, mes, metodo_pago }).eq('id', id);
                 this.showEditPagoModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
@@ -1436,11 +1462,7 @@
             },
             async ejecutarEliminarPago() {
                 if (!this.pagoAEliminar) return;
-                const { error } = await _supabase.from('pagos').delete().eq('id', this.pagoAEliminar.id);
-                if (error) {
-                    alert("Error al eliminar el pago: " + error.message);
-                    return;
-                }
+                await _supabase.from('pagos').delete().eq('id', this.pagoAEliminar.id);
                 this.showDeletePagoModal = false;
                 this.pagoAEliminar = null;
                 await this.cargarDatosSupabase();
@@ -1452,9 +1474,7 @@
                 if(marcar) {
                     this.alumnosFiltradosGestor.forEach(a => {
                         const nombreCompleto = a.nombre + ' ' + a.apellidos;
-                        if (!this.gestorExamenes.alumnosSeleccionados.includes(nombreCompleto)) {
-                            this.gestorExamenes.alumnosSeleccionados.push(nombreCompleto);
-                        }
+                        if (!this.gestorExamenes.alumnosSeleccionados.includes(nombreCompleto)) this.gestorExamenes.alumnosSeleccionados.push(nombreCompleto);
                     });
                 } else {
                     this.gestorExamenes.alumnosSeleccionados = [];
@@ -1488,172 +1508,60 @@
                 setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
             },
             async registrarPagoSolo() {
-                if (!this.form || !this.form.nombre || !this.form.apellidos) {
-                    alert("Por favor selecciona un alumno válido.");
-                    return;
-                }
+                if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
-                try {
-                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
-                    
-                    const { error } = await _supabase.from('pagos').insert([{
-                        factura_id: idFinal,
-                        alumno: this.form.nombre + ' ' + this.form.apellidos,
-                        tarifa: this.nuevoPago.tarifa,
-                        extras: this.nuevoPago.extras,
-                        importe: this.importeCalculado,
-                        fecha_pago: this.nuevoPago.fecha,
-                        mes: this.nuevoPago.mes,
-                        metodo_pago: this.nuevoPago.metodo,
-                        registrado: true
-                    }]);
-
-                    if (error) {
-                        alert("Error al registrar el pago en Supabase: " + error.message);
-                        this.savingPago = false;
-                        return;
-                    }
-
-                    this.generarReciboHTML({
-                        fecha: this.nuevoPago.fecha,
-                        metodo: this.nuevoPago.metodo,
-                        tarifa: this.nuevoPago.tarifa,
-                        extras: this.nuevoPago.extras,
-                        importe: this.importeCalculado,
-                        id: idFinal
-                    });
-
-                    await this.cargarDatosSupabase();
-                    this.showSuccess = true;
-                    this.successMessage = `¡Pago ${idFinal} guardado con éxito!`;
-                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
-
-                    setTimeout(() => { window.print(); }, 400);
-
-                } catch (e) {
-                    alert("Error en el proceso: " + e.toString());
-                    this.savingPago = false;
-                }
+                const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                await _supabase.from('pagos').insert([{
+                    factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: this.nuevoPago.metodo, registrado: true
+                }]);
+                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `¡Pago ${idFinal} guardado!`;
+                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
+                setTimeout(() => { window.print(); }, 400);
             },
             async registrarPagoYSubirNube() {
-                if (!this.form || !this.form.nombre || !this.form.apellidos) {
-                    alert("Por favor selecciona un alumno válido.");
-                    return;
-                }
+                if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
-                try {
-                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
-                    
-                    const { error } = await _supabase.from('pagos').insert([{
-                        factura_id: idFinal,
-                        alumno: this.form.nombre + ' ' + this.form.apellidos,
-                        tarifa: this.nuevoPago.tarifa,
-                        extras: this.nuevoPago.extras,
-                        importe: this.importeCalculado,
-                        fecha_pago: this.nuevoPago.fecha,
-                        mes: this.nuevoPago.mes,
-                        metodo_pago: this.nuevoPago.metodo,
-                        registrado: true
-                    }]);
-
-                    if (error) {
-                        alert("Error al registrar el pago en Supabase: " + error.message);
-                        this.savingPago = false;
-                        return;
-                    }
-
-                    this.generarReciboHTML({
-                        fecha: this.nuevoPago.fecha,
-                        metodo: this.nuevoPago.metodo,
-                        tarifa: this.nuevoPago.tarifa,
-                        extras: this.nuevoPago.extras,
-                        importe: this.importeCalculado,
-                        id: idFinal
-                    });
-
-                    const element = document.getElementById('zona-impresion');
-                    const opt = {
-                        margin: 0,
-                        filename: `${idFinal}.pdf`,
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    };
-
-                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
-                    const fechaParts = this.nuevoPago.fecha.split('-');
-                    const anio = fechaParts[0] || new Date().getFullYear();
-                    const mesNum = fechaParts[1] || '08';
-                    const storagePath = `${anio}/${mesNum}/${idFinal}.pdf`;
-
-                    const uploadRes = await _supabase.storage
-                        .from('facturas')
-                        .upload(storagePath, pdfBlob, {
-                            contentType: 'application/pdf',
-                            upsert: true
-                        });
-
-                    if (uploadRes.error) {
-                        alert("Aviso: El pago se guardó pero hubo un error al subir el PDF a Storage: " + uploadRes.error.message);
-                    }
-
-                    await this.cargarDatosSupabase();
-                    this.showSuccess = true;
-                    this.successMessage = `¡Pago registrado y ${idFinal}.pdf subido a la nube!`;
-                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
-
-                    setTimeout(() => { window.print(); }, 400);
-
-                } catch (e) {
-                    alert("Error en el proceso: " + e.toString());
-                    this.savingPago = false;
-                }
+                const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                await _supabase.from('pagos').insert([{
+                    factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: this.nuevoPago.metodo, registrado: true
+                }]);
+                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
+                const element = document.getElementById('zona-impresion');
+                const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+                const fechaParts = this.nuevoPago.fecha.split('-');
+                await _supabase.storage.from('facturas').upload(`${fechaParts[0]}/${fechaParts[1]}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `¡Pago y PDF subidos a la nube!`;
+                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
+                setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
-                const facturaNum = pago.factura_id || 'S/N';
-                this.generarReciboHTML({
-                    fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
-                    metodo: pago.metodo_pago || 'Efectivo',
-                    tarifa: pago.tarifa,
-                    extras: pago.extras,
-                    importe: pago.importe,
-                    id: facturaNum
-                }, pago.alumno);
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: pago.metodo_pago, tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistoricoGlobal(pago) {
-                const facturaNum = pago.factura_id || 'S/N';
-                this.generarReciboHTML({
-                    fecha: pago.fecha_pago || new Date().toISOString().split('T')[0],
-                    metodo: pago.metodo_pago || 'Efectivo',
-                    tarifa: pago.tarifa,
-                    extras: pago.extras,
-                    importe: pago.importe,
-                    id: facturaNum
-                }, pago.alumno);
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: pago.metodo_pago, tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
                 setTimeout(() => { window.print(); }, 400);
             },
             generarReciboHTML(datos, nombreAlumnoFijo = null) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
-                
                 const alumnoImprimir = nombreAlumnoFijo || (this.form.nombre ? `${this.form.nombre} ${this.form.apellidos}` : 'ALUMNO');
-                const importeTotalStr = parseFloat(datos.importe || datos.importeTotal || 0).toFixed(2).replace('.', ',') + " €";
+                const importeTotalStr = parseFloat(datos.importe || 0).toFixed(2).replace('.', ',') + " €";
                 let filasHTML = "";
+                if (datos.tarifa) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
+                if (datos.extras) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;"></td></tr>`;
                 
-                if (datos.tarifa && String(datos.tarifa).trim() !== "") {
-                    let matchTarifa = String(datos.tarifa).match(/(\d+)€/);
-                    let importeTarifaStr = matchTarifa ? matchTarifa[1] + " €" : importeTotalStr;
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTarifaStr}</td></tr>`;
-                }
-                
-                if (datos.extras && String(datos.extras).trim() !== "") {
-                    let matchExtra = String(datos.extras).match(/(\d+(?:[\.,]\d)?)€/);
-                    let importeExtraStr = matchExtra ? matchExtra[1] + " €" : parseFloat(String(datos.extras).replace(/[^\d\.,]/g,'').replace(',','.')||0).toFixed(2).replace('.',',') + " €";
-                    filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.extras}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeExtraStr}</td></tr>`;
-                }
-
                 document.getElementById('ticket-data').innerHTML = `
                     <div style="font-family:'Helvetica',sans-serif;margin:0;padding:30px;color:#000">
                         <div style="border:2px solid #000;width:100%;position:relative;min-height:850px;display:flex;flex-direction:column;background:#fff;">
@@ -1668,7 +1576,7 @@
                                 <tr>
                                     <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
                                     <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
-                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || datos.metodo_pago || '').toUpperCase()}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || 'Efectivo').toUpperCase()}</span></td>
                                 </tr>
                             </table>
                             <div style="border-bottom:2px solid #000;padding:15px;">
@@ -1676,10 +1584,7 @@
                                 <h3 style="margin:5px 0;text-transform:uppercase">${alumnoImprimir}</h3>
                             </div>
                             <table style="width:100%;border-collapse:collapse;">
-                                <tr>
-                                    <th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th>
-                                    <th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th>
-                                </tr>
+                                <tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>
                                 ${filasHTML}
                                 <tr style="height:250px;"><td colspan="2"></td></tr>
                                 <tr style="border-top:2px solid #000;border-bottom:2px solid #000;background:#eee;font-weight:bold;font-size:20px;">
@@ -1690,12 +1595,10 @@
                             <table style="margin-top:30px;margin-bottom:20px;width:100%;border-collapse:collapse;">
                                 <tr>
                                     <td style="font-size:10px;font-weight:bold;width:60%;padding:15px;">NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).</td>
-                                    <td style="text-align:center;position:relative;padding:15px;">
-                                        <div style="border-top:1px dashed #000;margin-top:70px;font-size:10px">FDO. CSE ELISA GUNDÍN</div>
-                                    </td>
+                                    <td style="text-align:center;position:relative;padding:15px;"><div style="border-top:1px dashed #000;margin-top:70px;font-size:10px">FDO. CSE ELISA GUNDÍN</div></td>
                                 </tr>
                             </table>
-                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD 3/2018, le informamos que sus datos personales serão tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la facturación, contabilidad y la relación administrativa. Los datos se conservarán durante los plazos legales aplicables. Puede ejercer sus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad dirigiéndose por escrito a C/ Alicante 4, El Pinós (03650).</div>
+                            <div style="font-size:8px;text-align:justify;padding-top:15px;margin-top:auto;border-top:2px solid #000;line-height:1.2;width:100%;box-sizing:border-box;">PROTECCIÓN DE DATOS: En cumplimiento del RGPD y LOPDGDD, tratamos sus datos para la gestión contable y fiscal.</div>
                         </div>
                     </div>`;
             },
@@ -1707,12 +1610,7 @@
                     alumno: alumnoNombre,
                     nota: ''
                 }));
-                const { error } = await _supabase.from('examenes').insert(rowsToInsert);
-                if (error) {
-                    alert("Error al guardar exámenes: " + error.message);
-                    this.savingExamenes = false;
-                    return;
-                }
+                await _supabase.from('examenes').insert(rowsToInsert);
                 this.showSuccess = true;
                 this.successMessage = 'Exámenes creados correctamente';
                 this.gestorExamenes.asignatura = '';
