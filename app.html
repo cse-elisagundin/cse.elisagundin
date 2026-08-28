@@ -364,7 +364,7 @@
                             </div>
                         </div>
 
-                        <!-- BUSCADOR DE ARCHIVOS NUBE -->
+                        <!-- BUSCADOR Y BOTÓN SUBIDA MASIVA -->
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
@@ -372,14 +372,15 @@
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
                             <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0">
-                                <i class="fas fa-cloud-upload-alt"></i> Subir PDF Externo
-                                <input type="file" accept="application/pdf" @change="subirArchivoDirectoNube" class="hidden">
+                                <i class="fas fa-cloud-upload-alt"></i> Subir PDFs (Masivo)
+                                <!-- Atributo MULTIPLE añadido aquí -->
+                                <input type="file" accept="application/pdf" multiple @change="subirArchivoDirectoNube" class="hidden">
                             </label>
                         </div>
 
                         <!-- LISTADO ORGANIZADO POR CARPETAS (AÑOS / MESES) -->
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cargando facturas desde la nube...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Procesando facturas en la nube...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron archivos en el almacenamiento. Sube tus facturas antiguas o genera nuevos recibos.
@@ -1280,21 +1281,42 @@
                 this.loadingArchivos = false;
             },
             async subirArchivoDirectoNube(event) {
-                const file = event.target.files[0];
-                if (!file) return;
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+
+                this.loadingArchivos = true;
+                let subidos = 0;
+                let errores = 0;
+
                 const anioActual = new Date().getFullYear();
                 const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
-                const path = `${anioActual}/${mesActual}/${file.name}`;
-                
-                const { error } = await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
-                if (error) {
-                    alert("Error al subir archivo: " + error.message);
-                    return;
+
+                // Recorremos todos los archivos seleccionados para subirlos uno a uno
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const path = `${anioActual}/${mesActual}/${file.name}`;
+                    
+                    const { error } = await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                    if (error) {
+                        console.error("Error al subir el archivo: " + file.name, error);
+                        errores++;
+                    } else {
+                        subidos++;
+                    }
                 }
-                await this.cargarArchivosNube();
+
+                event.target.value = ''; // Resetea el input para poder volver a elegir los mismos archivos si hace falta
+                
+                await this.cargarArchivosNube(); // Refresca el panel para mostrar las nuevas facturas
+                
                 this.showSuccess = true;
-                this.successMessage = "¡Archivo subido correctamente a la nube!";
-                setTimeout(() => { this.showSuccess = false; }, 2500);
+                if (errores > 0) {
+                    this.successMessage = `Proceso finalizado. Subidos: ${subidos}. Errores: ${errores}.`;
+                } else {
+                    this.successMessage = `¡${subidos} archivo(s) subido(s) correctamente!`;
+                }
+                
+                setTimeout(() => { this.showSuccess = false; }, 3500);
             },
             logout() {
                 _supabase.auth.signOut();
