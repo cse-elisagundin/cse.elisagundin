@@ -248,8 +248,9 @@
             </div>
         </transition>
 
+        <!-- PANTALLA DE LOGIN (Protegida contra parpadeo con checkingSession) -->
         <transition name="fade">
-            <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
+            <div v-if="!authenticated && !checkingSession" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
                 <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
                     <div v-if="loading" class="loading-line"><div class="loading-progress"></div></div>
                     <div class="mb-6 mt-2">
@@ -311,7 +312,7 @@
                         class="p-4 border-b hover:bg-blue-50 cursor-pointer transition relative"
                         :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
                         <div class="flex justify-between items-start">
-                            <div class="font-bold text-base" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'">{{ s.apellidos }}, {{ s.nombre }}</div>
+                            <div class="font-bold text-base" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'  ">{{ s.apellidos }}, {{ s.nombre }}</div>
                             <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">BAJA</span>
                         </div>
                         <div class="text-xs text-gray-500 mt-1 flex justify-between uppercase">
@@ -344,7 +345,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Tus facturas originales (140-ÉRI-OCT-01.pdf) vinculadas con Supabase</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Tus facturas originales vinculadas con Supabase</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -374,7 +375,7 @@
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por número, alumno, mes o tilde..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
+                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por número, alumno, mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
@@ -965,7 +966,9 @@
     createApp({
         data() {
             return {
-                authenticated: false, loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
+                authenticated: false, 
+                checkingSession: true, // NUEVO: Evita el parpadeo del login al refrescar
+                loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
                 list: [], search: '', selected: null, isNew: false, 
                 loading: false, saving: false, savingPago: false,
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
@@ -1343,7 +1346,6 @@
                         let fileNameStorage = item.name;
                         let facturaIdLimpio = fileNameStorage.replace('.pdf', '');
 
-                        // Buscar en la tabla pagos por archivo_url o por factura_id exacto (respetando tildes)
                         let pagoEncontrado = this.pagosList.find(p => {
                             if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
                             if (p.factura_id && this.normalizeName(p.factura_id) === this.normalizeName(facturaIdLimpio)) return true;
@@ -1391,7 +1393,7 @@
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
                             path: item.path,
-                            displayName: displayName, // Muestra tu factura original con tilde (ej. 140-ÉRI-OCT-01.pdf)
+                            displayName: displayName,
                             alumnoAsociado: alumnoAsociado,
                             curso: cursoVal,
                             mes: mesVal,
@@ -1518,7 +1520,6 @@
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
 
-                        // Buscar coincidencia en pagos por factura_id
                         const { data: pagoEncontrado } = await _supabase
                             .from('pagos')
                             .select('*')
@@ -1530,7 +1531,6 @@
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // Nombre seguro para Storage (quitando tildes para evitar error 400 de la API)
                         const nombreStorageSeguro = nombreSinExtension.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
                         const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
@@ -1812,7 +1812,6 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                // Ruta limpia sin tildes para el almacenamiento físico
                 const nombreStorageSeguro = idFinal.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
@@ -1904,6 +1903,8 @@
                 this.authenticated = true;
                 await this.cargarDatosSupabase();
             }
+            // Finalizamos la verificación silenciosa para evitar parpadeos visuales
+            this.checkingSession = false;
         }
     }).mount('#app');
 </script>
