@@ -345,7 +345,7 @@
                     </span>
                 </div>
 
-                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (ESTILO DRIVE) -->
+                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (INTELIGENTE POR CURSOS) -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -353,7 +353,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Tus recibos organizados por años y meses</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente por Cursos Escolares</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -364,32 +364,32 @@
                             </div>
                         </div>
 
-                        <!-- BUSCADOR Y SUBIDA MASIVA OPTIMIZADA -->
+                        <!-- BUSCADOR Y SUBIDA INTELIGENTE DE CARPETAS -->
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
+                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o curso..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
-                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0">
-                                <i class="fas fa-cloud-upload-alt"></i> Subir PDFs (Masivo)
-                                <input type="file" accept="application/pdf" multiple @change="subirArchivoDirectoNube" class="hidden">
+                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0" title="Selecciona una carpeta o múltiples archivos">
+                                <i class="fas fa-folder-plus"></i> Subir Carpeta / PDFs
+                                <input type="file" accept="application/pdf" webkitdirectory directory multiple @change="subirCarpetasInteligente" class="hidden">
                             </label>
                         </div>
 
-                        <!-- LISTADO ORGANIZADO POR CARPETAS (AÑOS / MESES) -->
+                        <!-- LISTADO ORGANIZADO POR CURSOS Y MESES -->
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Procesando facturas en la nube...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Clasificando y cargando facturas desde la nube...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento. Sube tus facturas antiguas o genera nuevos recibos.
+                            No se encontraron archivos en el almacenamiento. Sube tus carpetas de Drive o genera nuevos recibos.
                         </div>
                         <div v-else class="space-y-4">
                             <div v-for="(archivosMes, carpetaKey) in archivosAgrupadosPorCarpeta" :key="carpetaKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
                                 <div class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center select-none">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-folder text-[#2b94cc]"></i>
-                                        <span>Carpeta: {{ carpetaKey }}</span>
+                                        <span>{{ carpetaKey }}</span>
                                         <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ archivosMes.length }} archivos</span>
                                     </div>
                                 </div>
@@ -1058,7 +1058,12 @@
                     if (!grupos[carpeta]) grupos[carpeta] = [];
                     grupos[carpeta].push(a);
                 });
-                return grupos;
+                // Ordenamos las claves del objeto agrupado por curso escolar cronológicamente
+                const ordenado = {};
+                Object.keys(grupos).sort().reverse().forEach(k => {
+                    ordenado[k] = grupos[k];
+                });
+                return ordenado;
             },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
@@ -1259,18 +1264,19 @@
                     
                     this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
                         const partes = item.name.split('/');
-                        let folder = "GENERAL";
+                        let cursoFolder = "GENERAL";
                         let fileName = partes[partes.length - 1];
-                        if (partes.length >= 3) {
-                            folder = `${partes[0]} / Mes ${partes[1]}`;
-                        } else if (partes.length === 2) {
-                            folder = partes[0];
+                        
+                        if (partes.length >= 2) {
+                            // Si la ruta tiene estructura [curso]/[mes]/archivo.pdf o similar
+                            cursoFolder = `Curso ${partes[0]} - ${partes[1]}`;
                         }
-                        const fullPath = item.id ? item.name : (partes.length > 1 ? item.name : item.name);
+                        
+                        const fullPath = item.id ? item.name : partes.join('/');
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
                         return {
                             name: fileName,
-                            folder: folder,
+                            folder: cursoFolder,
                             url: urlData.publicUrl
                         };
                     });
@@ -1282,11 +1288,52 @@
             sanitizarNombreArchivo(nombre) {
                 return nombre
                     .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "") // Elimina acentos
-                    .replace(/[^a-zA-Z0-9.\-_]/g, "_") // Reemplaza caracteres especiales o espacios por guiones bajos
-                    .replace(/__+/g, "_"); // Evita duplicar guiones bajos
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-zA-Z0-9.\-_]/g, "_")
+                    .replace(/__+/g, "_");
             },
-            async subirArchivoDirectoNube(event) {
+            determinarCursoYMesInteligente(file) {
+                // Analiza la ruta relativa webkitRelativePath o el nombre del archivo
+                const relPath = file.webkitRelativePath || file.name;
+                const pathUpper = relPath.toUpperCase();
+
+                let anioDetectado = new Date().getFullYear();
+                let mesDetectado = "10"; // Por defecto Octubre
+
+                // Buscar año en la ruta
+                const matchAnio = pathUpper.match(/20\d{2}/);
+                if (matchAnio) {
+                    anioDetectado = parseInt(matchAnio[0], 10);
+                }
+
+                // Mapeo de meses
+                const mesesMap = {
+                    'SEPTIEMBRE': '09', 'OCTUBRE': '10', 'NOVIEMBRE': '11', 'DICIEMBRE': '12',
+                    'ENERO': '01', 'FEBRERO': '02', 'MARZO': '03', 'ABRIL': '04',
+                    'MAYO': '05', 'JUNIO': '06', 'JULIO': '07', 'AGOSTO': '08'
+                };
+
+                for (const [nombreMes, numMes] of Object.entries(mesesMap)) {
+                    if (pathUpper.includes(nombreMes)) {
+                        mesDetectado = numMes;
+                        break;
+                    }
+                }
+
+                const mesNumInt = parseInt(mesDetectado, 10);
+                // Si el mes es entre Septiembre (9) y Diciembre (12), el curso escolar empieza ese año
+                // Si es entre Enero (1) y Agosto (8), el curso escolar empezó el año anterior
+                let anioInicioCurso = (mesNumInt >= 9) ? anioDetectado : anioDetectado - 1;
+                let anioFinCurso = anioInicioCurso + 1;
+                let cursoKey = `${anioInicioCurso}-${anioFinCurso}`;
+                let nombreMesTexto = Object.keys(mesesMap).find(key => mesesMap[key] === mesDetectado) || 'GENERAL';
+
+                return {
+                    curso: cursoKey,
+                    mesNombre: nombreMesTexto
+                };
+            },
+            async subirCarpetasInteligente(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
 
@@ -1294,14 +1341,16 @@
                 let subidos = 0;
                 let errores = 0;
 
-                const anioActual = new Date().getFullYear();
-                const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
-
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
+                    if (!file.name.toLowerCase().endsWith('.pdf')) continue;
+
                     try {
+                        const clasificacion = this.determinarCursoYMesInteligente(file);
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
-                        const path = `${anioActual}/${mesActual}/${nombreLimpio}`;
+                        
+                        // Ruta estructurada: [Curso]/[Mes]/[NombreLimpio.pdf]
+                        const path = `${clasificacion.curso}/${clasificacion.mesNombre}/${nombreLimpio}`;
                         
                         const { error } = await _supabase.storage.from('facturas').upload(path, file, { 
                             upsert: true,
@@ -1320,14 +1369,14 @@
                     }
                 }
 
-                event.target.value = ''; // Resetea el input
-                await this.cargarArchivosNube(); // Refresca listado
+                event.target.value = '';
+                await this.cargarArchivosNube();
                 
                 this.showSuccess = true;
                 if (errores > 0) {
                     this.successMessage = `Proceso completado. Subidos: ${subidos}, Con error: ${errores}.`;
                 } else {
-                    this.successMessage = `¡Los ${subidos} archivos se han subido con éxito!`;
+                    this.successMessage = `¡Se han subido y clasificado ${subidos} archivos con éxito!`;
                 }
                 
                 setTimeout(() => { this.showSuccess = false; }, 4000);
@@ -1573,7 +1622,16 @@
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 const fechaParts = this.nuevoPago.fecha.split('-');
-                await _supabase.storage.from('facturas').upload(`${fechaParts[0]}/${fechaParts[1]}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                
+                // Clasificación automática para nuevos recibos impresos
+                const mesNum = parseInt(fechaParts[1], 10);
+                const anioNum = parseInt(fechaParts[0], 10);
+                const anioIni = mesNum >= 9 ? anioNum : anioNum - 1;
+                const cursoKey = `${anioIni}-${anioIni+1}`;
+                const mesesNombresArr = ['GENERAL','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                const mesNombreStr = mesesNombresArr[mesNum] || 'GENERAL';
+
+                await _supabase.storage.from('facturas').upload(`${cursoKey}/${mesNombreStr}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago y PDF subidos a la nube!`;
