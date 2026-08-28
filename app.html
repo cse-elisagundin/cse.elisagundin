@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">El sistema detectará el año de la carpeta o abreviaturas como OCT, NOV... y las clasificará.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">El sistema eliminará tildes y subirá en formato puro para garantizar compatibilidad 100%.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -1139,7 +1139,9 @@
             }
         },
         methods: {
-            normalizeName(str) { return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); },
+            normalizeName(str) { 
+                return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
+            },
             formatearFecha(f) {
                 if (!f) return '';
                 const parts = f.split('-');
@@ -1204,6 +1206,8 @@
             pagoVacio() {
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
+            
+            // FUNCIÓN ACTUALIZADA: Genera IDs sin tildes para garantizar coincidencia con la nube
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 0;
                 if (this.pagosList && this.pagosList.length > 0) {
@@ -1218,10 +1222,12 @@
                     maxNum = Math.max(...numeros, 0);
                 }
                 const siguienteNum = maxNum + 1;
-                const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
-                const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
+                let nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 
-                // Mantenemos la letra tal cual (Érika -> É)
+                // CRÍTICO: Eliminamos tildes de las iniciales para que Érika pase a ser E
+                nombreCompleto = nombreCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                
+                const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
                 const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
                 
                 const mesLimpio = String(mesStr || '').trim().split(' ')[0];
@@ -1284,12 +1290,12 @@
                 }
             },
             
-            // NUEVO SISTEMA DE ESCANEO PROFUNDO (INFALIBLE) Y SIN LÍMITE DE 100
+            // FUNCIÓN ACTUALIZADA: Explora hasta 1000 items por carpeta
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
                     let allFiles = [];
-                    // Subimos el límite a 1000 para no dejarnos archivos fuera
+                    // Limit subido a 1000
                     const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 1000 });
                     if (rootError) throw rootError;
 
@@ -1297,8 +1303,7 @@
                         for (const rootItem of rootItems) {
                             const rootName = rootItem.name;
                             if (!rootName || rootName === '.emptyFolderPlaceholder') continue;
-                            
-                            // Si NO termina en .pdf, asumimos al 100% que es una CARPETA
+
                             if (rootName.toLowerCase().endsWith('.pdf')) {
                                 allFiles.push({ name: rootName, path: rootName });
                             } else {
@@ -1309,17 +1314,21 @@
                                     for (const monthItem of monthItems) {
                                         const mName = monthItem.name;
                                         if (!mName || mName === '.emptyFolderPlaceholder') continue;
-                                        
+
                                         if (mName.toLowerCase().endsWith('.pdf')) {
                                             allFiles.push({ name: mName, path: `${cursoFolder}/${mName}` });
                                         } else {
-                                            // Es la carpeta del mes, la exploramos
-                                            const { data: pdfItems } = await _supabase.storage.from('facturas').list(`${cursoFolder}/${mName}`, { limit: 1000 });
+                                            const folderPath = `${cursoFolder}/${mName}`;
+                                            const { data: pdfItems } = await _supabase.storage.from('facturas').list(folderPath, { limit: 1000 });
                                             
                                             if (pdfItems) {
                                                 for (const pdfItem of pdfItems) {
-                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
-                                                        allFiles.push({ name: pdfItem.name, path: `${cursoFolder}/${mName}/${pdfItem.name}` });
+                                                    const pName = pdfItem.name;
+                                                    if (pName && pName.toLowerCase().endsWith('.pdf')) {
+                                                        allFiles.push({
+                                                            name: pName,
+                                                            path: `${folderPath}/${pName}`
+                                                        });
                                                     }
                                                 }
                                             }
@@ -1332,11 +1341,20 @@
                     
                     this.archivosNube = allFiles.map(item => {
                         const fileName = item.name;
+                        const facturaIdLimpio = fileName.replace('.pdf', '');
+                        
+                        // CRÍTICO: Comparamos el ID limpio ignorando tildes por completo
+                        const idArchivoBuscado = facturaIdLimpio.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        
+                        const pagoEncontrado = this.pagosList.find(p => {
+                            if (!p.factura_id) return false;
+                            const idBD = String(p.factura_id).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                            return idBD === idArchivoBuscado;
+                        });
+                        
                         let fechaRealPago = null;
                         let mesReal = null;
-                        const facturaIdLimpio = fileName.replace('.pdf', '');
-                        const pagoEncontrado = this.pagosList.find(p => p.factura_id === facturaIdLimpio);
-                        
+
                         if (pagoEncontrado && pagoEncontrado.fecha_pago) {
                             fechaRealPago = pagoEncontrado.fecha_pago;
                             if (pagoEncontrado.mes) {
@@ -1376,9 +1394,10 @@
                 }
                 this.loadingArchivos = false;
             },
+            
+            // FUNCIÓN ACTUALIZADA: Analiza rutas quitando tildes previamente para asegurar el match
             analizarTextoParaCursoYMes(pathCompleto) {
-                // Eliminamos NFC forzado para evitar cuelgues
-                const pathUp = String(pathCompleto).toUpperCase();
+                const pathUp = String(pathCompleto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
@@ -1406,8 +1425,7 @@
                 };
 
                 for (const [abbr, fullName] of Object.entries(mesesMap)) {
-                    // Regex mejorado para capturar tildes naturales sin fallar
-                    const regex = new RegExp(`(^|[^A-ZÁÉÍÓÚÑ])${abbr}([^A-ZÁÉÍÓÚÑ]|$)`);
+                    const regex = new RegExp(`(^|[^A-Z])${abbr}([^A-Z]|$)`);
                     if (regex.test(pathUp)) {
                         mesDetectado = fullName;
                         break;
@@ -1426,13 +1444,17 @@
                 }
                 return total;
             },
+            
+            // FUNCIÓN CRÍTICA ACTUALIZADA: Filtro de transliteración agresivo a ASCII
             sanitizarNombreArchivo(nombre) {
-                // Conserva tildes intactas. Solo limpia símbolos conflictivos para rutas web
                 return String(nombre)
-                    .trim()
-                    .replace(/[\s\/\\?%*:|"<>]/g, "_")
-                    .replace(/__+/g, "_");
+                    .normalize("NFD") // Separa la tilde de la vocal (É -> E + ´)
+                    .replace(/[\u0300-\u036f]/g, "") // Elimina completamente la tilde
+                    .replace(/[^a-zA-Z0-9.\-_()]/g, "_") // Cambia todo lo raro por guion bajo
+                    .replace(/_+/g, "_") // Limpia múltiples guiones bajos
+                    .trim(); // Se acabó el problema en la nube
             },
+            
             async subirArchivosSeleccionados(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -1497,6 +1519,7 @@
                         const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
                         
+                        // Aplicamos el filtro agresivo para asegurar que Suba
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
                         
@@ -1522,7 +1545,7 @@
                 if (errores > 0) {
                     this.successMessage = `Proceso finalizado. Subidos: ${subidos} | Error/Ignorados: ${errores}`;
                 } else {
-                    this.successMessage = `¡Se han subido y clasificado ${subidos} archivos con éxito!`;
+                    this.successMessage = `¡Subidos ${subidos} archivos a la nube sin errores!`;
                 }
                 setTimeout(() => { this.showSuccess = false; }, 5000);
             },
@@ -1771,7 +1794,10 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                // Aplica el mismo filtrado para asegurar la subida
+                const idFinalLimpio = this.sanitizarNombreArchivo(idFinal);
+
+                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinalLimpio}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago y PDF subidos a la nube!`;
