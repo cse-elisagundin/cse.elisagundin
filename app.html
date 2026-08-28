@@ -355,23 +355,35 @@
                             </div>
                         </div>
 
-                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <!-- ZONA DE ARRASTRAR Y SOLTAR (DRAG & DROP) FLEXIBLE PARA ARCHIVOS Y CARPETAS -->
+                        <div class="mb-6 border-2 border-dashed border-indigo-200 hover:border-[#2b94cc] bg-indigo-50/30 p-6 rounded-2xl text-center transition flex flex-col items-center justify-center gap-3 relative"
+                             @dragover.prevent @drop.prevent="manejarDropNube">
+                            <div class="bg-blue-100 text-[#2b94cc] p-3 rounded-full text-2xl shadow-sm">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">El sistema detectará el año de la carpeta o fecha y las clasificará automáticamente.</p>
+                            </div>
+                            <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
+                                <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
+                                <input type="file" accept="application/pdf" multiple @change="subirArchivosSeleccionados" class="hidden">
+                            </label>
+                        </div>
+
+                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                                 <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
-                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0" title="Selecciona tu carpeta principal (ej. 25-26 o 26-27)">
-                                <i class="fas fa-folder-plus"></i> Subir Carpeta / PDFs
-                                <input type="file" accept="application/pdf" webkitdirectory directory multiple @change="subirCarpetasInteligente" class="hidden">
-                            </label>
                         </div>
 
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
                             <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y clasificando facturas...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento. Sube tus carpetas o verifica que existan PDFs en el bucket 'facturas'.
+                            No se encontraron archivos en el almacenamiento. Sube tus archivos o carpetas arriba.
                         </div>
                         <div v-else class="space-y-4">
                             <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
@@ -1273,7 +1285,6 @@
                 try {
                     let allFiles = [];
                     
-                    // 1. Listar la raíz del bucket (carpetas de cursos ej: '25-26', '26-27')
                     const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 100 });
                     if (rootError) throw rootError;
 
@@ -1281,17 +1292,14 @@
                         for (const rootItem of rootItems) {
                             const esCarpetaRoot = rootItem.id === null || (rootItem.metadata === null && !rootItem.updated_at);
                             if (esCarpetaRoot) {
-                                const cursoFolder = rootItem.name; // Ej: '25-26'
-                                
-                                // 2. Listar dentro de la carpeta del curso (meses: OCTUBRE, NOVIEMBRE...)
+                                const cursoFolder = rootItem.name;
                                 const { data: monthItems, error: monthError } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 100 });
                                 if (!monthError && monthItems) {
                                     for (const monthItem of monthItems) {
                                         const esCarpetaMes = monthItem.id === null || (monthItem.metadata === null && !monthItem.updated_at);
-                                        const monthFolder = monthItem.name; // Ej: 'OCTUBRE'
+                                        const monthFolder = monthItem.name;
                                         
                                         if (esCarpetaMes) {
-                                            // 3. Listar los PDFs dentro de la carpeta del mes
                                             const fullFolderPath = `${cursoFolder}/${monthFolder}`;
                                             const { data: pdfItems, error: pdfError } = await _supabase.storage.from('facturas').list(fullFolderPath, { limit: 500 });
                                             if (!pdfError && pdfItems) {
@@ -1323,7 +1331,6 @@
                     
                     this.archivosNube = allFiles.map(item => {
                         const fileName = item.name;
-                        
                         let fechaRealPago = null;
                         let mesReal = null;
                         const facturaIdLimpio = fileName.replace('.pdf', '');
@@ -1413,10 +1420,57 @@
                     .replace(/[^a-zA-Z0-9.\-_]/g, "_")
                     .replace(/__+/g, "_");
             },
-            async subirCarpetasInteligente(event) {
+            async subirArchivosSeleccionados(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
+                await this.procesarYSubirArchivosArray(Array.from(files));
+                event.target.value = '';
+            },
+            async manejarDropNube(event) {
+                const items = event.dataTransfer.items;
+                if (!items) return;
+                
+                this.loadingArchivos = true;
+                let filesArray = [];
 
+                const traverseFileTree = (item, path = '') => {
+                    return new Promise((resolve) => {
+                        if (item.isFile) {
+                            item.file(file => {
+                                file.fullPath = path + file.name;
+                                filesArray.push(file);
+                                resolve();
+                            });
+                        } else if (item.isDirectory) {
+                            const dirReader = item.createReader();
+                            dirReader.readEntries(async entries => {
+                                for (let entry of entries) {
+                                    await traverseFileTree(entry, path + item.name + '/');
+                                }
+                                resolve();
+                            });
+                        } else {
+                            resolve();
+                        }
+                    });
+                };
+
+                let promises = [];
+                for (let i = 0; i < items.length; i++) {
+                    const entry = items[i].webkitGetAsEntry();
+                    if (entry) {
+                        promises.push(traverseFileTree(entry));
+                    }
+                }
+
+                await Promise.all(promises);
+                if (filesArray.length > 0) {
+                    await this.procesarYSubirArchivosArray(filesArray);
+                } else {
+                    this.loadingArchivos = false;
+                }
+            },
+            async procesarYSubirArchivosArray(files) {
                 this.loadingArchivos = true;
                 let subidos = 0;
                 let errores = 0;
@@ -1426,9 +1480,9 @@
                     if (!file.name.toLowerCase().endsWith('.pdf')) continue;
 
                     try {
-                        const rutaCompleta = file.webkitRelativePath || file.name;
+                        const rutaCompleta = file.fullPath || file.webkitRelativePath || file.name;
                         const analisis = this.analizarTextoParaCursoYMes(rutaCompleta);
-                        const cursoPath = analisis.curso.replace('/', '-'); // Ej: 2025-2026
+                        const cursoPath = analisis.curso.replace('/', '-');
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         
                         const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
@@ -1450,16 +1504,13 @@
                     }
                 }
 
-                event.target.value = '';
                 await this.cargarArchivosNube();
-                
                 this.showSuccess = true;
                 if (errores > 0) {
                     this.successMessage = `Proceso completado. Subidos: ${subidos}, Con error: ${errores}.`;
                 } else {
                     this.successMessage = `¡Se han subido y clasificado ${subidos} archivos con éxito!`;
                 }
-                
                 setTimeout(() => { this.showSuccess = false; }, 4000);
             },
             logout() {
