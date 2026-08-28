@@ -364,7 +364,7 @@
                             </div>
                         </div>
 
-                        <!-- BUSCADOR Y BOTÓN SUBIDA MASIVA -->
+                        <!-- BUSCADOR Y SUBIDA MASIVA OPTIMIZADA -->
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
@@ -373,7 +373,6 @@
                             </div>
                             <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0">
                                 <i class="fas fa-cloud-upload-alt"></i> Subir PDFs (Masivo)
-                                <!-- Atributo MULTIPLE añadido aquí -->
                                 <input type="file" accept="application/pdf" multiple @change="subirArchivoDirectoNube" class="hidden">
                             </label>
                         </div>
@@ -1280,6 +1279,13 @@
                 }
                 this.loadingArchivos = false;
             },
+            sanitizarNombreArchivo(nombre) {
+                return nombre
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "") // Elimina acentos
+                    .replace(/[^a-zA-Z0-9.\-_]/g, "_") // Reemplaza caracteres especiales o espacios por guiones bajos
+                    .replace(/__+/g, "_"); // Evita duplicar guiones bajos
+            },
             async subirArchivoDirectoNube(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -1291,32 +1297,40 @@
                 const anioActual = new Date().getFullYear();
                 const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 
-                // Recorremos todos los archivos seleccionados para subirlos uno a uno
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    const path = `${anioActual}/${mesActual}/${file.name}`;
-                    
-                    const { error } = await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
-                    if (error) {
-                        console.error("Error al subir el archivo: " + file.name, error);
+                    try {
+                        const nombreLimpio = this.sanitizarNombreArchivo(file.name);
+                        const path = `${anioActual}/${mesActual}/${nombreLimpio}`;
+                        
+                        const { error } = await _supabase.storage.from('facturas').upload(path, file, { 
+                            upsert: true,
+                            contentType: 'application/pdf'
+                        });
+                        
+                        if (error) {
+                            console.error(`Error al subir ${file.name}:`, error.message);
+                            errores++;
+                        } else {
+                            subidos++;
+                        }
+                    } catch(err) {
+                        console.error(`Excepción en archivo ${file.name}:`, err);
                         errores++;
-                    } else {
-                        subidos++;
                     }
                 }
 
-                event.target.value = ''; // Resetea el input para poder volver a elegir los mismos archivos si hace falta
-                
-                await this.cargarArchivosNube(); // Refresca el panel para mostrar las nuevas facturas
+                event.target.value = ''; // Resetea el input
+                await this.cargarArchivosNube(); // Refresca listado
                 
                 this.showSuccess = true;
                 if (errores > 0) {
-                    this.successMessage = `Proceso finalizado. Subidos: ${subidos}. Errores: ${errores}.`;
+                    this.successMessage = `Proceso completado. Subidos: ${subidos}, Con error: ${errores}.`;
                 } else {
-                    this.successMessage = `¡${subidos} archivo(s) subido(s) correctamente!`;
+                    this.successMessage = `¡Los ${subidos} archivos se han subido con éxito!`;
                 }
                 
-                setTimeout(() => { this.showSuccess = false; }, 3500);
+                setTimeout(() => { this.showSuccess = false; }, 4000);
             },
             logout() {
                 _supabase.auth.signOut();
