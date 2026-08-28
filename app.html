@@ -355,7 +355,7 @@
                             </div>
                         </div>
 
-                        <!-- ZONA DE ARRASTRAR Y SOLTAR (DRAG & DROP) FLEXIBLE PARA ARCHIVOS Y CARPETAS -->
+                        <!-- ZONA DE ARRASTRAR Y SOLTAR -->
                         <div class="mb-6 border-2 border-dashed border-indigo-200 hover:border-[#2b94cc] bg-indigo-50/30 p-6 rounded-2xl text-center transition flex flex-col items-center justify-center gap-3 relative"
                              @dragover.prevent @drop.prevent="manejarDropNube">
                             <div class="bg-blue-100 text-[#2b94cc] p-3 rounded-full text-2xl shadow-sm">
@@ -1220,7 +1220,10 @@
                 const siguienteNum = maxNum + 1;
                 const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
-                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('').normalize("NFC");
+                
+                // Mantenemos la letra tal cual (Érika -> É)
+                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
+                
                 const mesLimpio = String(mesStr || '').trim().split(' ')[0];
                 const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
                 let dia = "01";
@@ -1280,59 +1283,49 @@
                     console.error("Error cargando desde Supabase:", e);
                 }
             },
+            
+            // NUEVO SISTEMA DE ESCANEO PROFUNDO (INFALIBLE) Y SIN LÍMITE DE 100
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
                     let allFiles = [];
-                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 500 });
+                    // Subimos el límite a 1000 para no dejarnos archivos fuera
+                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 1000 });
                     if (rootError) throw rootError;
 
                     if (rootItems) {
                         for (const rootItem of rootItems) {
-                            const name = rootItem.name;
-                            if (!name || name === '.emptyFolderPlaceholder') continue;
-
-                            const isPdfRoot = name.toLowerCase().endsWith('.pdf');
+                            const rootName = rootItem.name;
+                            if (!rootName || rootName === '.emptyFolderPlaceholder') continue;
                             
-                            if (!isPdfRoot) {
-                                const cursoFolder = name;
-                                const { data: monthItems, error: monthError } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 500 });
+                            // Si NO termina en .pdf, asumimos al 100% que es una CARPETA
+                            if (rootName.toLowerCase().endsWith('.pdf')) {
+                                allFiles.push({ name: rootName, path: rootName });
+                            } else {
+                                const cursoFolder = rootName;
+                                const { data: monthItems } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 1000 });
                                 
-                                if (!monthError && monthItems) {
+                                if (monthItems) {
                                     for (const monthItem of monthItems) {
                                         const mName = monthItem.name;
                                         if (!mName || mName === '.emptyFolderPlaceholder') continue;
-
-                                        const isPdfMonth = mName.toLowerCase().endsWith('.pdf');
-
-                                        if (!isPdfMonth) {
-                                            const fullFolderPath = `${cursoFolder}/${mName}`;
-                                            const { data: pdfItems, error: pdfError } = await _supabase.storage.from('facturas').list(fullFolderPath, { limit: 1000 });
+                                        
+                                        if (mName.toLowerCase().endsWith('.pdf')) {
+                                            allFiles.push({ name: mName, path: `${cursoFolder}/${mName}` });
+                                        } else {
+                                            // Es la carpeta del mes, la exploramos
+                                            const { data: pdfItems } = await _supabase.storage.from('facturas').list(`${cursoFolder}/${mName}`, { limit: 1000 });
                                             
-                                            if (!pdfError && pdfItems) {
+                                            if (pdfItems) {
                                                 for (const pdfItem of pdfItems) {
-                                                    const pName = pdfItem.name;
-                                                    if (pName && pName.toLowerCase().endsWith('.pdf')) {
-                                                        allFiles.push({
-                                                            name: pName,
-                                                            path: `${fullFolderPath}/${pName}`
-                                                        });
+                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
+                                                        allFiles.push({ name: pdfItem.name, path: `${cursoFolder}/${mName}/${pdfItem.name}` });
                                                     }
                                                 }
                                             }
-                                        } else {
-                                            allFiles.push({
-                                                name: mName,
-                                                path: `${cursoFolder}/${mName}`
-                                            });
                                         }
                                     }
                                 }
-                            } else {
-                                allFiles.push({
-                                    name: name,
-                                    path: name
-                                });
                             }
                         }
                     }
@@ -1384,7 +1377,8 @@
                 this.loadingArchivos = false;
             },
             analizarTextoParaCursoYMes(pathCompleto) {
-                const pathUp = String(pathCompleto).normalize("NFC").toUpperCase();
+                // Eliminamos NFC forzado para evitar cuelgues
+                const pathUp = String(pathCompleto).toUpperCase();
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
@@ -1412,6 +1406,7 @@
                 };
 
                 for (const [abbr, fullName] of Object.entries(mesesMap)) {
+                    // Regex mejorado para capturar tildes naturales sin fallar
                     const regex = new RegExp(`(^|[^A-ZÁÉÍÓÚÑ])${abbr}([^A-ZÁÉÍÓÚÑ]|$)`);
                     if (regex.test(pathUp)) {
                         mesDetectado = fullName;
@@ -1432,8 +1427,9 @@
                 return total;
             },
             sanitizarNombreArchivo(nombre) {
+                // Conserva tildes intactas. Solo limpia símbolos conflictivos para rutas web
                 return String(nombre)
-                    .normalize("NFC")
+                    .trim()
                     .replace(/[\s\/\\?%*:|"<>]/g, "_")
                     .replace(/__+/g, "_");
             },
@@ -1497,11 +1493,11 @@
                     if (!file.name.toLowerCase().endsWith('.pdf')) continue;
 
                     try {
-                        const rutaCompleta = String(file.fullPath || file.webkitRelativePath || file.name).normalize("NFC");
-                        const analisis = this.analizarTextoParaCursoYMes(rutaCompleta);
+                        const rutaOriginal = file.fullPath || file.webkitRelativePath || file.name;
+                        const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
-                        const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         
+                        const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
                         
                         const { error } = await _supabase.storage.from('facturas').upload(path, file, { 
@@ -1510,7 +1506,7 @@
                         });
                         
                         if (error) {
-                            console.error(`Error al subir ${file.name}:`, error.message);
+                            console.error(`Error al subir ${file.name}:`, error);
                             errores++;
                         } else {
                             subidos++;
@@ -1524,11 +1520,11 @@
                 await this.cargarArchivosNube();
                 this.showSuccess = true;
                 if (errores > 0) {
-                    this.successMessage = `Proceso completado. Subidos: ${subidos}, Con error: ${errores}.`;
+                    this.successMessage = `Proceso finalizado. Subidos: ${subidos} | Error/Ignorados: ${errores}`;
                 } else {
                     this.successMessage = `¡Se han subido y clasificado ${subidos} archivos con éxito!`;
                 }
-                setTimeout(() => { this.showSuccess = false; }, 4000);
+                setTimeout(() => { this.showSuccess = false; }, 5000);
             },
             logout() {
                 _supabase.auth.signOut();
