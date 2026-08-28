@@ -371,7 +371,7 @@
                             <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y clasificando facturas...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento o las políticas RLS de Supabase impiden la lectura. Ejecuta el script SQL de políticas RLS.
+                            No se encontraron archivos en el almacenamiento. Sube tus carpetas o verifica que existan PDFs en el bucket 'facturas'.
                         </div>
                         <div v-else class="space-y-4">
                             <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
@@ -1271,13 +1271,59 @@
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
-                    const { data, error } = await _supabase.storage.from('facturas').list('', { limit: 1000, recursive: true });
-                    if (error) throw error;
+                    let allFiles = [];
                     
-                    this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
-                        const fileName = item.name.split('/').pop();
+                    // 1. Listar la raíz del bucket (carpetas de cursos ej: '25-26', '26-27')
+                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 100 });
+                    if (rootError) throw rootError;
+
+                    if (rootItems) {
+                        for (const rootItem of rootItems) {
+                            const esCarpetaRoot = rootItem.id === null || (rootItem.metadata === null && !rootItem.updated_at);
+                            if (esCarpetaRoot) {
+                                const cursoFolder = rootItem.name; // Ej: '25-26'
+                                
+                                // 2. Listar dentro de la carpeta del curso (meses: OCTUBRE, NOVIEMBRE...)
+                                const { data: monthItems, error: monthError } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 100 });
+                                if (!monthError && monthItems) {
+                                    for (const monthItem of monthItems) {
+                                        const esCarpetaMes = monthItem.id === null || (monthItem.metadata === null && !monthItem.updated_at);
+                                        const monthFolder = monthItem.name; // Ej: 'OCTUBRE'
+                                        
+                                        if (esCarpetaMes) {
+                                            // 3. Listar los PDFs dentro de la carpeta del mes
+                                            const fullFolderPath = `${cursoFolder}/${monthFolder}`;
+                                            const { data: pdfItems, error: pdfError } = await _supabase.storage.from('facturas').list(fullFolderPath, { limit: 500 });
+                                            if (!pdfError && pdfItems) {
+                                                for (const pdfItem of pdfItems) {
+                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
+                                                        allFiles.push({
+                                                            name: pdfItem.name,
+                                                            path: `${fullFolderPath}/${pdfItem.name}`
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                        } else if (monthItem.name && monthItem.name.toLowerCase().endsWith('.pdf')) {
+                                            allFiles.push({
+                                                name: monthItem.name,
+                                                path: `${cursoFolder}/${monthItem.name}`
+                                            });
+                                        }
+                                    }
+                                }
+                            } else if (rootItem.name && rootItem.name.toLowerCase().endsWith('.pdf')) {
+                                allFiles.push({
+                                    name: rootItem.name,
+                                    path: rootItem.name
+                                });
+                            }
+                        }
+                    }
+                    
+                    this.archivosNube = allFiles.map(item => {
+                        const fileName = item.name;
                         
-                        // 1. Cruce con BD
                         let fechaRealPago = null;
                         let mesReal = null;
                         const facturaIdLimpio = fileName.replace('.pdf', '');
@@ -1304,14 +1350,12 @@
                             let anioInicioCurso = (mesF >= 9) ? anioF : anioF - 1;
                             cursoVal = `${anioInicioCurso}/${anioInicioCurso + 1}`;
                         } else {
-                            // 2. Analizar ruta completa (incluyendo nombre de carpetas ej: 25-26 o 26-27)
-                            const analisis = this.analizarTextoParaCursoYMes(item.name);
+                            const analisis = this.analizarTextoParaCursoYMes(item.path);
                             cursoVal = analisis.curso;
                             mesVal = analisis.mes;
                         }
 
-                        const fullPath = item.name;
-                        const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
+                        const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
                             name: fileName,
                             curso: cursoVal,
@@ -1329,7 +1373,6 @@
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
-                // Detectar formato de carpeta de año ej: "25-26", "26-27", "2025-2026", "2026-2027"
                 if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027")) {
                     cursoKey = "2026/2027";
                 } else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026")) {
@@ -1683,7 +1726,6 @@
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
-                const alumnoImprimir = nombreAlumnoFijo || (this.form.nombre ? `${this.form.nombre} ${this.form.apellidos}` : 'ALUMNO');
                 const importeTotalStr = parseFloat(datos.importe || 0).toFixed(2).replace('.', ',') + " €";
                 let filasHTML = "";
                 if (datos.tarifa) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span><br><i style="font-size:11px;color:#666">Curso académico vigente</i></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
