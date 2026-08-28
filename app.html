@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">El sistema detectará el año de la carpeta o fecha y las clasificará automáticamente.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">El sistema detectará el año de la carpeta o abreviaturas como OCT, NOV... y las clasificará.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -1220,6 +1220,7 @@
                 const siguienteNum = maxNum + 1;
                 const nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
+                // Mantiene las tildes originales en las iniciales (ej: ÉRI en vez de ERI)
                 const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
                 const mesLimpio = String(mesStr || '').trim().split(' ')[0];
                 const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
@@ -1376,7 +1377,7 @@
                 this.loadingArchivos = false;
             },
             analizarTextoParaCursoYMes(pathCompleto) {
-                const pathUp = pathCompleto.toUpperCase();
+                const pathUp = pathCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
@@ -1389,14 +1390,24 @@
                 }
 
                 const mesesMap = {
-                    'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12,
-                    'ENERO': 1, 'FEBRERO': 2, 'MARZO': 3, 'ABRIL': 4,
-                    'MAYO': 5, 'JUNIO': 6, 'JULIO': 7, 'AGOSTO': 8
+                    'SEPTIEMBRE': 'SEPTIEMBRE', 'SEP': 'SEPTIEMBRE',
+                    'OCTUBRE': 'OCTUBRE', 'OCT': 'OCTUBRE',
+                    'NOVIEMBRE': 'NOVIEMBRE', 'NOV': 'NOVIEMBRE',
+                    'DICIEMBRE': 'DICIEMBRE', 'DIC': 'DICIEMBRE',
+                    'ENERO': 'ENERO', 'ENE': 'ENERO',
+                    'FEBRERO': 'FEBRERO', 'FEB': 'FEBRERO',
+                    'MARZO': 'MARZO', 'MAR': 'MARZO',
+                    'ABRIL': 'ABRIL', 'ABR': 'ABRIL',
+                    'MAYO': 'MAYO', 'MAY': 'MAYO',
+                    'JUNIO': 'JUNIO', 'JUN': 'JUNIO',
+                    'JULIO': 'JULIO', 'JUL': 'JULIO',
+                    'AGOSTO': 'AGOSTO', 'AGO': 'AGOSTO'
                 };
 
-                for (const mName of Object.keys(mesesMap)) {
-                    if (pathUp.includes(mName)) {
-                        mesDetectado = mName;
+                for (const [abbr, fullName] of Object.entries(mesesMap)) {
+                    const regex = new RegExp(`(^|[^A-Z])${abbr}([^A-Z]|$)`);
+                    if (regex.test(pathUp)) {
+                        mesDetectado = fullName;
                         break;
                     }
                 }
@@ -1414,10 +1425,10 @@
                 return total;
             },
             sanitizarNombreArchivo(nombre) {
+                // Conserva estrictamente tildes y caracteres originales (Érika, etc.), 
+                // reemplazando únicamente espacios o símbolos de ruta inválidos.
                 return nombre
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/[^a-zA-Z0-9.\-_]/g, "_")
+                    .replace(/[\s\/\\?%*:|"<>]/g, "_")
                     .replace(/__+/g, "_");
             },
             async subirArchivosSeleccionados(event) {
