@@ -344,7 +344,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente por carpetas y años (Septiembre a Agosto)</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente cruzando datos con Supabase (tildes intactas)</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán mediante ID seguro, protegiendo 100% las tildes (ÉRI e ERI son independientes).</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su factura_id y alumno (ÉRI e ERI independientes).</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -374,13 +374,13 @@
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
+                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por número, alumno, mes o tilde..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
 
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y vinculando facturas con tildes protegidas...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cruzando datos con Supabase y ordenando facturas...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron archivos en el almacenamiento. Sube tus archivos o carpetas arriba.
@@ -404,12 +404,12 @@
                                         </div>
                                         <div class="p-3">
                                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                <div v-for="archivo in archivosLista" :key="archivo.name" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
+                                                <div v-for="archivo in archivosLista" :key="archivo.path" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
                                                     <div class="flex items-center gap-2.5 truncate">
                                                         <div class="bg-red-100 text-red-500 p-2 rounded-lg shrink-0"><i class="fas fa-file-pdf"></i></div>
                                                         <div class="truncate">
-                                                            <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.name">{{ archivo.name }}</div>
-                                                            <div class="text-[10px] text-gray-400">PDF • Nube</div>
+                                                            <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.displayName">{{ archivo.displayName }}</div>
+                                                            <div class="text-[10px] text-gray-500 font-semibold truncate">{{ archivo.alumnoAsociado || 'Sin alumno vinculado' }}</div>
                                                         </div>
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
@@ -1054,13 +1054,18 @@
             },
             archivosNubeFiltrados() {
                 const t = this.normalizeName(this.searchExplorador);
-                return this.archivosNube.filter(a => this.normalizeName(a.name).includes(t) || this.normalizeName(a.curso).includes(t) || this.normalizeName(a.mes).includes(t));
+                return this.archivosNube.filter(a => 
+                    this.normalizeName(a.displayName).includes(t) || 
+                    this.normalizeName(a.alumnoAsociado).includes(t) || 
+                    this.normalizeName(a.curso).includes(t) || 
+                    this.normalizeName(a.mes).includes(t)
+                );
             },
             cursosArchivosAgrupados() {
                 const arbol = {};
                 this.archivosNubeFiltrados.forEach(a => {
                     const curso = a.curso || '2025/2026';
-                    const mes = a.mes || 'GENERAL';
+                    const mes = a.mes || 'OCTUBRE';
                     if (!arbol[curso]) arbol[curso] = {};
                     if (!arbol[curso][mes]) arbol[curso][mes] = [];
                     arbol[curso][mes].push(a);
@@ -1338,27 +1343,39 @@
                         let fileNameStorage = item.name;
                         let facturaIdLimpio = fileNameStorage.replace('.pdf', '');
 
-                        // Si el archivo físico en la nube usa ID interno o nombre seguro, lo buscamos en pagos
-                        let displayName = fileNameStorage;
-                        const pagoEncontrado = this.pagosList.find(p => {
-                            if (!p.factura_id) return false;
-                            // Comprobamos si coincide el ID limpio o si el path contiene el identificador
-                            return String(p.factura_id) === facturaIdLimpio || item.path.includes(p.factura_id);
+                        // Buscar en la tabla pagos por archivo_url o por factura_id exacto (respetando tildes)
+                        let pagoEncontrado = this.pagosList.find(p => {
+                            if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
+                            if (p.factura_id && String(p.factura_id) === facturaIdLimpio) return true;
+                            if (item.path.includes(p.factura_id)) return true;
+                            return false;
                         });
 
-                        if (pagoEncontrado && pagoEncontrado.factura_id) {
-                            displayName = `${pagoEncontrado.factura_id}.pdf`;
-                        }
-                        
-                        let fechaRealPago = null;
-                        let mesReal = null;
+                        let displayName = facturaIdLimpio + '.pdf';
+                        let alumnoAsociado = 'Desconocido';
 
-                        if (pagoEncontrado && pagoEncontrado.fecha_pago) {
-                            fechaRealPago = pagoEncontrado.fecha_pago;
-                            if (pagoEncontrado.mes) {
-                                mesReal = pagoEncontrado.mes.split(' ')[0].toUpperCase();
+                        if (pagoEncontrado) {
+                            if (pagoEncontrado.factura_id) {
+                                displayName = `${pagoEncontrado.factura_id}.pdf`;
+                            }
+                            if (pagoEncontrado.alumno) {
+                                alumnoAsociado = pagoEncontrado.alumno;
+                            }
+                        } else {
+                            // Intento de fallback inteligente por iniciales en el nombre del archivo o ruta
+                            const partesPath = item.path.split('/');
+                            const nombreArchivoLimpio = partesPath[partesPath.length - 1].replace('.pdf', '');
+                            const posibleAlumno = this.list.find(a => {
+                                const inicialesAlum = (a.nombre.charAt(0) + a.apellidos.charAt(0)).toUpperCase();
+                                return nombreArchivoLimpio.toUpperCase().includes(inicialesAlum);
+                            });
+                            if (posibleAlumno) {
+                                alumnoAsociado = `${posibleAlumno.nombre} ${posibleAlumno.apellidos}`;
                             }
                         }
+                        
+                        let fechaRealPago = pagoEncontrado ? pagoEncontrado.fecha_pago : null;
+                        let mesReal = pagoEncontrado && pagoEncontrado.mes ? pagoEncontrado.mes.split(' ')[0].toUpperCase() : null;
 
                         let cursoVal = "2025/2026";
                         let mesVal = "OCTUBRE";
@@ -1381,7 +1398,9 @@
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
-                            name: displayName, // Muestra siempre la tilde exacta (ej: ÉRI-OCT-01.pdf)
+                            path: item.path,
+                            displayName: displayName, // Muestra el ID de factura exacto con tilde (ej: 140-ÉRI-OCT-01.pdf)
+                            alumnoAsociado: alumnoAsociado,
                             curso: cursoVal,
                             mes: mesVal,
                             url: urlData.publicUrl
@@ -1496,13 +1515,8 @@
                 }
             },
             
-            /**
-             * ARQUITECTURA DESACOPLADA DEFINITIVA:
-             * Sube los archivos a la nube usando un nombre plano y seguro (evitando errores 400 y tildes corruptas),
-             * mientras que en la base de datos y la interfaz se respeta el ID exacto con tilde (ÉRI vs ERI).
-             */
             async procesarYSubirFacturas(archivosSeleccionados) {
-                console.log("Iniciando procesamiento con almacenamiento seguro desacoplado...");
+                console.log("Iniciando procesamiento con almacenamiento seguro y cruce inteligente...");
                 this.loadingArchivos = true;
                 
                 const resultados = {
@@ -1518,9 +1532,9 @@
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
 
-                        console.log(`Procesando factura: ${nombreOriginal}`);
+                        console.log(`Procesando archivo: ${nombreOriginal}`);
 
-                        // 1. Buscar coincidencia exacta en la base de datos por factura_id
+                        // 1. Buscar coincidencia exacta en pagos por factura_id (respetando tildes)
                         const { data: pagoEncontrado, error: errorBusqueda } = await _supabase
                             .from('pagos')
                             .select('*')
@@ -1531,22 +1545,17 @@
                             throw new Error(`Error en consulta Supabase: ${errorBusqueda.message}`);
                         }
 
-                        if (!pagoEncontrado) {
-                            console.warn(`Aviso: No hay registro de pago para "${nombreSinExtension}". Se subirá igualmente.`);
-                        }
-
-                        // 2. Determinar ruta y curso/mes de destino
+                        // 2. Determinar ruta de destino
                         const rutaOriginal = archivo.fullPath || archivo.webkitRelativePath || archivo.name;
                         const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // 3. NOMBRE SEGURO PARA LA NUBE: Usamos el ID del pago o un hash limpio 
-                        // para evitar por completo que caracteres como Á o É rompan la subida en Supabase.
+                        // 3. Generar nombre de almacenamiento seguro para evitar errores en la nube
                         const idSeguroNube = pagoEncontrado ? `recibo_${pagoEncontrado.id}.pdf` : `recibo_${Date.now()}_${Math.random().toString(36).substring(2,7)}.pdf`;
                         const rutaStorage = `${cursoPath}/${mesNombreStr}/${idSeguroNube}`;
 
-                        // 4. Subida limpia al Storage sin arriesgar tildes en la ruta física
+                        // 4. Subir archivo a Supabase Storage
                         const { error: errorUpload } = await _supabase.storage
                             .from('facturas')
                             .upload(rutaStorage, archivo, {
@@ -1559,18 +1568,15 @@
                             throw new Error(`Error al subir a Storage: ${errorUpload.message}`);
                         }
 
-                        // 5. Vincular en la base de datos manteniendo el nombre original intacto en factura_id
+                        // 5. Actualizar la tabla pagos vinculando archivo_url y manteniendo factura_id intacto
                         if (pagoEncontrado) {
-                            const { error: errorUpdate } = await _supabase
+                            await _supabase
                                 .from('pagos')
                                 .update({ 
-                                    factura_id: nombreSinExtension // Mantiene rigurosamente la tilde original
+                                    archivo_url: rutaStorage,
+                                    factura_id: nombreSinExtension // Preserva la tilde y formato original (ej. ÉRI)
                                 })
                                 .eq('id', pagoEncontrado.id);
-
-                            if (errorUpdate) {
-                                throw new Error(`Error al actualizar registro: ${errorUpdate.message}`);
-                            }
                         }
 
                         resultados.exitosos++;
@@ -1594,7 +1600,7 @@
                 if (resultados.errores > 0) {
                     this.successMessage = `Subidos: ${resultados.exitosos} | Errores: ${resultados.errores}`;
                 } else {
-                    this.successMessage = `¡${resultados.exitosos} facturas procesadas y protegidas con éxito!`;
+                    this.successMessage = `¡${resultados.exitosos} facturas procesadas y vinculadas con éxito!`;
                 }
                 setTimeout(() => { this.showSuccess = false; }, 5000);
                 this.loadingArchivos = false;
@@ -1852,14 +1858,19 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                // Subida segura usando el ID interno generado en base de datos
                 const idRegistro = insertedPago ? insertedPago.id : Date.now();
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/recibo_${idRegistro}.pdf`;
 
                 await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                
+                // Guardar la ruta en la tabla pagos para vinculación directa
+                if (insertedPago) {
+                    await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
+                }
+
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
-                this.successMessage = `¡Pago y PDF con tilde protegida subidos a la nube!`;
+                this.successMessage = `¡Pago y PDF subidos y vinculados correctamente!`;
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
                 setTimeout(() => { window.print(); }, 400);
             },
