@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Select2 para los desplegables de alumnos -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -54,7 +53,6 @@
 </head>
 <body class="h-screen overflow-hidden text-sm">
 
-<!-- ZONA DE IMPRESIÓN DE FACTURA OFICIAL -->
 <div id="zona-impresion" class="hidden bg-white font-sans">
     <div id="ticket-data"></div>
 </div>
@@ -62,7 +60,6 @@
 <div id="app" class="h-full flex flex-col relative">
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
-        <!-- MENSAJE DE ÉXITO FLOTANTE -->
         <transition name="pop">
             <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none p-4">
                 <div class="bg-white px-6 py-5 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[280px]">
@@ -73,7 +70,6 @@
             </div>
         </transition>
 
-        <!-- MODALES DE EDICIÓN Y ELIMINACIÓN -->
         <transition name="pop">
             <div v-if="showEditExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
@@ -252,7 +248,6 @@
             </div>
         </transition>
 
-        <!-- PANTALLA DE LOGIN SUPABASE -->
         <transition name="fade">
             <div v-if="!authenticated" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
                 <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
@@ -277,10 +272,8 @@
             </div>
         </transition>
 
-        <!-- APLICACIÓN PRINCIPAL RESPONSIVE -->
         <div v-if="authenticated" class="flex flex-col md:flex-row h-full animate-opacity duration-700">
             
-            <!-- PANEL LATERAL / LISTADO DE ALUMNOS -->
             <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas'}">
                 <div class="p-4 sm:p-5 bg-[#243c7a] text-white">
                     <div class="flex items-center gap-3">
@@ -332,10 +325,8 @@
                 </div>
             </div>
 
-            <!-- PANEL DE CONTENIDO PRINCIPAL -->
             <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas'}">
 
-                <!-- BOTÓN VOLVER EN MÓVIL -->
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0">
                     <button @click="cerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Volver al listado
@@ -345,7 +336,7 @@
                     </span>
                 </div>
 
-                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (JERÁRQUICO POR CURSOS Y MESES) -->
+                <!-- EXPLORADOR DE FACTURAS EN LA NUBE -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -353,7 +344,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Organizado por Cursos Escolares (Septiembre a Agosto)</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente por carpetas y años (Septiembre a Agosto)</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -364,29 +355,26 @@
                             </div>
                         </div>
 
-                        <!-- BUSCADOR Y SUBIDA INTELIGENTE DE CARPETAS -->
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                                 <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
-                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0" title="Selecciona una carpeta o múltiples archivos">
+                            <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0" title="Selecciona tu carpeta principal (ej. 25-26 o 26-27)">
                                 <i class="fas fa-folder-plus"></i> Subir Carpeta / PDFs
                                 <input type="file" accept="application/pdf" webkitdirectory directory multiple @change="subirCarpetasInteligente" class="hidden">
                             </label>
                         </div>
 
-                        <!-- LISTADO ORGANIZADO EN ACORDEÓN POR CURSOS Y MESES -->
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Clasificando y cargando facturas desde la nube...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y clasificando facturas...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento o las políticas RLS impiden su lectura. Sube tus carpetas o verifica el bucket.
+                            No se encontraron archivos en el almacenamiento o las políticas RLS de Supabase impiden la lectura. Ejecuta el script SQL de políticas RLS.
                         </div>
                         <div v-else class="space-y-4">
                             <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                <!-- Cabecera del Curso Escolar -->
                                 <div @click="toggleCursoFacturas(cursoKey)" class="bg-[#243c7a] text-white p-4 font-extrabold text-xs sm:text-sm flex justify-between items-center cursor-pointer select-none hover:bg-[#1a2e5e] transition">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-graduation-cap text-[#fa65c3]"></i>
@@ -396,7 +384,6 @@
                                     <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoFacturasAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                 </div>
 
-                                <!-- Desplegable de Meses del Curso -->
                                 <div v-if="cursoFacturasAbierto[cursoKey]" class="p-3 sm:p-4 space-y-3 bg-gray-50/50">
                                     <div v-for="(archivosLista, mesKey) in mesesObj" :key="mesKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
                                         <div class="bg-gray-100 p-3 font-bold text-[#2b94cc] text-xs flex justify-between items-center">
@@ -551,7 +538,6 @@
                         </div>
                     </div>
 
-                    <!-- CALENDARIO DE EXÁMENES -->
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
                             <div class="flex items-center gap-3">
@@ -639,7 +625,6 @@
                             </button>
                         </div>
 
-                        <!-- MENÚ INTERNO DEL ALUMNO -->
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
                             <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
                             <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre }}?</p>
@@ -671,7 +656,6 @@
                             </div>
                         </div>
 
-                        <!-- FICHA ACADÉMICA -->
                         <form v-if="activeTab === 'ficha'" class="p-4 sm:p-8 space-y-6 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
@@ -740,7 +724,6 @@
                             </section>
                         </form>
 
-                        <!-- GESTIÓN DE PAGOS -->
                         <div v-if="activeTab === 'pagos'" class="p-4 sm:p-8 space-y-6 bg-gray-50 flex-1">
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
@@ -913,7 +896,6 @@
                             </div>
                         </div>
 
-                        <!-- EXÁMENES -->
                         <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
@@ -945,7 +927,6 @@
                     </div>
                 </div>
                 
-                <!-- ESTADO VACÍO -->
                 <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
@@ -1002,7 +983,6 @@
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
                 searchPagosGlobal: '',
-                // Explorador Nube
                 archivosNube: [],
                 loadingArchivos: false,
                 searchExplorador: '',
@@ -1291,14 +1271,13 @@
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
-                    // Carga de la lista recursiva en Supabase Storage
                     const { data, error } = await _supabase.storage.from('facturas').list('', { limit: 1000, recursive: true });
                     if (error) throw error;
                     
                     this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
                         const fileName = item.name.split('/').pop();
                         
-                        // 1. CRUCE INTELIGENTE CON LA TABLA PAGOS DE SUPABASE (Por ID de factura)
+                        // 1. Cruce con BD
                         let fechaRealPago = null;
                         let mesReal = null;
                         const facturaIdLimpio = fileName.replace('.pdf', '');
@@ -1315,12 +1294,9 @@
                         let mesVal = "OCTUBRE";
 
                         if (fechaRealPago) {
-                            // Si tenemos la fecha exacta de la BD, calculamos el curso y mes matemático perfecto
                             const partesFecha = fechaRealPago.split('-');
                             const anioF = parseInt(partesFecha[0], 10);
                             const mesF = parseInt(partesFecha[1], 10);
-                            
-                            // Meses del año a nombre
                             const mesesArr = ["", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
                             if (!mesReal && mesF >= 1 && mesF <= 12) mesVal = mesesArr[mesF];
                             else if (mesReal) mesVal = mesReal;
@@ -1328,13 +1304,13 @@
                             let anioInicioCurso = (mesF >= 9) ? anioF : anioF - 1;
                             cursoVal = `${anioInicioCurso}/${anioInicioCurso + 1}`;
                         } else {
-                            // 2. FALLBACK: Analizar el nombre o ruta si no está en la BD
+                            // 2. Analizar ruta completa (incluyendo nombre de carpetas ej: 25-26 o 26-27)
                             const analisis = this.analizarTextoParaCursoYMes(item.name);
                             cursoVal = analisis.curso;
                             mesVal = analisis.mes;
                         }
 
-                        const fullPath = item.id ? item.name : item.name;
+                        const fullPath = item.name;
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
                         return {
                             name: fileName,
@@ -1348,14 +1324,19 @@
                 }
                 this.loadingArchivos = false;
             },
-            analizarTextoParaCursoYMes(texto) {
-                const textUp = texto.toUpperCase();
-                let anioDetectado = 2025; // Por defecto año base escolar anterior
+            analizarTextoParaCursoYMes(pathCompleto) {
+                const pathUp = pathCompleto.toUpperCase();
+                let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
-                let numMes = 10;
 
-                const matchAnio = textUp.match(/20\d{2}/);
-                if (matchAnio) anioDetectado = parseInt(matchAnio[0], 10);
+                // Detectar formato de carpeta de año ej: "25-26", "26-27", "2025-2026", "2026-2027"
+                if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027")) {
+                    cursoKey = "2026/2027";
+                } else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026")) {
+                    cursoKey = "2025/2026";
+                } else if (pathUp.includes("24-25") || pathUp.includes("2024-2025")) {
+                    cursoKey = "2024/2025";
+                }
 
                 const mesesMap = {
                     'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12,
@@ -1363,16 +1344,12 @@
                     'MAYO': 5, 'JUNIO': 6, 'JULIO': 7, 'AGOSTO': 8
                 };
 
-                for (const [mName, mNum] of Object.entries(mesesMap)) {
-                    if (textUp.includes(mName)) {
+                for (const mName of Object.keys(mesesMap)) {
+                    if (pathUp.includes(mName)) {
                         mesDetectado = mName;
-                        numMes = mNum;
                         break;
                     }
                 }
-
-                let anioInicio = (numMes >= 9) ? anioDetectado : anioDetectado - 1;
-                let cursoKey = `${anioInicio}/${anioInicio + 1}`;
 
                 return { curso: cursoKey, mes: mesDetectado };
             },
@@ -1406,7 +1383,8 @@
                     if (!file.name.toLowerCase().endsWith('.pdf')) continue;
 
                     try {
-                        const analisis = this.analizarTextoParaCursoYMes(file.webkitRelativePath || file.name);
+                        const rutaCompleta = file.webkitRelativePath || file.name;
+                        const analisis = this.analizarTextoParaCursoYMes(rutaCompleta);
                         const cursoPath = analisis.curso.replace('/', '-'); // Ej: 2025-2026
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         
