@@ -1088,13 +1088,13 @@
                     arbol[cursoKey] = mesesOrdenados;
                 }
 
-                // Ordenar los cursos descendentemente (ej. 2025/2026 primero)
+                // Ordenar los cursos descendentemente
                 const cursosOrdenados = Object.keys(arbol).sort().reverse();
                 const resultadoFinal = {};
                 cursosOrdenados.forEach(c => {
                     resultadoFinal[c] = arbol[c];
                     if (this.cursoFacturasAbierto[c] === undefined) {
-                        this.cursoFacturasAbierto[c] = true; // Por defecto abiertos
+                        this.cursoFacturasAbierto[c] = true;
                     }
                 });
                 return resultadoFinal;
@@ -1293,7 +1293,8 @@
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
-                    const { data, error } = await _supabase.storage.from('facturas').list('', { recursive: true });
+                    // Límite de 1000 archivos para evitar que Supabase trunque el listado
+                    const { data, error } = await _supabase.storage.from('facturas').list('', { limit: 1000, recursive: true });
                     if (error) throw error;
                     
                     this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
@@ -1303,15 +1304,12 @@
                         let fileName = partes[partes.length - 1];
                         
                         if (partes.length >= 3) {
-                            // Estructura nueva: [curso] / [mes] / [archivo.pdf] (ej: 2025-2026/OCTUBRE/archivo.pdf)
                             cursoVal = partes[0].replace('-', '/');
                             mesVal = partes[1].toUpperCase();
                         } else if (partes.length === 2) {
-                            // Estructura intermedia: [mes] / [archivo.pdf] o [curso] / [archivo.pdf]
                             mesVal = partes[0].toUpperCase();
                         }
 
-                        // Fallback inteligente si los nombres no venían estructurados
                         const analisis = this.analizarTextoParaCursoYMes(item.name);
                         if (cursoVal === "2025/2026" && analisis.curso) cursoVal = analisis.curso;
                         if (mesVal === "GENERAL" && analisis.mes) mesVal = analisis.mes;
@@ -1334,27 +1332,29 @@
                 const textUp = texto.toUpperCase();
                 let anioDetectado = new Date().getFullYear();
                 let mesDetectado = "OCTUBRE";
+                let numMes = 10;
 
                 const matchAnio = textUp.match(/20\d{2}/);
                 if (matchAnio) anioDetectado = parseInt(matchAnio[0], 10);
 
                 const mesesMap = {
-                    'SEPTIEMBRE': 'SEPTIEMBRE', 'OCTUBRE': 'OCTUBRE', 'NOVIEMBRE': 'NOVIEMBRE', 'DICIEMBRE': 'DICIEMBRE',
-                    'ENERO': 'ENERO', 'FEBRERO': 'FEBRERO', 'MARZO': 'MARZO', 'ABRIL': 'ABRIL',
-                    'MAYO': 'MAYO', 'JUNIO': 'JUNIO', 'JULIO': 'JULIO', 'AGOSTO': 'AGOSTO'
+                    'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12,
+                    'ENERO': 1, 'FEBRERO': 2, 'MARZO': 3, 'ABRIL': 4,
+                    'MAYO': 5, 'JUNIO': 6, 'JULIO': 7, 'AGOSTO': 8
                 };
 
-                for (const mName of Object.keys(mesesMap)) {
+                for (const [mName, mNum] of Object.entries(mesesMap)) {
                     if (textUp.includes(mName)) {
                         mesDetectado = mName;
+                        numMes = mNum;
                         break;
                     }
                 }
 
-                const mesIdx = monthOrder[mesDetectado] || 2;
-                let anioInicio = (mesIdx >= 1 && mesIdx <= 4) ? anioDetectado - 1 : anioDetectado;
-                if (mesIdx >= 5) anioInicio = anioDetectado; // Ajuste para meses de inicio de curso
-                let cursoKey = `${anioInicio}/${anioInicio + 1}`;
+                // LÓGICA CORRECTA DE CURSOS ESCOLARES (Sep-Dic del año Y -> Y / Y+1; Ene-Ago del año Y -> Y-1 / Y)
+                let anioInicio = (numMes >= 9) ? anioDetectado : anioDetectado - 1;
+                let anioFin = anioInicio + 1;
+                let cursoKey = `${anioInicio}/${anioFin}`;
 
                 return { curso: cursoKey, mes: mesDetectado };
             },
@@ -1389,7 +1389,7 @@
 
                     try {
                         const analisis = this.analizarTextoParaCursoYMes(file.webkitRelativePath || file.name);
-                        const cursoPath = analisis.curso.replace('/', '-'); // Formato carpeta 2025-2026
+                        const cursoPath = analisis.curso.replace('/', '-'); // Ej: 2025-2026
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         
                         const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
@@ -1664,7 +1664,6 @@
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
-                // Clasificación automática para nuevos recibos impresos
                 const analisis = this.analizarTextoParaCursoYMes(this.nuevoPago.mes + " " + this.nuevoPago.fecha);
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
