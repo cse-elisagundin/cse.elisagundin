@@ -345,7 +345,7 @@
                     </span>
                 </div>
 
-                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (INTELIGENTE POR CURSOS) -->
+                <!-- 📁 EXPLORADOR DE FACTURAS EN LA NUBE (JERÁRQUICO POR CURSOS Y MESES) -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -353,7 +353,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente por Cursos Escolares</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Organizado por Cursos Escolares (Septiembre a Agosto)</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -368,7 +368,7 @@
                         <div class="mb-6 bg-gray-50 p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center justify-between">
                             <div class="w-full relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o curso..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
+                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por nombre, alumno o mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
                                 <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
                             </div>
                             <label class="w-full sm:w-auto bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition shrink-0" title="Selecciona una carpeta o múltiples archivos">
@@ -377,34 +377,46 @@
                             </label>
                         </div>
 
-                        <!-- LISTADO ORGANIZADO POR CURSOS Y MESES -->
+                        <!-- LISTADO ORGANIZADO EN ACORDEÓN POR CURSOS Y MESES -->
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
                             <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Clasificando y cargando facturas desde la nube...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento. Sube tus carpetas de Drive o genera nuevos recibos.
+                            No se encontraron archivos en el almacenamiento. Sube tus carpetas o genera nuevos recibos.
                         </div>
                         <div v-else class="space-y-4">
-                            <div v-for="(archivosMes, carpetaKey) in archivosAgrupadosPorCarpeta" :key="carpetaKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center select-none">
+                            <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                <!-- Cabecera del Curso Escolar -->
+                                <div @click="toggleCursoFacturas(cursoKey)" class="bg-[#243c7a] text-white p-4 font-extrabold text-xs sm:text-sm flex justify-between items-center cursor-pointer select-none hover:bg-[#1a2e5e] transition">
                                     <div class="flex items-center gap-3">
-                                        <i class="fas fa-folder text-[#2b94cc]"></i>
-                                        <span>{{ carpetaKey }}</span>
-                                        <span class="text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ archivosMes.length }} archivos</span>
+                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i>
+                                        <span>Curso Escolar {{ cursoKey }}</span>
+                                        <span class="text-xs font-semibold bg-white/20 px-2.5 py-0.5 rounded-full text-white">{{ contarArchivosCurso(mesesObj) }} archivos</span>
                                     </div>
+                                    <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoFacturasAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                 </div>
-                                <div class="p-3">
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        <div v-for="archivo in archivosMes" :key="archivo.name" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
-                                            <div class="flex items-center gap-2.5 truncate">
-                                                <div class="bg-red-100 text-red-500 p-2 rounded-lg shrink-0"><i class="fas fa-file-pdf"></i></div>
-                                                <div class="truncate">
-                                                    <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.name">{{ archivo.name }}</div>
-                                                    <div class="text-[10px] text-gray-400">PDF • Nube</div>
+
+                                <!-- Desplegable de Meses del Curso -->
+                                <div v-if="cursoFacturasAbierto[cursoKey]" class="p-3 sm:p-4 space-y-3 bg-gray-50/50">
+                                    <div v-for="(archivosLista, mesKey) in mesesObj" :key="mesKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <div class="bg-gray-100 p-3 font-bold text-[#2b94cc] text-xs flex justify-between items-center">
+                                            <span class="uppercase"><i class="fas fa-folder-open mr-2"></i> {{ mesKey }}</span>
+                                            <span class="bg-white px-2 py-0.5 rounded text-gray-500 border text-[10px]">{{ archivosLista.length }} archivos</span>
+                                        </div>
+                                        <div class="p-3">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                <div v-for="archivo in archivosLista" :key="archivo.name" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
+                                                    <div class="flex items-center gap-2.5 truncate">
+                                                        <div class="bg-red-100 text-red-500 p-2 rounded-lg shrink-0"><i class="fas fa-file-pdf"></i></div>
+                                                        <div class="truncate">
+                                                            <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.name">{{ archivo.name }}</div>
+                                                            <div class="text-[10px] text-gray-400">PDF • Nube</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0">
+                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="flex items-center gap-1 shrink-0">
-                                                <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
                                             </div>
                                         </div>
                                     </div>
@@ -993,7 +1005,8 @@
                 // Explorador Nube
                 archivosNube: [],
                 loadingArchivos: false,
-                searchExplorador: ''
+                searchExplorador: '',
+                cursoFacturasAbierto: {}
             }
         },
         watch: {
@@ -1049,21 +1062,42 @@
             },
             archivosNubeFiltrados() {
                 const t = this.normalizeName(this.searchExplorador);
-                return this.archivosNube.filter(a => this.normalizeName(a.name).includes(t) || this.normalizeName(a.folder).includes(t));
+                return this.archivosNube.filter(a => this.normalizeName(a.name).includes(t) || this.normalizeName(a.curso).includes(t) || this.normalizeName(a.mes).includes(t));
             },
-            archivosAgrupadosPorCarpeta() {
-                const grupos = {};
+            cursosArchivosAgrupados() {
+                const arbol = {};
                 this.archivosNubeFiltrados.forEach(a => {
-                    const carpeta = a.folder || 'GENERAL';
-                    if (!grupos[carpeta]) grupos[carpeta] = [];
-                    grupos[carpeta].push(a);
+                    const curso = a.curso || '2025/2026';
+                    const mes = a.mes || 'GENERAL';
+                    if (!arbol[curso]) arbol[curso] = {};
+                    if (!arbol[curso][mes]) arbol[curso][mes] = [];
+                    arbol[curso][mes].push(a);
                 });
-                // Ordenamos las claves del objeto agrupado por curso escolar cronológicamente
-                const ordenado = {};
-                Object.keys(grupos).sort().reverse().forEach(k => {
-                    ordenado[k] = grupos[k];
+
+                // Ordenar los meses dentro de cada curso según monthOrder
+                for (const cursoKey in arbol) {
+                    const mesesOrdenados = {};
+                    const clavesMeses = Object.keys(arbol[cursoKey]).sort((m1, m2) => {
+                        const idx1 = monthOrder[m1.toUpperCase()] || 99;
+                        const idx2 = monthOrder[m2.toUpperCase()] || 99;
+                        return idx1 - idx2;
+                    });
+                    clavesMeses.forEach(m => {
+                        mesesOrdenados[m] = arbol[cursoKey][m];
+                    });
+                    arbol[cursoKey] = mesesOrdenados;
+                }
+
+                // Ordenar los cursos descendentemente (ej. 2025/2026 primero)
+                const cursosOrdenados = Object.keys(arbol).sort().reverse();
+                const resultadoFinal = {};
+                cursosOrdenados.forEach(c => {
+                    resultadoFinal[c] = arbol[c];
+                    if (this.cursoFacturasAbierto[c] === undefined) {
+                        this.cursoFacturasAbierto[c] = true; // Por defecto abiertos
+                    }
                 });
-                return ordenado;
+                return resultadoFinal;
             },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
@@ -1264,19 +1298,30 @@
                     
                     this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
                         const partes = item.name.split('/');
-                        let cursoFolder = "GENERAL";
+                        let cursoVal = "2025/2026";
+                        let mesVal = "GENERAL";
                         let fileName = partes[partes.length - 1];
                         
-                        if (partes.length >= 2) {
-                            // Si la ruta tiene estructura [curso]/[mes]/archivo.pdf o similar
-                            cursoFolder = `Curso ${partes[0]} - ${partes[1]}`;
+                        if (partes.length >= 3) {
+                            // Estructura nueva: [curso] / [mes] / [archivo.pdf] (ej: 2025-2026/OCTUBRE/archivo.pdf)
+                            cursoVal = partes[0].replace('-', '/');
+                            mesVal = partes[1].toUpperCase();
+                        } else if (partes.length === 2) {
+                            // Estructura intermedia: [mes] / [archivo.pdf] o [curso] / [archivo.pdf]
+                            mesVal = partes[0].toUpperCase();
                         }
-                        
+
+                        // Fallback inteligente si los nombres no venían estructurados
+                        const analisis = this.analizarTextoParaCursoYMes(item.name);
+                        if (cursoVal === "2025/2026" && analisis.curso) cursoVal = analisis.curso;
+                        if (mesVal === "GENERAL" && analisis.mes) mesVal = analisis.mes;
+
                         const fullPath = item.id ? item.name : partes.join('/');
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
                         return {
                             name: fileName,
-                            folder: cursoFolder,
+                            curso: cursoVal,
+                            mes: mesVal,
                             url: urlData.publicUrl
                         };
                     });
@@ -1285,53 +1330,50 @@
                 }
                 this.loadingArchivos = false;
             },
+            analizarTextoParaCursoYMes(texto) {
+                const textUp = texto.toUpperCase();
+                let anioDetectado = new Date().getFullYear();
+                let mesDetectado = "OCTUBRE";
+
+                const matchAnio = textUp.match(/20\d{2}/);
+                if (matchAnio) anioDetectado = parseInt(matchAnio[0], 10);
+
+                const mesesMap = {
+                    'SEPTIEMBRE': 'SEPTIEMBRE', 'OCTUBRE': 'OCTUBRE', 'NOVIEMBRE': 'NOVIEMBRE', 'DICIEMBRE': 'DICIEMBRE',
+                    'ENERO': 'ENERO', 'FEBRERO': 'FEBRERO', 'MARZO': 'MARZO', 'ABRIL': 'ABRIL',
+                    'MAYO': 'MAYO', 'JUNIO': 'JUNIO', 'JULIO': 'JULIO', 'AGOSTO': 'AGOSTO'
+                };
+
+                for (const mName of Object.keys(mesesMap)) {
+                    if (textUp.includes(mName)) {
+                        mesDetectado = mName;
+                        break;
+                    }
+                }
+
+                const mesIdx = monthOrder[mesDetectado] || 2;
+                let anioInicio = (mesIdx >= 1 && mesIdx <= 4) ? anioDetectado - 1 : anioDetectado;
+                if (mesIdx >= 5) anioInicio = anioDetectado; // Ajuste para meses de inicio de curso
+                let cursoKey = `${anioInicio}/${anioInicio + 1}`;
+
+                return { curso: cursoKey, mes: mesDetectado };
+            },
+            toggleCursoFacturas(cursoKey) {
+                this.cursoFacturasAbierto[cursoKey] = !this.cursoFacturasAbierto[cursoKey];
+            },
+            contarArchivosCurso(mesesObj) {
+                let total = 0;
+                for (const m in mesesObj) {
+                    total += mesesObj[m].length;
+                }
+                return total;
+            },
             sanitizarNombreArchivo(nombre) {
                 return nombre
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
                     .replace(/[^a-zA-Z0-9.\-_]/g, "_")
                     .replace(/__+/g, "_");
-            },
-            determinarCursoYMesInteligente(file) {
-                // Analiza la ruta relativa webkitRelativePath o el nombre del archivo
-                const relPath = file.webkitRelativePath || file.name;
-                const pathUpper = relPath.toUpperCase();
-
-                let anioDetectado = new Date().getFullYear();
-                let mesDetectado = "10"; // Por defecto Octubre
-
-                // Buscar año en la ruta
-                const matchAnio = pathUpper.match(/20\d{2}/);
-                if (matchAnio) {
-                    anioDetectado = parseInt(matchAnio[0], 10);
-                }
-
-                // Mapeo de meses
-                const mesesMap = {
-                    'SEPTIEMBRE': '09', 'OCTUBRE': '10', 'NOVIEMBRE': '11', 'DICIEMBRE': '12',
-                    'ENERO': '01', 'FEBRERO': '02', 'MARZO': '03', 'ABRIL': '04',
-                    'MAYO': '05', 'JUNIO': '06', 'JULIO': '07', 'AGOSTO': '08'
-                };
-
-                for (const [nombreMes, numMes] of Object.entries(mesesMap)) {
-                    if (pathUpper.includes(nombreMes)) {
-                        mesDetectado = numMes;
-                        break;
-                    }
-                }
-
-                const mesNumInt = parseInt(mesDetectado, 10);
-                // Si el mes es entre Septiembre (9) y Diciembre (12), el curso escolar empieza ese año
-                // Si es entre Enero (1) y Agosto (8), el curso escolar empezó el año anterior
-                let anioInicioCurso = (mesNumInt >= 9) ? anioDetectado : anioDetectado - 1;
-                let anioFinCurso = anioInicioCurso + 1;
-                let cursoKey = `${anioInicioCurso}-${anioFinCurso}`;
-                let nombreMesTexto = Object.keys(mesesMap).find(key => mesesMap[key] === mesDetectado) || 'GENERAL';
-
-                return {
-                    curso: cursoKey,
-                    mesNombre: nombreMesTexto
-                };
             },
             async subirCarpetasInteligente(event) {
                 const files = event.target.files;
@@ -1346,11 +1388,11 @@
                     if (!file.name.toLowerCase().endsWith('.pdf')) continue;
 
                     try {
-                        const clasificacion = this.determinarCursoYMesInteligente(file);
+                        const analisis = this.analizarTextoParaCursoYMes(file.webkitRelativePath || file.name);
+                        const cursoPath = analisis.curso.replace('/', '-'); // Formato carpeta 2025-2026
                         const nombreLimpio = this.sanitizarNombreArchivo(file.name);
                         
-                        // Ruta estructurada: [Curso]/[Mes]/[NombreLimpio.pdf]
-                        const path = `${clasificacion.curso}/${clasificacion.mesNombre}/${nombreLimpio}`;
+                        const path = `${cursoPath}/${analisis.mes}/${nombreLimpio}`;
                         
                         const { error } = await _supabase.storage.from('facturas').upload(path, file, { 
                             upsert: true,
@@ -1621,17 +1663,13 @@
                 const element = document.getElementById('zona-impresion');
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
-                const fechaParts = this.nuevoPago.fecha.split('-');
                 
                 // Clasificación automática para nuevos recibos impresos
-                const mesNum = parseInt(fechaParts[1], 10);
-                const anioNum = parseInt(fechaParts[0], 10);
-                const anioIni = mesNum >= 9 ? anioNum : anioNum - 1;
-                const cursoKey = `${anioIni}-${anioIni+1}`;
-                const mesesNombresArr = ['GENERAL','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-                const mesNombreStr = mesesNombresArr[mesNum] || 'GENERAL';
+                const analisis = this.analizarTextoParaCursoYMes(this.nuevoPago.mes + " " + this.nuevoPago.fecha);
+                const cursoPath = analisis.curso.replace('/', '-');
+                const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                await _supabase.storage.from('facturas').upload(`${cursoKey}/${mesNombreStr}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinal}.pdf`, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago y PDF subidos a la nube!`;
