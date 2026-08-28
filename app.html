@@ -344,7 +344,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Organizado automáticamente cruzando datos con Supabase (tildes intactas)</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Tus facturas originales (140-ÉRI-OCT-01.pdf) vinculadas con Supabase</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su factura_id y alumno (ÉRI e ERI independientes).</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos y formato original.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -380,7 +380,7 @@
                         </div>
 
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cruzando datos con Supabase y ordenando facturas...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cargando facturas y cruzando datos con Supabase...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron archivos en el almacenamiento. Sube tus archivos o carpetas arriba.
@@ -393,7 +393,7 @@
                                         <span>Curso Escolar {{ cursoKey }}</span>
                                         <span class="text-xs font-semibold bg-white/20 px-2.5 py-0.5 rounded-full text-white">{{ contarArchivosCurso(mesesObj) }} archivos</span>
                                     </div>
-                                    <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoFacturasAbierto[cursoKey] ? 'rotate-180' : ''"></i>
+                                    <i class="fas fa-chevron-down transition-transform duration-350" :class="cursoFacturasAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                 </div>
 
                                 <div v-if="cursoFacturasAbierto[cursoKey]" class="p-3 sm:p-4 space-y-3 bg-gray-50/50">
@@ -756,7 +756,7 @@
                                                 <span>Curso {{ cursoKey }}</span>
                                                 <span class="text-[10px] sm:text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }}m</span>
                                             </div>
-                                            <i class="fas fa-chevron-down transition-transform duration-300" :class="cursoAbierto[cursoKey] ? 'rotate-180' : ''"></i>
+                                            <i class="fas fa-chevron-down transition-transform duration-350" :class="cursoAbierto[cursoKey] ? 'rotate-180' : ''"></i>
                                         </div>
 
                                         <div v-if="cursoAbierto[cursoKey]" class="p-2 sm:p-3 overflow-x-auto">
@@ -1346,23 +1346,15 @@
                         // Buscar en la tabla pagos por archivo_url o por factura_id exacto (respetando tildes)
                         let pagoEncontrado = this.pagosList.find(p => {
                             if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
-                            if (p.factura_id && String(p.factura_id) === facturaIdLimpio) return true;
-                            if (item.path.includes(p.factura_id)) return true;
+                            if (p.factura_id && this.normalizeName(p.factura_id) === this.normalizeName(facturaIdLimpio)) return true;
+                            if (p.factura_id && item.path.includes(p.factura_id)) return true;
                             return false;
                         });
 
-                        let displayName = facturaIdLimpio + '.pdf';
-                        let alumnoAsociado = 'Desconocido';
+                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${facturaIdLimpio}.pdf`;
+                        let alumnoAsociado = pagoEncontrado && pagoEncontrado.alumno ? pagoEncontrado.alumno : 'Desconocido';
 
-                        if (pagoEncontrado) {
-                            if (pagoEncontrado.factura_id) {
-                                displayName = `${pagoEncontrado.factura_id}.pdf`;
-                            }
-                            if (pagoEncontrado.alumno) {
-                                alumnoAsociado = pagoEncontrado.alumno;
-                            }
-                        } else {
-                            // Intento de fallback inteligente por iniciales en el nombre del archivo o ruta
+                        if (!pagoEncontrado) {
                             const partesPath = item.path.split('/');
                             const nombreArchivoLimpio = partesPath[partesPath.length - 1].replace('.pdf', '');
                             const posibleAlumno = this.list.find(a => {
@@ -1399,7 +1391,7 @@
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
                             path: item.path,
-                            displayName: displayName, // Muestra el ID de factura exacto con tilde (ej: 140-ÉRI-OCT-01.pdf)
+                            displayName: displayName, // Muestra tu factura original con tilde (ej. 140-ÉRI-OCT-01.pdf)
                             alumnoAsociado: alumnoAsociado,
                             curso: cursoVal,
                             mes: mesVal,
@@ -1516,14 +1508,8 @@
             },
             
             async procesarYSubirFacturas(archivosSeleccionados) {
-                console.log("Iniciando procesamiento con almacenamiento seguro y cruce inteligente...");
                 this.loadingArchivos = true;
-                
-                const resultados = {
-                    exitosos: 0,
-                    errores: 0,
-                    detalles: []
-                };
+                let exitosos = 0, errores = 0;
 
                 for (const archivo of archivosSeleccionados) {
                     try {
@@ -1532,30 +1518,22 @@
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
 
-                        console.log(`Procesando archivo: ${nombreOriginal}`);
-
-                        // 1. Buscar coincidencia exacta en pagos por factura_id (respetando tildes)
-                        const { data: pagoEncontrado, error: errorBusqueda } = await _supabase
+                        // Buscar coincidencia en pagos por factura_id
+                        const { data: pagoEncontrado } = await _supabase
                             .from('pagos')
                             .select('*')
                             .eq('factura_id', nombreSinExtension)
                             .maybeSingle();
 
-                        if (errorBusqueda) {
-                            throw new Error(`Error en consulta Supabase: ${errorBusqueda.message}`);
-                        }
-
-                        // 2. Determinar ruta de destino
                         const rutaOriginal = archivo.fullPath || archivo.webkitRelativePath || archivo.name;
                         const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // 3. Generar nombre de almacenamiento seguro para evitar errores en la nube
-                        const idSeguroNube = pagoEncontrado ? `recibo_${pagoEncontrado.id}.pdf` : `recibo_${Date.now()}_${Math.random().toString(36).substring(2,7)}.pdf`;
-                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${idSeguroNube}`;
+                        // Nombre seguro para Storage (quitando tildes para evitar error 400 de la API)
+                        const nombreStorageSeguro = nombreSinExtension.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
+                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
-                        // 4. Subir archivo a Supabase Storage
                         const { error: errorUpload } = await _supabase.storage
                             .from('facturas')
                             .upload(rutaStorage, archivo, {
@@ -1564,51 +1542,27 @@
                                 contentType: 'application/pdf'
                             });
 
-                        if (errorUpload) {
-                            throw new Error(`Error al subir a Storage: ${errorUpload.message}`);
-                        }
+                        if (errorUpload) throw errorUpload;
 
-                        // 5. Actualizar la tabla pagos vinculando archivo_url y manteniendo factura_id intacto
                         if (pagoEncontrado) {
                             await _supabase
                                 .from('pagos')
-                                .update({ 
-                                    archivo_url: rutaStorage,
-                                    factura_id: nombreSinExtension // Preserva la tilde y formato original (ej. ÉRI)
-                                })
+                                .update({ archivo_url: rutaStorage })
                                 .eq('id', pagoEncontrado.id);
                         }
 
-                        resultados.exitosos++;
-                        resultados.detalles.push({
-                            archivo: nombreOriginal,
-                            estado: 'Completado con éxito'
-                        });
-
+                        exitosos++;
                     } catch (error) {
-                        console.error(`Fallo con el archivo ${archivo.name}:`, error.message);
-                        resultados.errores++;
-                        resultados.detalles.push({
-                            archivo: archivo.name,
-                            estado: `Error: ${error.message}`
-                        });
+                        console.error(`Error con ${archivo.name}:`, error.message);
+                        errores++;
                     }
                 }
 
                 await this.cargarArchivosNube();
                 this.showSuccess = true;
-                if (resultados.errores > 0) {
-                    this.successMessage = `Subidos: ${resultados.exitosos} | Errores: ${resultados.errores}`;
-                } else {
-                    this.successMessage = `¡${resultados.exitosos} facturas procesadas y vinculadas con éxito!`;
-                }
-                setTimeout(() => { this.showSuccess = false; }, 5000);
+                this.successMessage = `¡${exitosos} facturas procesadas y vinculadas con éxito!`;
+                setTimeout(() => { this.showSuccess = false; }, 4000);
                 this.loadingArchivos = false;
-                return resultados;
-            },
-
-            obtenerNombreVisualFactura(facturaIdBD) {
-                return facturaIdBD;
             },
 
             logout() {
@@ -1858,12 +1812,12 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                const idRegistro = insertedPago ? insertedPago.id : Date.now();
-                const rutaStorage = `${cursoPath}/${mesNombreStr}/recibo_${idRegistro}.pdf`;
+                // Ruta limpia sin tildes para el almacenamiento físico
+                const nombreStorageSeguro = idFinal.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
+                const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
                 await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 
-                // Guardar la ruta en la tabla pagos para vinculación directa
                 if (insertedPago) {
                     await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
                 }
