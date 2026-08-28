@@ -382,7 +382,7 @@
                             <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Clasificando y cargando facturas desde la nube...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento. Sube tus carpetas o genera nuevos recibos.
+                            No se encontraron archivos en el almacenamiento o las políticas RLS impiden su lectura. Sube tus carpetas o verifica el bucket.
                         </div>
                         <div v-else class="space-y-4">
                             <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
@@ -1074,7 +1074,6 @@
                     arbol[curso][mes].push(a);
                 });
 
-                // Ordenar los meses dentro de cada curso según monthOrder
                 for (const cursoKey in arbol) {
                     const mesesOrdenados = {};
                     const clavesMeses = Object.keys(arbol[cursoKey]).sort((m1, m2) => {
@@ -1088,7 +1087,6 @@
                     arbol[cursoKey] = mesesOrdenados;
                 }
 
-                // Ordenar los cursos descendentemente
                 const cursosOrdenados = Object.keys(arbol).sort().reverse();
                 const resultadoFinal = {};
                 cursosOrdenados.forEach(c => {
@@ -1293,28 +1291,50 @@
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
-                    // Límite de 1000 archivos para evitar que Supabase trunque el listado
+                    // Carga de la lista recursiva en Supabase Storage
                     const { data, error } = await _supabase.storage.from('facturas').list('', { limit: 1000, recursive: true });
                     if (error) throw error;
                     
                     this.archivosNube = (data || []).filter(item => item.name && item.name.endsWith('.pdf')).map(item => {
-                        const partes = item.name.split('/');
-                        let cursoVal = "2025/2026";
-                        let mesVal = "GENERAL";
-                        let fileName = partes[partes.length - 1];
+                        const fileName = item.name.split('/').pop();
                         
-                        if (partes.length >= 3) {
-                            cursoVal = partes[0].replace('-', '/');
-                            mesVal = partes[1].toUpperCase();
-                        } else if (partes.length === 2) {
-                            mesVal = partes[0].toUpperCase();
+                        // 1. CRUCE INTELIGENTE CON LA TABLA PAGOS DE SUPABASE (Por ID de factura)
+                        let fechaRealPago = null;
+                        let mesReal = null;
+                        const facturaIdLimpio = fileName.replace('.pdf', '');
+                        const pagoEncontrado = this.pagosList.find(p => p.factura_id === facturaIdLimpio);
+                        
+                        if (pagoEncontrado && pagoEncontrado.fecha_pago) {
+                            fechaRealPago = pagoEncontrado.fecha_pago;
+                            if (pagoEncontrado.mes) {
+                                mesReal = pagoEncontrado.mes.split(' ')[0].toUpperCase();
+                            }
                         }
 
-                        const analisis = this.analizarTextoParaCursoYMes(item.name);
-                        if (cursoVal === "2025/2026" && analisis.curso) cursoVal = analisis.curso;
-                        if (mesVal === "GENERAL" && analisis.mes) mesVal = analisis.mes;
+                        let cursoVal = "2025/2026";
+                        let mesVal = "OCTUBRE";
 
-                        const fullPath = item.id ? item.name : partes.join('/');
+                        if (fechaRealPago) {
+                            // Si tenemos la fecha exacta de la BD, calculamos el curso y mes matemático perfecto
+                            const partesFecha = fechaRealPago.split('-');
+                            const anioF = parseInt(partesFecha[0], 10);
+                            const mesF = parseInt(partesFecha[1], 10);
+                            
+                            // Meses del año a nombre
+                            const mesesArr = ["", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+                            if (!mesReal && mesF >= 1 && mesF <= 12) mesVal = mesesArr[mesF];
+                            else if (mesReal) mesVal = mesReal;
+
+                            let anioInicioCurso = (mesF >= 9) ? anioF : anioF - 1;
+                            cursoVal = `${anioInicioCurso}/${anioInicioCurso + 1}`;
+                        } else {
+                            // 2. FALLBACK: Analizar el nombre o ruta si no está en la BD
+                            const analisis = this.analizarTextoParaCursoYMes(item.name);
+                            cursoVal = analisis.curso;
+                            mesVal = analisis.mes;
+                        }
+
+                        const fullPath = item.id ? item.name : item.name;
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(fullPath);
                         return {
                             name: fileName,
@@ -1330,7 +1350,7 @@
             },
             analizarTextoParaCursoYMes(texto) {
                 const textUp = texto.toUpperCase();
-                let anioDetectado = new Date().getFullYear();
+                let anioDetectado = 2025; // Por defecto año base escolar anterior
                 let mesDetectado = "OCTUBRE";
                 let numMes = 10;
 
@@ -1351,10 +1371,8 @@
                     }
                 }
 
-                // LÓGICA CORRECTA DE CURSOS ESCOLARES (Sep-Dic del año Y -> Y / Y+1; Ene-Ago del año Y -> Y-1 / Y)
                 let anioInicio = (numMes >= 9) ? anioDetectado : anioDetectado - 1;
-                let anioFin = anioInicio + 1;
-                let cursoKey = `${anioInicio}/${anioFin}`;
+                let cursoKey = `${anioInicio}/${anioInicio + 1}`;
 
                 return { curso: cursoKey, mes: mesDetectado };
             },
@@ -1710,10 +1728,6 @@
                                     <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || 'Efectivo').toUpperCase()}</span></td>
                                 </tr>
                             </table>
-                            <div style="border-bottom:2px solid #000;padding:15px;">
-                                <p style="font-size:10px;margin:0">RECIBÍ DE:</p>
-                                <h3 style="margin:5px 0;text-transform:uppercase">${alumnoImprimir}</h3>
-                            </div>
                             <table style="width:100%;border-collapse:collapse;">
                                 <tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>
                                 ${filasHTML}
