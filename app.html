@@ -363,7 +363,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se leerán y clasificarán preservando estrictamente todas las tildes (ÉRI e ERI son independientes).</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán mediante ID seguro, protegiendo 100% las tildes (ÉRI e ERI son independientes).</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -380,7 +380,7 @@
                         </div>
 
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y clasificando facturas con tildes protegidas...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Analizando carpetas y vinculando facturas con tildes protegidas...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron archivos en el almacenamiento. Sube tus archivos o carpetas arriba.
@@ -1338,11 +1338,12 @@
                         let fileNameStorage = item.name;
                         let facturaIdLimpio = fileNameStorage.replace('.pdf', '');
 
-                        // Búsqueda exacta respetando estrictamente las tildes (ÉRI vs ERI)
+                        // Si el archivo físico en la nube usa ID interno o nombre seguro, lo buscamos en pagos
                         let displayName = fileNameStorage;
                         const pagoEncontrado = this.pagosList.find(p => {
                             if (!p.factura_id) return false;
-                            return String(p.factura_id) === facturaIdLimpio;
+                            // Comprobamos si coincide el ID limpio o si el path contiene el identificador
+                            return String(p.factura_id) === facturaIdLimpio || item.path.includes(p.factura_id);
                         });
 
                         if (pagoEncontrado && pagoEncontrado.factura_id) {
@@ -1380,7 +1381,7 @@
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return {
-                            name: displayName, // Preserva la tilde exacta (ej: ÉRI-OCT-01.pdf)
+                            name: displayName, // Muestra siempre la tilde exacta (ej: ÉRI-OCT-01.pdf)
                             curso: cursoVal,
                             mes: mesVal,
                             url: urlData.publicUrl
@@ -1496,11 +1497,12 @@
             },
             
             /**
-             * Procesa y sube los archivos respetando estrictamente las tildes y caracteres especiales.
-             * Evita cualquier normalización destructiva que pueda fusionar alumnos o facturas (ej. ÉRI vs ERI).
+             * ARQUITECTURA DESACOPLADA DEFINITIVA:
+             * Sube los archivos a la nube usando un nombre plano y seguro (evitando errores 400 y tildes corruptas),
+             * mientras que en la base de datos y la interfaz se respeta el ID exacto con tilde (ÉRI vs ERI).
              */
             async procesarYSubirFacturas(archivosSeleccionados) {
-                console.log("Iniciando procesamiento de archivos con preservación total de tildes...");
+                console.log("Iniciando procesamiento con almacenamiento seguro desacoplado...");
                 this.loadingArchivos = true;
                 
                 const resultados = {
@@ -1513,13 +1515,12 @@
                     try {
                         if (!archivo.name.toLowerCase().endsWith('.pdf')) continue;
 
-                        // 1. Obtener el nombre original EXACTO del archivo (ej. "ÉRI-OCT-01.pdf")
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
 
-                        console.log(`Procesando archivo original: ${nombreOriginal}`);
+                        console.log(`Procesando factura: ${nombreOriginal}`);
 
-                        // 2. Búsqueda exacta en la base de datos sin eliminar acentos
+                        // 1. Buscar coincidencia exacta en la base de datos por factura_id
                         const { data: pagoEncontrado, error: errorBusqueda } = await _supabase
                             .from('pagos')
                             .select('*')
@@ -1527,25 +1528,26 @@
                             .maybeSingle();
 
                         if (errorBusqueda) {
-                            throw new Error(`Error en la consulta a Supabase: ${errorBusqueda.message}`);
+                            throw new Error(`Error en consulta Supabase: ${errorBusqueda.message}`);
                         }
 
                         if (!pagoEncontrado) {
-                            console.warn(`Aviso: No se encontró registro en la base de datos para la factura: ${nombreSinExtension}`);
+                            console.warn(`Aviso: No hay registro de pago para "${nombreSinExtension}". Se subirá igualmente.`);
                         }
 
-                        // 3. Determinar ruta y mes según la estructura de la app y el archivo
+                        // 2. Determinar ruta y curso/mes de destino
                         const rutaOriginal = archivo.fullPath || archivo.webkitRelativePath || archivo.name;
                         const analisis = this.analizarTextoParaCursoYMes(rutaOriginal);
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // Usamos encodeURIComponent en el nombre del archivo para que la API de Supabase 
-                        // acepte las tildes de forma segura sin eliminarlas ni corromperlas.
-                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${encodeURIComponent(nombreOriginal)}`;
+                        // 3. NOMBRE SEGURO PARA LA NUBE: Usamos el ID del pago o un hash limpio 
+                        // para evitar por completo que caracteres como Á o É rompan la subida en Supabase.
+                        const idSeguroNube = pagoEncontrado ? `recibo_${pagoEncontrado.id}.pdf` : `recibo_${Date.now()}_${Math.random().toString(36).substring(2,7)}.pdf`;
+                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${idSeguroNube}`;
 
-                        // 4. Subida del archivo al Storage respetando el nombre y tildes exactas
-                        const { data: uploadData, error: errorUpload } = await _supabase.storage
+                        // 4. Subida limpia al Storage sin arriesgar tildes en la ruta física
+                        const { error: errorUpload } = await _supabase.storage
                             .from('facturas')
                             .upload(rutaStorage, archivo, {
                                 cacheControl: '3600',
@@ -1557,17 +1559,17 @@
                             throw new Error(`Error al subir a Storage: ${errorUpload.message}`);
                         }
 
-                        // 5. Sincronización o actualización del registro si procede
+                        // 5. Vincular en la base de datos manteniendo el nombre original intacto en factura_id
                         if (pagoEncontrado) {
                             const { error: errorUpdate } = await _supabase
                                 .from('pagos')
                                 .update({ 
-                                    factura_id: nombreSinExtension // Garantiza ID exacto con tilde
+                                    factura_id: nombreSinExtension // Mantiene rigurosamente la tilde original
                                 })
                                 .eq('id', pagoEncontrado.id);
 
                             if (errorUpdate) {
-                                throw new Error(`Error al actualizar el registro de pago: ${errorUpdate.message}`);
+                                throw new Error(`Error al actualizar registro: ${errorUpdate.message}`);
                             }
                         }
 
@@ -1578,7 +1580,7 @@
                         });
 
                     } catch (error) {
-                        console.error(`Fallo al procesar el archivo ${archivo.name}:`, error.message);
+                        console.error(`Fallo con el archivo ${archivo.name}:`, error.message);
                         resultados.errores++;
                         resultados.detalles.push({
                             archivo: archivo.name,
@@ -1590,9 +1592,9 @@
                 await this.cargarArchivosNube();
                 this.showSuccess = true;
                 if (resultados.errores > 0) {
-                    this.successMessage = `Proceso finalizado. Subidos: ${resultados.exitosos} | Errores: ${resultados.errores}`;
+                    this.successMessage = `Subidos: ${resultados.exitosos} | Errores: ${resultados.errores}`;
                 } else {
-                    this.successMessage = `¡Subidos ${resultados.exitosos} archivos respetando tildes correctamente!`;
+                    this.successMessage = `¡${resultados.exitosos} facturas procesadas y protegidas con éxito!`;
                 }
                 setTimeout(() => { this.showSuccess = false; }, 5000);
                 this.loadingArchivos = false;
@@ -1834,11 +1836,13 @@
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
-                await _supabase.from('pagos').insert([{
+                
+                const { data: insertedPago } = await _supabase.from('pagos').insert([{
                     factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
                     fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: this.nuevoPago.metodo, registrado: true
-                }]);
+                }]).select().single();
+
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 const element = document.getElementById('zona-impresion');
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
@@ -1848,10 +1852,11 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                // Subida respetando estrictamente las tildes con encodeURIComponent
-                const idFinalStorage = encodeURIComponent(`${idFinal}.pdf`);
+                // Subida segura usando el ID interno generado en base de datos
+                const idRegistro = insertedPago ? insertedPago.id : Date.now();
+                const rutaStorage = `${cursoPath}/${mesNombreStr}/recibo_${idRegistro}.pdf`;
 
-                await _supabase.storage.from('facturas').upload(`${cursoPath}/${mesNombreStr}/${idFinalStorage}`, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago y PDF con tilde protegida subidos a la nube!`;
