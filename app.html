@@ -142,7 +142,7 @@
 
                     <div v-if="modalType === 'edit'" class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-500 uppercase">Nombre del Mes</label>
-                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 27'">
+                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 2027">
                     </div>
 
                     <div class="flex gap-3 pt-3 border-t">
@@ -176,7 +176,7 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1">Mes</label>
                             <select v-model="editPagoForm.mes" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
-                                <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
+                                <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ formatMesUnificado(m) }}</option>
                             </select>
                         </div>
                     </div>
@@ -400,7 +400,7 @@
                                 <div v-if="cursoFacturasAbierto[cursoKey]" class="p-3 sm:p-4 space-y-3 bg-gray-50/50">
                                     <div v-for="(archivosLista, mesKey) in mesesObj" :key="mesKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
                                         <div class="bg-gray-100 p-3 font-bold text-[#2b94cc] text-xs flex justify-between items-center">
-                                            <span class="uppercase"><i class="fas fa-folder-open mr-2"></i> {{ mesKey }}</span>
+                                            <span><i class="fas fa-folder-open mr-2"></i> {{ formatMesUnificado(mesKey) }}</span>
                                             <span class="bg-white px-2 py-0.5 rounded text-gray-500 border text-[10px]">{{ archivosLista.length }} archivos</span>
                                         </div>
                                         <div class="p-3">
@@ -691,7 +691,7 @@
                             </section>
 
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
-                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <div class="col-span-1 sm:col-span-2 md:grid-cols-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
                                 <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
@@ -772,7 +772,7 @@
                                                 </thead>
                                                 <tbody>
                                                     <tr v-for="mes in mesesCurso" :key="mes" class="hover:bg-blue-50/40 transition">
-                                                        <td class="p-2.5 border font-bold text-[#243c7a]">{{ mes }}</td>
+                                                        <td class="p-2.5 border font-bold text-[#243c7a]">{{ formatMesUnificado(mes) }}</td>
                                                         <td class="p-2 border text-center">
                                                             <input type="number" step="0.01" 
                                                                 :value="getCuotaValor(form.nombre + ' ' + form.apellidos, mes)" 
@@ -851,7 +851,7 @@
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Smart / Automático)</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
-                                            <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ m }}</option>
+                                            <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ formatMesUnificado(m) }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1689,21 +1689,21 @@
                 let siguienteMesStr = "";
                 try {
                     let idx = listaNombres.indexOf(mName);
-                    let anioNum = Number(yRaw);
-                    if (idx === 11) siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}'`;
-                    else siguienteMesStr = `${listaNombres[idx + 1]} ${mName === 'DICIEMBRE' ? anioNum + 1 : anioNum}'`;
-                } catch(e) { siguienteMesStr = "JUNIO 27'"; }
+                    let anioNum = Number("20" + (yRaw.length === 2 ? yRaw : yRaw.slice(-2)));
+                    if (idx === 11) siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}`;
+                    else siguienteMesStr = `${listaNombres[idx + 1]} ${mName === 'DICIEMBRE' ? anioNum + 1 : anioNum}`;
+                } catch(e) { siguienteMesStr = "JUNIO 2027"; }
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
                 await _supabase.from('ingresos_fijos').upsert({ alumno: nombreCompleto, mes: siguienteMesStr, cuota: 0, pagado: false }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
-                this.successMessage = `¡Mes de ${siguienteMesStr} generado!`;
+                this.successMessage = `¡Mes de ${this.formatMesUnificado(siguienteMesStr)} generado!`;
                 setTimeout(() => { this.showSuccess = false; }, 2500);
             },
             abrirModalEditar(mes) {
                 this.modalType = 'edit';
                 this.modalTitle = 'Modificar Mes';
-                this.modalMessage = `Introduce el nuevo nombre para "${mes}". Se actualizará para todos los alumnos.`;
+                this.modalMessage = `Introduce el nuevo nombre para "${this.formatMesUnificado(mes)}". Se actualizará para todos los alumnos.`;
                 this.modalInputVal = mes;
                 this.modalTargetMes = mes;
                 this.showCustomModal = true;
@@ -1711,7 +1711,7 @@
             abrirModalEliminar(mes) {
                 this.modalType = 'delete';
                 this.modalTitle = 'Eliminar Mes';
-                this.modalMessage = `¿Seguro que deseas eliminar el mes "${mes}" para todos los alumnos?`;
+                this.modalMessage = `¿Seguro que deseas eliminar el mes "${this.formatMesUnificado(mes)}" para todos los alumnos?`;
                 this.modalTargetMes = mes;
                 this.showCustomModal = true;
             },
