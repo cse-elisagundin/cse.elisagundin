@@ -1215,9 +1215,8 @@
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
             
-            // CORREGIDO: Iniciales exactas sin tildes + Curso escolar correcto (ej: 26-27), manteniendo secuencia numérica
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
-                let maxNum = 106; // Mantiene la numeración secuencial principal desde el 106 actual
+                let maxNum = 106;
                 if (this.pagosList && this.pagosList.length > 0) {
                     const numeros = this.pagosList.map(p => {
                         if (p.factura_id) {
@@ -1231,11 +1230,9 @@
                 }
                 const siguienteNum = maxNum + 1;
                 
-                // 1. Limpieza de tildes
                 let nombreLimpio = String(nombre || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 let apellidoLimpio = String(apellidos || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 
-                // 2. Extracción precisa de iniciales: Inicial(es) del nombre + 1º Apellido + 2º Apellido
                 const palabrasNombre = nombreLimpio.split(/\s+/).filter(w => w.length > 0);
                 let inicialesNombres = palabrasNombre.map(w => w.charAt(0)).join('');
                 if (!inicialesNombres) inicialesNombres = 'X';
@@ -1246,20 +1243,14 @@
                 
                 const codigoAlumno = `${inicialesNombres}${inicialApellido1}${inicialApellido2}`;
                 
-                // 3. Mes abreviado (3 letras) sin tildes
                 let mesLimpio = String(mesStr || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 let mesPartes = mesLimpio.replace(/'/g, '').split(' ');
                 let mesLetras = mesPartes[0] ? mesPartes[0].substring(0, 3) : "GEN";
                 
-                // 4. Curso Escolar calculado por fecha de emisión (Sep-Dic -> yy-(yy+1) | Ene-Ago -> (yy-1)-yy)
-                let fechaObj = fecha ? new Date(fecha) : new Date();
-                if (isNaN(fechaObj.getTime())) fechaObj = new Date();
-                let anioF = fechaObj.getFullYear();
-                let mesF = fechaObj.getMonth() + 1;
-                
-                let anioInicio = (mesF >= 9) ? anioF : anioF - 1;
-                let anioFin = anioInicio + 1;
-                let cursoEscolar = `${String(anioInicio).slice(-2)}-${String(anioFin).slice(-2)}`;
+                // CORRECCIÓN: Derivar el curso escolar estrictamente del mes de destino seleccionado, no de la fecha de emisión
+                const parsedMonth = this.parseMonthOrder(mesStr);
+                const [anioInicioStr, anioFinStr] = parsedMonth.cursoKey.split('/');
+                const cursoEscolar = `${anioInicioStr.slice(-2)}-${anioFinStr.slice(-2)}`;
                 
                 return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
             },
@@ -1398,7 +1389,11 @@
                         let cursoVal = "2025/2026";
                         let mesVal = "OCTUBRE";
 
-                        if (fechaRealPago) {
+                        if (pagoEncontrado && pagoEncontrado.mes) {
+                            const parsedM = this.parseMonthOrder(pagoEncontrado.mes);
+                            cursoVal = parsedM.cursoKey;
+                            mesVal = pagoEncontrado.mes.split(' ')[0].toUpperCase();
+                        } else if (fechaRealPago) {
                             const partesFecha = fechaRealPago.split('-');
                             const anioFNum = parseInt(partesFecha[0], 10);
                             const mesF = parseInt(partesFecha[1], 10);
@@ -1658,8 +1653,8 @@
             },
             getCuotaValor(nombreAlumno, mes) {
                 const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
-                if (!reg || reg.cuota === null || reg.cuota === 0) return '';
-                return reg.cuota;
+                if (!reg || reg.cuota === null || reg.cuota === '' || isNaN(reg.cuota)) return '';
+                return Number(reg.cuota).toFixed(2);
             },
             updateCuotaLocal(nombreAlumno, mes, valor) {
                 let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
@@ -1835,9 +1830,10 @@
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
-                const analisis = this.analizarTextoParaCursoYMes(this.nuevoPago.mes + " " + this.nuevoPago.fecha);
-                const cursoPath = analisis.curso.replace('/', '-');
-                const mesNombreStr = analisis.mes || 'OCTUBRE';
+                // CORRECCIÓN: Estructuración determinista de la ruta sin adivinanzas por regex
+                const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
+                const cursoPath = parsedMonth.cursoKey.replace('/', '-'); // Ej: "2025-2026"
+                const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
 
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
