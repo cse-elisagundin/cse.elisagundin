@@ -142,7 +142,7 @@
 
                     <div v-if="modalType === 'edit'" class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-500 uppercase">Nombre del Mes</label>
-                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold uppercase" placeholder="Ej: JULIO 2027">
+                        <input type="text" v-model="modalInputVal" @keyup.enter="ejecutarAccionModal" class="w-full p-3.5 rounded-xl border input-corp outline-none text-sm font-bold" placeholder="Ej: Noviembre 2026">
                     </div>
 
                     <div class="flex gap-3 pt-3 border-t">
@@ -1099,7 +1099,7 @@
             },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
-                const porDefecto = ["OCTUBRE 25'", "NOVIEMBRE 25'", "DICIEMBRE 25'", "ENERO 26'", "FEBRERO 26'", "MARZO 26'", "ABRIL 26'", "MAYO 26'", "JUNIO 26'"];
+                const porDefecto = ["Octubre 2025", "Noviembre 2025", "Diciembre 2025", "Enero 2026", "Febrero 2026", "Marzo 2026", "Abril 2026", "Mayo 2026", "Junio 2026"];
                 const todos = [...new Set([...porDefecto, ...mesesBD])];
                 return todos.sort((a, b) => {
                     const pa = this.parseMonthOrder(a);
@@ -1202,7 +1202,7 @@
             parseMonthOrder(m_str) {
                 const parts = m_str.replace(/'/g, "").trim().split(' ');
                 if (parts.length >= 2) {
-                    const m_name = parts[0];
+                    const m_name = parts[0].toUpperCase();
                     const y_raw = parts[1];
                     const yearNum = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
                     const monthIdx = monthOrder[m_name] || 1;
@@ -1365,12 +1365,13 @@
                             if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
                             if (p.factura_id) {
                                 let facturaIdDb = String(p.factura_id).trim();
-                                if (facturaIdDb.toUpperCase() === fileNameDecoded.toUpperCase()) return true;
+                                let facturaIdSafe = facturaIdDb.replace(/\//g, '.');
+                                if (facturaIdDb.toUpperCase() === fileNameDecoded.toUpperCase() || facturaIdSafe.toUpperCase() === fileNameDecoded.toUpperCase()) return true;
                             }
                             return false;
                         });
 
-                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameDecoded}.pdf`;
+                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameDecoded.replace(/\./g, '/')}.pdf`;
                         let alumnoAsociado = pagoEncontrado && pagoEncontrado.alumno ? pagoEncontrado.alumno : 'Desconocido';
 
                         if (!pagoEncontrado) {
@@ -1433,11 +1434,11 @@
                 let cursoKey = "2025/2026";
                 let mesDetectado = "OCTUBRE";
 
-                if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027")) {
+                if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027") || pathUp.includes("26.27")) {
                     cursoKey = "2026/2027";
-                } else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026")) {
+                } else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026") || pathUp.includes("25.26")) {
                     cursoKey = "2025/2026";
-                } else if (pathUp.includes("24-25") || pathUp.includes("2024-2025")) {
+                } else if (pathUp.includes("24-25") || pathUp.includes("2024-2025") || pathUp.includes("24.25")) {
                     cursoKey = "2024/2025";
                 }
 
@@ -1538,11 +1539,12 @@
 
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
+                        const nombreSinExtensionLimpio = nombreSinExtension.replace(/\./g, '/');
 
                         const { data: pagoEncontrado } = await _supabase
                             .from('pagos')
                             .select('*')
-                            .eq('factura_id', nombreSinExtension)
+                            .or(`factura_id.eq.${nombreSinExtension},factura_id.eq.${nombreSinExtensionLimpio}`)
                             .maybeSingle();
 
                         const rutaOriginal = archivo.fullPath || archivo.webkitRelativePath || archivo.name;
@@ -1550,7 +1552,7 @@
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        const nombreArchivoStorage = encodeURIComponent(nombreSinExtension) + '.pdf';
+                        const nombreArchivoStorage = encodeURIComponent(nombreSinExtension.replace(/\//g, '.')) + '.pdf';
                         const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
                         const { error: errorUpload } = await _supabase.storage
@@ -1685,14 +1687,14 @@
                 const parts = ultimoMes.replace(/'/g, "").trim().split(' ');
                 const mName = parts[0];
                 const yRaw = parts[1];
-                const listaNombres = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO'];
+                const listaNombres = ['Septiembre', 'Octubre', 'Noviembre', 'Diciembre', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto'];
                 let siguienteMesStr = "";
                 try {
-                    let idx = listaNombres.indexOf(mName);
+                    let idx = listaNombres.findIndex(m => m.toUpperCase() === mName.toUpperCase());
                     let anioNum = Number("20" + (yRaw.length === 2 ? yRaw : yRaw.slice(-2)));
                     if (idx === 11) siguienteMesStr = `${listaNombres[0]} ${anioNum + 1}`;
-                    else siguienteMesStr = `${listaNombres[idx + 1]} ${mName === 'DICIEMBRE' ? anioNum + 1 : anioNum}`;
-                } catch(e) { siguienteMesStr = "JUNIO 2027"; }
+                    else siguienteMesStr = `${listaNombres[idx + 1]} ${mName.toUpperCase() === 'DICIEMBRE' ? anioNum + 1 : anioNum}`;
+                } catch(e) { siguienteMesStr = "Junio 2027"; }
                 const nombreCompleto = this.form.nombre + ' ' + this.form.apellidos;
                 await _supabase.from('ingresos_fijos').upsert({ alumno: nombreCompleto, mes: siguienteMesStr, cuota: 0, pagado: false }, { onConflict: 'alumno,mes' });
                 await this.cargarDatosSupabase();
@@ -1718,7 +1720,7 @@
             cerrarCustomModal() { this.showCustomModal = false; },
             async ejecutarAccionModal() {
                 if (this.modalType === 'edit') {
-                    const nuevoNombre = this.modalInputVal.toUpperCase().trim();
+                    const nuevoNombre = this.modalInputVal.trim();
                     if (!nuevoNombre || nuevoNombre === this.modalTargetMes) { this.showCustomModal = false; return; }
                     await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
                     this.successMessage = "Mes modificado correctamente";
@@ -1827,9 +1829,10 @@
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 const element = document.getElementById('zona-impresion');
                 
-                const nombreArchivoStorage = encodeURIComponent(idFinal) + '.pdf';
+                const idSafeForStorage = idFinal.replace(/\//g, '.');
+                const nombreArchivoStorage = encodeURIComponent(idSafeForStorage) + '.pdf';
                 
-                const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const opt = { margin: 0, filename: `${idSafeForStorage}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
                 const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
