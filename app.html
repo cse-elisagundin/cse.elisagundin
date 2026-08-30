@@ -364,7 +364,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos respetando las tildes exactas.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -1215,8 +1215,9 @@
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
             
+            // NUEVA LÓGICA DE FACTURA_ID: [Secuencial]-[Iniciales Nombres y Apellidos sin tildes]-[Mes]-[Curso (ej: 26-27)]
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
-                let maxNum = 0;
+                let maxNum = 106; // Mantiene la numeración secuencial principal desde el 106 actual
                 if (this.pagosList && this.pagosList.length > 0) {
                     const numeros = this.pagosList.map(p => {
                         if (p.factura_id) {
@@ -1226,29 +1227,47 @@
                         }
                         return 0;
                     });
-                    maxNum = Math.max(...numeros, 0);
+                    maxNum = Math.max(...numeros, 106);
                 }
                 const siguienteNum = maxNum + 1;
                 
-                let nombreCompleto = (nombre || '').trim();
-                const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
-                const primerNombre = palabras[0] || '';
+                // 1. Limpieza estricta de tildes para evitar problemas en almacenamiento / URLs
+                let nombreLimpio = String(nombre || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+                let apellidoLimpio = String(apellidos || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 
-                let iniciales = "XXX";
-                if (primerNombre.length >= 3) {
-                    iniciales = primerNombre.substring(0, 3).toUpperCase();
-                } else if (primerNombre.length > 0) {
-                    iniciales = primerNombre.padEnd(3, 'X').toUpperCase();
+                // 2. Extracción de iniciales: Nombres completos (compuestos o simples) + 1º Apellido + 2º Apellido
+                const palabrasNombre = nombreLimpio.split(/\s+/).filter(w => w.length > 0);
+                let inicialesNombres = palabrasNombre.map(w => w.charAt(0)).join('');
+                if (!inicialesNombres) inicialesNombres = 'X';
+                
+                const palabrasApellido = apellidoLimpio.split(/\s+/).filter(w => w.length > 0);
+                let inicialesApellidos = '';
+                if (palabrasApellido.length >= 2) {
+                    inicialesApellidos = palabrasApellido[0].charAt(0) + palabrasApellido[1].charAt(0);
+                } else if (palabrasApellido.length === 1) {
+                    inicialesApellidos = palabrasApellido[0].charAt(0);
+                } else {
+                    inicialesApellidos = 'X';
                 }
                 
-                const mesLimpio = String(mesStr || '').trim().split(' ')[0];
-                const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
-                let dia = "01";
-                if (fecha) {
-                    const partesFecha = fecha.split('-');
-                    if (partesFecha.length === 3) dia = partesFecha[2];
-                }
-                return `${siguienteNum}-${iniciales}-${mesLetras}-${dia}`;
+                const codigoAlumno = `${inicialesNombres}${inicialesApellidos}`;
+                
+                // 3. Mes abreviado (3 letras) sin tildes
+                let mesLimpio = String(mesStr || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+                let mesPartes = mesLimpio.replace(/'/g, '').split(' ');
+                let mesLetras = mesPartes[0] ? mesPartes[0].substring(0, 3) : "GEN";
+                
+                // 4. Curso Escolar calculado por fecha de emisión (Sep-Dic -> yy-(yy+1) | Ene-Ago -> (yy-1)-yy)
+                let fechaObj = fecha ? new Date(fecha) : new Date();
+                if (isNaN(fechaObj.getTime())) fechaObj = new Date();
+                let anioF = fechaObj.getFullYear();
+                let mesF = fechaObj.getMonth() + 1;
+                
+                let anioInicio = (mesF >= 9) ? anioF : anioF - 1;
+                let anioFin = anioInicio + 1;
+                let cursoEscolar = `${String(anioInicio).slice(-2)}-${String(anioFin).slice(-2)}`;
+                
+                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
             },
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
@@ -1349,7 +1368,6 @@
                     }
                     
                     this.archivosNube = allFiles.map(item => {
-                        // Decodificamos el nombre para recuperar la tilde real (ej: %C3%89RI -> ÉRI)
                         let fileNameDecoded = "";
                         try {
                             fileNameDecoded = decodeURIComponent(item.name).replace('.pdf', '');
@@ -1542,7 +1560,6 @@
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // Codificamos con encodeURIComponent para permitir tildes en S3 sin colisiones ni Error 400
                         const nombreArchivoStorage = encodeURIComponent(nombreSinExtension) + '.pdf';
                         const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
@@ -1818,7 +1835,6 @@
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 const element = document.getElementById('zona-impresion');
                 
-                // Usamos encodeURIComponent para preservar la tilde real en la URL sin causar Error 400 ni colisiones
                 const nombreArchivoStorage = encodeURIComponent(idFinal) + '.pdf';
                 
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
