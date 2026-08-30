@@ -248,7 +248,7 @@
             </div>
         </transition>
 
-        <!-- PANTALLA DE LOGIN (Protegida contra parpadeo con checkingSession) -->
+        <!-- PANTALLA DE LOGIN -->
         <transition name="fade">
             <div v-if="!authenticated && !checkingSession" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4">
                 <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
@@ -364,7 +364,7 @@
                             </div>
                             <div>
                                 <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos y formato original.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos respetando las tildes exactas.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
                                 <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
@@ -967,7 +967,7 @@
         data() {
             return {
                 authenticated: false, 
-                checkingSession: true, // NUEVO: Evita el parpadeo del login al refrescar
+                checkingSession: true,
                 loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
                 list: [], search: '', selected: null, isNew: false, 
                 loading: false, saving: false, savingPago: false,
@@ -1150,6 +1150,11 @@
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
+            // NUEVA FUNCIÓN PARA MATCH EXACTO DE IDs SIN BORRAR TILDES
+            matchExactID(id1, id2) {
+                if (!id1 || !id2) return false;
+                return String(id1).normalize("NFC").toUpperCase() === String(id2).normalize("NFC").toUpperCase();
+            },
             formatearFecha(f) {
                 if (!f) return '';
                 const parts = f.split('-');
@@ -1229,11 +1234,20 @@
                     maxNum = Math.max(...numeros, 0);
                 }
                 const siguienteNum = maxNum + 1;
-                let nombreCompleto = (nombre || '').trim() + ' ' + (apellidos || '').trim();
-                nombreCompleto = nombreCompleto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                
+                // MEJORA: Respetamos las tildes y sacamos las 3 primeras letras del primer nombre
+                let nombreCompleto = (nombre || '').trim();
+                nombreCompleto = nombreCompleto.normalize("NFC"); 
                 
                 const palabras = nombreCompleto.split(/\s+/).filter(w => w.length > 0);
-                const iniciales = palabras.slice(0, 3).map(w => w.charAt(0).toUpperCase()).join('');
+                const primerNombre = palabras[0] || '';
+                
+                let iniciales = "XXX";
+                if (primerNombre.length >= 3) {
+                    iniciales = primerNombre.substring(0, 3).toUpperCase();
+                } else if (primerNombre.length > 0) {
+                    iniciales = primerNombre.padEnd(3, 'X').toUpperCase();
+                }
                 
                 const mesLimpio = String(mesStr || '').trim().split(' ')[0];
                 const mesLetras = (mesLimpio.length >= 3 ? mesLimpio.substring(0, 3) : "GEN").toUpperCase();
@@ -1343,13 +1357,15 @@
                     }
                     
                     this.archivosNube = allFiles.map(item => {
-                        let fileNameStorage = item.name;
+                        // DECODIFICAR URL PARA MOSTRAR TILDES CORRECTAMENTE EN PANTALLA
+                        let fileNameStorage = decodeURIComponent(item.name);
                         let facturaIdLimpio = fileNameStorage.replace('.pdf', '');
 
+                        // CRUZAR DATOS RESPETANDO TILDES CON matchExactID
                         let pagoEncontrado = this.pagosList.find(p => {
                             if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
-                            if (p.factura_id && this.normalizeName(p.factura_id) === this.normalizeName(facturaIdLimpio)) return true;
-                            if (p.factura_id && item.path.includes(p.factura_id)) return true;
+                            if (p.factura_id && this.matchExactID(p.factura_id, facturaIdLimpio)) return true;
+                            if (p.factura_id && decodeURIComponent(item.path).includes(p.factura_id)) return true;
                             return false;
                         });
 
@@ -1358,9 +1374,9 @@
 
                         if (!pagoEncontrado) {
                             const partesPath = item.path.split('/');
-                            const nombreArchivoLimpio = partesPath[partesPath.length - 1].replace('.pdf', '');
+                            const nombreArchivoLimpio = decodeURIComponent(partesPath[partesPath.length - 1]).replace('.pdf', '');
                             const posibleAlumno = this.list.find(a => {
-                                const inicialesAlum = (a.nombre.charAt(0) + a.apellidos.charAt(0)).toUpperCase();
+                                const inicialesAlum = a.nombre.substring(0, 3).toUpperCase();
                                 return nombreArchivoLimpio.toUpperCase().includes(inicialesAlum);
                             });
                             if (posibleAlumno) {
@@ -1531,7 +1547,8 @@
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        const nombreStorageSeguro = nombreSinExtension.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
+                        // GUARDADO DE LA RUTA MANTENIENDO LAS TILDES INTACTAS (.normalize("NFC"))
+                        const nombreStorageSeguro = nombreSinExtension.normalize("NFC") + '.pdf';
                         const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
                         const { error: errorUpload } = await _supabase.storage
@@ -1812,7 +1829,8 @@
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                const nombreStorageSeguro = idFinal.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '.pdf';
+                // GUARDADO DE PDF MANTENIENDO LAS TILDES (.normalize("NFC"))
+                const nombreStorageSeguro = idFinal.normalize("NFC") + '.pdf';
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreStorageSeguro}`;
 
                 await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
@@ -1903,7 +1921,6 @@
                 this.authenticated = true;
                 await this.cargarDatosSupabase();
             }
-            // Finalizamos la verificación silenciosa para evitar parpadeos visuales
             this.checkingSession = false;
         }
     }).mount('#app');
