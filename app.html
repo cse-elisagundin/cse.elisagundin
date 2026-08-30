@@ -1349,28 +1349,30 @@
                     }
                     
                     this.archivosNube = allFiles.map(item => {
-                        let fileNameStorage = decodeURIComponent(item.name).replace('.pdf', '');
-                        let fileNameStorageSinTildes = fileNameStorage.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        // Decodificamos el nombre para recuperar la tilde real (ej: %C3%89RI -> ÉRI)
+                        let fileNameDecoded = "";
+                        try {
+                            fileNameDecoded = decodeURIComponent(item.name).replace('.pdf', '');
+                        } catch(e) {
+                            fileNameDecoded = item.name.replace('.pdf', '');
+                        }
 
-                        // CRUZAR DATOS UNIFICANDO COMPARACIÓN SIN TILDES PARA ENCONTRAR EL ID ORIGINAL CON TILDES
                         let pagoEncontrado = this.pagosList.find(p => {
                             if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
                             if (p.factura_id) {
-                                let facturaIdDbSinTildes = String(p.factura_id).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                                if (facturaIdDbSinTildes === fileNameStorageSinTildes) return true;
+                                let facturaIdDb = String(p.factura_id).trim();
+                                if (facturaIdDb.toUpperCase() === fileNameDecoded.toUpperCase()) return true;
                             }
                             return false;
                         });
 
-                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameStorage}.pdf`;
+                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameDecoded}.pdf`;
                         let alumnoAsociado = pagoEncontrado && pagoEncontrado.alumno ? pagoEncontrado.alumno : 'Desconocido';
 
                         if (!pagoEncontrado) {
-                            const partesPath = item.path.split('/');
-                            const nombreArchivoLimpio = decodeURIComponent(partesPath[partesPath.length - 1]).replace('.pdf', '');
                             const posibleAlumno = this.list.find(a => {
-                                let inicialesAlum = a.nombre.substring(0, 3).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                                return nombreArchivoLimpio.toUpperCase().includes(inicialesAlum);
+                                let inicialesAlum = a.nombre.substring(0, 3).toUpperCase();
+                                return fileNameDecoded.toUpperCase().includes(inicialesAlum);
                             });
                             if (posibleAlumno) {
                                 alumnoAsociado = `${posibleAlumno.nombre} ${posibleAlumno.apellidos}`;
@@ -1385,13 +1387,13 @@
 
                         if (fechaRealPago) {
                             const partesFecha = fechaRealPago.split('-');
-                            const anioF = parseInt(partesFecha[0], 10);
+                            const anioFNum = parseInt(partesFecha[0], 10);
                             const mesF = parseInt(partesFecha[1], 10);
                             const mesesArr = ["", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
                             if (!mesReal && mesF >= 1 && mesF <= 12) mesVal = mesesArr[mesF];
                             else if (mesReal) mesVal = mesReal;
 
-                            let anioInicioCurso = (mesF >= 9) ? anioF : anioF - 1;
+                            let anioInicioCurso = (mesF >= 9) ? anioFNum : anioFNum - 1;
                             cursoVal = `${anioInicioCurso}/${anioInicioCurso + 1}`;
                         } else {
                             const analisis = this.analizarTextoParaCursoYMes(item.path);
@@ -1528,7 +1530,6 @@
 
                         const nombreOriginal = archivo.name;
                         const nombreSinExtension = nombreOriginal.substring(0, nombreOriginal.lastIndexOf('.'));
-                        const nombreSinExtensionLimpio = String(nombreSinExtension).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
                         const { data: pagoEncontrado } = await _supabase
                             .from('pagos')
@@ -1541,8 +1542,9 @@
                         const cursoPath = analisis.curso.replace('/', '-');
                         const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                        // RUTA LIMPIA DE TILDES PARA QUE SUPABASE STORAGE NO DÉ ERROR 400
-                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreSinExtensionLimpio}.pdf`;
+                        // Codificamos con encodeURIComponent para permitir tildes en S3 sin colisiones ni Error 400
+                        const nombreArchivoStorage = encodeURIComponent(nombreSinExtension) + '.pdf';
+                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
                         const { error: errorUpload } = await _supabase.storage
                             .from('facturas')
@@ -1816,17 +1818,17 @@
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 const element = document.getElementById('zona-impresion');
                 
-                // SANITIZACIÓN PARA EL ARCHIVO FÍSICO EN LA NUBE (ELIMINA TILDES PARA EVITAR ERROR 400 DE SUPABASE)
-                const idStorageSeguro = String(idFinal).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                // Usamos encodeURIComponent para preservar la tilde real en la URL sin causar Error 400 ni colisiones
+                const nombreArchivoStorage = encodeURIComponent(idFinal) + '.pdf';
                 
-                const opt = { margin: 0, filename: `${idStorageSeguro}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
                 const analisis = this.analizarTextoParaCursoYMes(this.nuevoPago.mes + " " + this.nuevoPago.fecha);
                 const cursoPath = analisis.curso.replace('/', '-');
                 const mesNombreStr = analisis.mes || 'OCTUBRE';
 
-                const rutaStorage = `${cursoPath}/${mesNombreStr}/${idStorageSeguro}.pdf`;
+                const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
                 await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 
