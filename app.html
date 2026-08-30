@@ -1215,7 +1215,7 @@
                 return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
             },
             
-            // NUEVA LÓGICA DE FACTURA_ID: [Secuencial]-[Iniciales Nombres y Apellidos sin tildes]-[Mes]-[Curso (ej: 26-27)]
+            // CORREGIDO: Iniciales exactas sin tildes + Curso escolar correcto (ej: 26-27), manteniendo secuencia numérica
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 106; // Mantiene la numeración secuencial principal desde el 106 actual
                 if (this.pagosList && this.pagosList.length > 0) {
@@ -1231,26 +1231,20 @@
                 }
                 const siguienteNum = maxNum + 1;
                 
-                // 1. Limpieza estricta de tildes para evitar problemas en almacenamiento / URLs
+                // 1. Limpieza de tildes
                 let nombreLimpio = String(nombre || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 let apellidoLimpio = String(apellidos || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 
-                // 2. Extracción de iniciales: Nombres completos (compuestos o simples) + 1º Apellido + 2º Apellido
+                // 2. Extracción precisa de iniciales: Inicial(es) del nombre + 1º Apellido + 2º Apellido
                 const palabrasNombre = nombreLimpio.split(/\s+/).filter(w => w.length > 0);
                 let inicialesNombres = palabrasNombre.map(w => w.charAt(0)).join('');
                 if (!inicialesNombres) inicialesNombres = 'X';
                 
-                const palabrasApellido = apellidoLimpio.split(/\s+/).filter(w => w.length > 0);
-                let inicialesApellidos = '';
-                if (palabrasApellido.length >= 2) {
-                    inicialesApellidos = palabrasApellido[0].charAt(0) + palabrasApellido[1].charAt(0);
-                } else if (palabrasApellido.length === 1) {
-                    inicialesApellidos = palabrasApellido[0].charAt(0);
-                } else {
-                    inicialesApellidos = 'X';
-                }
+                const palabrasApellidos = apellidoLimpio.split(/\s+/).filter(w => w.length > 0);
+                let inicialApellido1 = palabrasApellidos.length > 0 ? palabrasApellidos[0].charAt(0) : 'X';
+                let inicialApellido2 = palabrasApellidos.length > 1 ? palabrasApellidos[1].charAt(0) : '';
                 
-                const codigoAlumno = `${inicialesNombres}${inicialesApellidos}`;
+                const codigoAlumno = `${inicialesNombres}${inicialApellido1}${inicialApellido2}`;
                 
                 // 3. Mes abreviado (3 letras) sin tildes
                 let mesLimpio = String(mesStr || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
@@ -1269,6 +1263,7 @@
                 
                 return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
             },
+
             calcularSiguienteMesAPagar() {
                 if (!this.form || !this.form.nombre) return '';
                 const nombreAlumno = this.form.nombre + ' ' + this.form.apellidos;
