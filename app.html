@@ -207,9 +207,9 @@
 
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">Método de Pago</label>
-                        <select v-model="editPagoForm.metodo_pago" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold">
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Bizum">Bizum</option>
+                        <select v-model="editPagoForm.metodo_pago" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold uppercase">
+                            <option value="EFECTIVO">EFECTIVO</option>
+                            <option value="BIZUM">BIZUM</option>
                         </select>
                     </div>
 
@@ -480,8 +480,8 @@
                                             <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
                                         </td>
                                         <td class="p-3 border text-center">
-                                            <span :class="pago.metodo_pago === 'Bizum' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'" class="px-2 py-1 rounded font-bold text-[10px] uppercase">
-                                                {{ pago.metodo_pago || 'Efectivo' }}
+                                            <span :class="String(pago.metodo_pago).toUpperCase() === 'BIZUM' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'" class="px-2 py-1 rounded font-bold text-[10px] uppercase">
+                                                {{ String(pago.metodo_pago || 'EFECTIVO').toUpperCase() }}
                                             </span>
                                         </td>
                                         <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
@@ -859,11 +859,11 @@
                                 <div class="mb-4 p-3 sm:p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
                                     <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro</label>
                                     <div class="grid grid-cols-2 gap-3">
-                                        <button type="button" @click="nuevoPago.metodo = 'Efectivo'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'Efectivo' ? 'border-[#243c7a] bg-blue-50 text-[#243c7a]' : 'border-gray-200 text-gray-500'">
-                                            <i class="fas fa-money-bill-wave"></i> Efectivo
+                                        <button type="button" @click="nuevoPago.metodo = 'EFECTIVO'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'EFECTIVO' ? 'border-[#243c7a] bg-blue-50 text-[#243c7a]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-money-bill-wave"></i> EFECTIVO
                                         </button>
-                                        <button type="button" @click="nuevoPago.metodo = 'Bizum'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'Bizum' ? 'border-[#fa65c3] bg-pink-50 text-[#fa65c3]' : 'border-gray-200 text-gray-500'">
-                                            <i class="fas fa-mobile-alt"></i> Bizum
+                                        <button type="button" @click="nuevoPago.metodo = 'BIZUM'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'BIZUM' ? 'border-[#fa65c3] bg-pink-50 text-[#fa65c3]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-mobile-alt"></i> BIZUM
                                         </button>
                                     </div>
                                 </div>
@@ -1167,12 +1167,13 @@
                 let limpio = String(mesStr).toUpperCase().trim();
                 let parts = limpio.replace(/'/g, '').split(' ');
                 if (parts.length >= 2) {
-                    let mes = parts[0];
-                    let anio = parts[parts.length - 1];
-                    if (anio.length === 4) anio = anio.slice(-2);
-                    return `${mes} ${anio}'`;
+                    let mesUpper = parts[0];
+                    let mesCap = mesUpper.charAt(0) + mesUpper.slice(1).toLowerCase();
+                    let anioRaw = parts[parts.length - 1];
+                    let anioFull = anioRaw.length === 2 ? "20" + anioRaw : anioRaw;
+                    return `${mesCap} ${anioFull}`;
                 }
-                return limpio;
+                return limpio.charAt(0) + limpio.slice(1).toLowerCase();
             },
             obtenerNombreMesCorto(f) {
                 if (!f) return '';
@@ -1212,7 +1213,7 @@
                 return { cursoKey: '2025/2026', monthIdx: 1 };
             },
             pagoVacio() {
-                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'Bizum' };
+                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'EFECTIVO' };
             },
             
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
@@ -1247,10 +1248,9 @@
                 let mesPartes = mesLimpio.replace(/'/g, '').split(' ');
                 let mesLetras = mesPartes[0] ? mesPartes[0].substring(0, 3) : "GEN";
                 
-                // CORRECCIÓN: Derivar el curso escolar estrictamente del mes de destino seleccionado, no de la fecha de emisión
                 const parsedMonth = this.parseMonthOrder(mesStr);
                 const [anioInicioStr, anioFinStr] = parsedMonth.cursoKey.split('/');
-                const cursoEscolar = `${anioInicioStr.slice(-2)}-${anioFinStr.slice(-2)}`;
+                const cursoEscolar = `${anioInicioStr.slice(-2)}/${anioFinStr.slice(-2)}`;
                 
                 return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
             },
@@ -1737,7 +1737,7 @@
             },
             async guardarEdicionPago() {
                 const { id, tarifa, extras, importe, fecha_pago, mes, metodo_pago } = this.editPagoForm;
-                await _supabase.from('pagos').update({ tarifa, extras, importe: Number(importe) || 0, fecha_pago, mes, metodo_pago }).eq('id', id);
+                await _supabase.from('pagos').update({ tarifa, extras, importe: Number(importe) || 0, fecha_pago, mes, metodo_pago: String(metodo_pago || 'EFECTIVO').toUpperCase() }).eq('id', id);
                 this.showEditPagoModal = false;
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
@@ -1799,12 +1799,13 @@
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                 await _supabase.from('pagos').insert([{
                     factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
-                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: this.nuevoPago.metodo, registrado: true
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                 }]);
-                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
+                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 await this.cargarDatosSupabase();
                 this.showSuccess = true;
                 this.successMessage = `¡Pago ${idFinal} guardado!`;
@@ -1815,14 +1816,15 @@
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                 
                 const { data: insertedPago } = await _supabase.from('pagos').insert([{
                     factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
                     tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
-                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: this.nuevoPago.metodo, registrado: true
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                 }]).select().single();
 
-                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: this.nuevoPago.metodo, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
+                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
                 const element = document.getElementById('zona-impresion');
                 
                 const nombreArchivoStorage = encodeURIComponent(idFinal) + '.pdf';
@@ -1830,9 +1832,8 @@
                 const opt = { margin: 0, filename: `${idFinal}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
-                // CORRECCIÓN: Estructuración determinista de la ruta sin adivinanzas por regex
                 const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
-                const cursoPath = parsedMonth.cursoKey.replace('/', '-'); // Ej: "2025-2026"
+                const cursoPath = parsedMonth.cursoKey.replace('/', '-');
                 const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
 
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
@@ -1850,11 +1851,11 @@
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistorico(pago) {
-                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: pago.metodo_pago, tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
                 setTimeout(() => { window.print(); }, 400);
             },
             reimprimirPagoHistoricoGlobal(pago) {
-                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: pago.metodo_pago, tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
                 setTimeout(() => { window.print(); }, 400);
             },
             generarReciboHTML(datos, nombreAlumnoFijo = null) {
@@ -1880,7 +1881,7 @@
                                 <tr>
                                     <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
                                     <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
-                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || 'Efectivo').toUpperCase()}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</span></td>
                                 </tr>
                             </table>
                             <table style="width:100%;border-collapse:collapse;">
