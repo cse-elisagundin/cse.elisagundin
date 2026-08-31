@@ -1926,21 +1926,36 @@
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                 const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
+                const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
                 
                 const { data: insertedPago } = await _supabase.from('pagos').insert([{
-                    factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    factura_id: idFinal, alumno: alumnoNombre,
                     tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
                     fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                 }]).select().single();
 
-                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal });
+                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal }, alumnoNombre);
+                
                 const element = document.getElementById('zona-impresion');
                 
-                const idSafeForStorage = idFinal.replace(/\//g, '.');
-                const nombreArchivoStorage = encodeURIComponent(idSafeForStorage) + '.pdf';
+                // HACEMOS VISIBLE EL ELEMENTO PARA QUE HTML2CANVAS PUEDA CAPTURARLO SIN SALIR EN BLANCO
+                element.classList.remove('hidden');
                 
-                const opt = { margin: 0, filename: `${idSafeForStorage}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                const idSafeForStorage = idFinal.replace(/\//g, '.');
+                const nombreArchivoStorage = idSafeForStorage + '.pdf';
+                
+                const opt = { 
+                    margin: 0, 
+                    filename: `${idSafeForStorage}.pdf`, 
+                    image: { type: 'jpeg', quality: 0.98 }, 
+                    html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                };
+                
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+                
+                // VOLVEMOS A OCULTAR EL ELEMENTO TRAS LA GENERACIÓN DEL PDF
+                element.classList.add('hidden');
                 
                 const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
                 const cursoPath = parsedMonth.cursoKey.replace('/', '-');
@@ -1964,6 +1979,23 @@
                     }, 500);
                 }, 400);
             },
+            async registrarPagoSolo() {
+                if (!this.form || !this.form.nombre) return;
+                this.savingPago = true;
+                const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
+                
+                await _supabase.from('pagos').insert([{
+                    factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
+                }]);
+
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `¡Pago registrado en la base de datos!`;
+                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
+            },
             reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id }, pago.alumno);
                 document.body.classList.add('is-printing-ticket');
@@ -1974,24 +2006,67 @@
                     }, 500);
                 }, 400);
             },
-            generarReciboHTML(datos) {
+            reimprimirPagoHistoricoGlobal(pago) {
+                this.reimprimirPagoHistorico(pago);
+            },
+            abrirEditarPago(pago) {
+                this.editPagoForm = JSON.parse(JSON.stringify(pago));
+                this.showEditPagoModal = true;
+            },
+            async guardarEdicionPago() {
+                if (!this.editPagoForm.id) return;
+                await _supabase.from('pagos').update({
+                    fecha_pago: this.editPagoForm.fecha_pago,
+                    mes: this.editPagoForm.mes,
+                    tarifa: this.editPagoForm.tarifa,
+                    extras: this.editPagoForm.extras,
+                    importe: Number(this.editPagoForm.importe),
+                    metodo_pago: String(this.editPagoForm.metodo_pago).toUpperCase()
+                }).eq('id', this.editPagoForm.id);
+                this.showEditPagoModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago actualizado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirEliminarPago(pago) {
+                this.pagoAEliminar = pago;
+                this.showDeletePagoModal = true;
+            },
+            async ejecutarEliminarPago() {
+                if (!this.pagoAEliminar) return;
+                await _supabase.from('pagos').delete().eq('id', this.pagoAEliminar.id);
+                this.showDeletePagoModal = false;
+                this.pagoAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago eliminado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            generarReciboHTML(datos, alumnoNombre) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = new Date(datos.fecha).toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
                 const importeTotalStr = parseFloat(datos.importe || 0).toFixed(2).replace('.', ',') + " €";
+                const nombreFinal = alumnoNombre || (this.selected ? `${this.selected.nombre} ${this.selected.apellidos}` : '');
+                
                 let filasHTML = "";
                 if (datos.tarifa) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
-                
+                if (datos.extras) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-size:12px;color:#555;">${datos.extras}</span></td><td style="text-align:right;padding:15px; border-bottom:1px solid #eee;"></td></tr>`;
+
                 document.getElementById('ticket-data').innerHTML = `
                     <div style="font-family:'Helvetica',sans-serif;margin:0;padding:30px;color:#000">
                         <div style="border:2px solid #000;width:100%;position:relative;min-height:850px;display:flex;flex-direction:column;background:#fff;">
                             <img src="${logoUrl}" style="position:absolute;top:300px;left:50%;margin-left:-200px;width:400px;opacity:0.05;filter:grayscale(100%);z-index:-1;" />
-                            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:15px;">
                                 <tr>
                                     <td style="padding:15px;"><img src="${logoUrl}" style="width:120px;filter:grayscale(100%);" /></td>
                                     <td style="text-align:right;font-size:11px;padding:15px;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
                                 </tr>
                             </table>
+                            <div style="padding:0 15px 15px 15px; font-size:13px; font-weight:bold;">
+                                RECIBIDO DE: <span style="text-transform:uppercase;">${nombreFinal}</span>
+                            </div>
                             <table style="width:100%;border-collapse:collapse;border-top:2px solid #000;border-bottom:2px solid #000;font-weight:bold;font-size:10px;text-transform:uppercase;padding:10px 0;">
                                 <tr>
                                     <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
@@ -2002,7 +2077,7 @@
                             <table style="width:100%;border-collapse:collapse;">
                                 <tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>
                                 ${filasHTML}
-                                <tr style="height:250px;"><td colspan="2"></td></tr>
+                                <tr style="height:200px;"><td colspan="2"></td></tr>
                                 <tr style="border-top:2px solid #000;border-bottom:2px solid #000;background:#eee;font-weight:bold;font-size:20px;">
                                     <td style="font-size:12px;padding:15px;">TOTAL EUROS</td>
                                     <td style="text-align:right;padding:15px;">${importeTotalStr}</td>
@@ -2010,6 +2085,183 @@
                             </table>
                         </div>
                     </div>`;
+            },
+            abrirEditarExamen(ex) {
+                this.editExamenForm = JSON.parse(JSON.stringify(ex));
+                this.showEditExamenModal = true;
+            },
+            async guardarEdicionExamen() {
+                if (!this.editExamenForm.id) return;
+                await _supabase.from('examenes').update({
+                    fecha: this.editExamenForm.fecha,
+                    asignatura: this.editExamenForm.asignatura,
+                    nota: this.editExamenForm.nota
+                }).eq('id', this.editExamenForm.id);
+                this.showEditExamenModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen actualizado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirEliminarExamen(ex) {
+                this.examenAEliminar = ex;
+                this.showDeleteExamenModal = true;
+            },
+            async ejecutarEliminarExamen() {
+                if (!this.examenAEliminar) return;
+                await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
+                this.showDeleteExamenModal = false;
+                this.examenAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen eliminado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            async guardarExamenesMasivos() {
+                if (!this.gestorExamenes.fecha || !this.gestorExamenes.asignatura || this.gestorExamenes.alumnosSeleccionados.length === 0) return;
+                this.savingExamenes = true;
+                const filas = this.gestorExamenes.alumnosSeleccionados.map(alumno => ({
+                    fecha: this.gestorExamenes.fecha,
+                    asignatura: this.gestorExamenes.asignatura,
+                    alumno: alumno
+                }));
+                await _supabase.from('examenes').insert(filas);
+                this.gestorExamenes.alumnosSeleccionados = [];
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = '¡Exámenes creados con éxito!';
+                setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 2000);
+            },
+            seleccionarTodos(val) {
+                if (val) {
+                    this.gestorExamenes.alumnosSeleccionados = this.alumnosFiltradosGestor.map(a => `${a.nombre} ${a.apellidos}`);
+                } else {
+                    this.gestorExamenes.alumnosSeleccionados = [];
+                }
+            },
+            cambiarMesCalendario(dir) {
+                const d = new Date(this.mesVisualizadoCalendario);
+                d.setMonth(d.getMonth() + dir);
+                this.mesVisualizadoCalendario = d;
+            },
+            async subirArchivosSeleccionados(event) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+                this.loadingArchivos = true;
+                for (const file of files) {
+                    const path = `subidas_manuales/${file.name}`;
+                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                }
+                await this.cargarArchivosNube();
+                this.loadingArchivos = false;
+                this.showSuccess = true;
+                this.successMessage = 'Archivos subidos correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirSeccionPagos() {
+                this.activeTab = 'pagos';
+                if (this.listaMesesDinamicos.length > 0) {
+                    this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
+                }
+            },
+            async generarSiguienteMes() {
+                const ult = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'Junio 2026';
+                const mNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                let idx = mNombres.findIndex(m => m.toLowerCase() === ult.split(' ')[0].toLowerCase());
+                let year = parseInt(ult.split(' ')[1]) || 2026;
+                idx++;
+                if (idx > 11) { idx = 0; year++; }
+                const nuevoMes = `${mNombres[idx]} ${year}`;
+                if (this.selected) {
+                    await _supabase.from('ingresos_fijos').insert([{ alumno: `${this.selected.nombre} ${this.selected.apellidos}`, mes: nuevoMes, cuota: 0, pagado: false }]);
+                    await this.cargarDatosSupabase();
+                }
+            },
+            getCuotaValor(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? reg.cuota : '';
+            },
+            updateCuotaLocal(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.cuota = Number(val);
+                } else {
+                    this.ingresosFijosList.push({ alumno, mes, cuota: Number(val), pagado: false });
+                }
+            },
+            async guardarCeldaIngresosFijos(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (!reg) return;
+                if (reg.id) {
+                    await _supabase.from('ingresos_fijos').update({ cuota: reg.cuota }).eq('id', reg.id);
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota, pagado: false }]).select().single();
+                    if (data) reg.id = data.id;
+                }
+            },
+            isPagadoTrue(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? Boolean(reg.pagado) : false;
+            },
+            async togglePagadoIngresosFijos(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.pagado = val;
+                    if (reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ pagado: val }).eq('id', reg.id);
+                    } else {
+                        const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota || 0, pagado: val }]).select().single();
+                        if (data) reg.id = data.id;
+                    }
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: 0, pagado: val }]).select().single();
+                    if (data) this.ingresosFijosList.push(data);
+                }
+            },
+            abrirModalEditar(mes) {
+                this.modalTargetMes = mes;
+                this.modalInputVal = mes;
+                this.modalType = 'edit';
+                this.modalTitle = 'Renombrar Mes';
+                this.modalMessage = `Introduce el nuevo nombre para ${mes}:`;
+                this.showCustomModal = true;
+            },
+            abrirModalEliminar(mes) {
+                this.modalTargetMes = mes;
+                this.modalType = 'delete';
+                this.modalTitle = 'Eliminar Mes';
+                this.modalMessage = `¿Seguro que deseas eliminar la cuota del mes ${mes}?`;
+                this.showCustomModal = true;
+            },
+            cerrarCustomModal() {
+                this.showCustomModal = false;
+            },
+            async ejecutarAccionModal() {
+                if (this.modalType === 'edit' && this.modalInputVal && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ mes: this.modalInputVal }).eq('id', reg.id);
+                    }
+                } else if (this.modalType === 'delete' && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').delete().eq('id', reg.id);
+                    }
+                }
+                this.showCustomModal = false;
+                await this.cargarDatosSupabase();
+            },
+            toggleCurso(cursoKey) {
+                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
             },
             logout() { _supabase.auth.signOut(); location.reload(); },
             createNew() { this.isNew = true; this.activeTab = 'ficha'; this.form = { nombre:'', apellidos:'', dni:'', nacimiento:'', direccion:'', cp:'', poblacion:'', provincia:'', colegio:'', curso:'', tlf:'', fam1_nombre:'', fam1_relacion:'', fam1_tlf:'', fam2_nombre:'', fam2_relacion:'', fam2_tlf:'', baja: false }; this.selected = { id: 'TEMP' }; },
