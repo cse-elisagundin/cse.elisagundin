@@ -16,10 +16,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
     <style>
         :root { --c-primary: #243c7a; --c-secondary: #2b94cc; --c-accent: #fa65c3; --bg-body: #f4f6f9; }
         body { font-family: 'Outfit', sans-serif; background-color: var(--bg-body); }
@@ -44,19 +40,19 @@
             #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
         }
 
-        .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 15px 0; transition: background 0.2s; }
+        .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 12px 0; transition: background 0.2s; }
         .timeline-row.today { background-color: #fff5fa; }
         .timeline-row:last-child { border-bottom: none; }
         .timeline-row:hover { background-color: #fafbff; }
-        .date-col { width: 90px; flex-shrink: 0; text-align: center; border-right: 2px solid #f0f0f0; margin-right: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .date-col .day-num { font-size: 28px; font-weight: 900; color: var(--c-primary); line-height: 1; }
-        .date-col .day-name { font-size: 13px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 4px; }
-        .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .exam-pill { border-left: 4px solid var(--c-primary); padding: 8px 14px; border-radius: 8px; background: white; min-width: 140px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
-        .pill-subject { font-size: 11px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
-        .pill-student { font-size: 14px; font-weight: 700; color: #333; }
+        .date-col { width: 80px; flex-shrink: 0; text-align: center; border-right: 2px solid #f0f0f0; margin-right: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .date-col .day-num { font-size: 24px; font-weight: 900; color: var(--c-primary); line-height: 1; }
+        .date-col .day-name { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 2px; }
+        .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .exam-pill { border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; background: white; min-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
+        .pill-subject { font-size: 10px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
+        .pill-student { font-size: 13px; font-weight: 700; color: #333; }
 
-        /* ESTILOS DE LA REJILLA DEL HORARIO */
+        /* ESTILOS DE LA REJILLA DEL HORARIO EN PANTALLA */
         .cell-slot { height: 38px; font-size: 11px; font-weight: 700; transition: all 0.15s ease; user-select: none; }
         .cell-slot:hover { border-color: var(--c-secondary) !important; background-color: #eef7fc !important; }
         .cell-extra { background-color: #fff9f0; border-style: dashed !important; }
@@ -64,20 +60,31 @@
         .cell-highlighted { background-color: #ffe6f5 !important; border: 2px solid var(--c-accent) !important; color: #b01476 !important; transform: scale(1.02); z-index: 10; }
         .cell-baja { background-color: #fff3e0 !important; color: #e65100 !important; text-decoration: line-through; }
 
-        /* IMPRESIÓN DEL CUADRANTE EN A4 HORIZONTAL */
+        /* IMPRESIÓN MILIMÉTRICA Y OPTIMIZADA DEL CUADRANTE EN A4 HORIZONTAL */
         @media print {
-            .print-horario-only {
-                display: block !important;
-            }
-            @page { size: A4 landscape; margin: 5mm; }
+            .print-horario-only { display: block !important; }
+            @page { size: A4 landscape; margin: 4mm; }
             body { background: white !important; color: black !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
-            .print-header-horario { display: flex !important; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--c-primary); padding-bottom: 4px; margin-bottom: 8px; }
-            .grid-container-horario { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-            table.tabla-horario-print { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
-            table.tabla-horario-print th, table.tabla-horario-print td { border: 1px solid #243c7a !important; padding: 2px 3px !important; height: 22px !important; text-align: center !important; }
-            table.tabla-horario-print th { background-color: #243c7a !important; color: white !important; font-weight: 800 !important; }
+            .print-header-horario { display: flex !important; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--c-primary); padding-bottom: 4px; margin-bottom: 6px; }
+            .grid-container-horario { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; width: 100% !important; }
+            
+            /* TABLA CON LAYOUT FIJO PARA EVITAR DESBORDAMIENTOS */
+            table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            table.tabla-horario-print th, table.tabla-horario-print td {
+                border: 1px solid #243c7a !important;
+                padding: 1px 2px !important;
+                height: 20px !important;
+                max-height: 20px !important;
+                font-size: 8.5px !important;
+                text-align: center !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+                text-overflow: ellipsis !important;
+            }
+            table.tabla-horario-print th { background-color: #243c7a !important; color: white !important; font-weight: 800 !important; font-size: 9px !important; }
             .th-ingles-print { background-color: #fa65c3 !important; }
+            .cell-extra-print { background-color: #f9f9f9 !important; }
         }
     </style>
 </head>
@@ -253,7 +260,7 @@
                             <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ formatImporte(pagoAEliminar?.importe) }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ formatMesUnificado(pagoAEliminar?.mes) }}</strong>?</p>
+                    <p class="text-[#243c7a] text-sm font-medium">¿Estás seguro de eliminar este pago de <strong class="text-[#243c7a]">{{ formatImporte(pagoAEliminar?.importe) }} €</strong> correspondiente al mes de <strong class="text-[#243c7a]">{{ formatMesUnificado(pagoAEliminar?.mes) }}</strong>?</p>
                     <div class="flex gap-3 pt-3 border-t">
                         <button @click="showDeletePagoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
                         <button @click="ejecutarEliminarPago" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
@@ -287,66 +294,122 @@
             </div>
         </transition>
 
-        <div v-if="authenticated" class="flex flex-col md:flex-row h-full animate-opacity duration-700">
+        <div v-if="authenticated" class="flex h-full animate-opacity duration-700 relative overflow-hidden">
             
-            <!-- BARRA LATERAL (LISTADO DE ALUMNOS Y BOTONES PRINCIPALES) -->
-            <div class="w-full md:w-1/4 bg-white border-r flex flex-col shadow-xl z-20 h-full no-print" :class="{'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'}">
-                <div class="p-4 sm:p-5 bg-[#243c7a] text-white">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-white p-1 rounded-lg shadow-sm">
+            <!-- BARRA LATERAL RETRÁCTIL CON PIN Y HOVER INTELIGENTE -->
+            <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative"
+                 :class="[
+                     isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-16',
+                     {'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'}
+                 ]"
+                 @mouseenter="isSidebarHovered = true"
+                 @mouseleave="isSidebarHovered = false">
+                
+                <!-- CABECERA Y BOTÓN DE PIN (CHINCHETA) -->
+                <div class="p-3 bg-[#243c7a] text-white flex items-center justify-between overflow-hidden shrink-0 h-16">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="bg-white p-1 rounded-lg shrink-0 shadow-sm">
                             <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-8 w-auto object-contain">
                         </div>
-                        <h1 class="font-bold text-lg leading-tight">Gestión<br><span class="text-[#fa65c3]">Alumnos</span></h1>
+                        <h1 v-if="isSidebarPinned || isSidebarHovered" class="font-bold text-sm leading-tight truncate">
+                            Gestión<br><span class="text-[#fa65c3]">Alumnos</span>
+                        </h1>
                     </div>
+                    <button v-if="isSidebarPinned || isSidebarHovered" 
+                            @click="isSidebarPinned = !isSidebarPinned" 
+                            class="p-1.5 rounded-lg hover:bg-white/10 transition text-xs shrink-0" 
+                            :class="isSidebarPinned ? 'text-[#fa65c3]' : 'text-white/60'"
+                            :title="isSidebarPinned ? 'Desfijar barra lateral' : 'Fijar barra lateral para mantener desplegada'">
+                        <i class="fas fa-thumbtack text-sm" :class="isSidebarPinned ? '' : 'rotate-45'"></i>
+                    </button>
                 </div>
-                <div class="p-3 sm:p-4 bg-gray-50 border-b space-y-2.5">
-                    <div class="relative">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input v-model="search" type="text" placeholder="Buscar alumno..." class="w-full pl-9 pr-8 p-2.5 rounded-lg border focus:border-[#2b94cc] outline-none shadow-sm">
-                        <button v-if="search" @click="search = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+
+                <!-- ACCIONES RÁPIDAS Y NAVEGACIÓN -->
+                <div class="p-2 sm:p-3 bg-gray-50 border-b space-y-2 overflow-hidden shrink-0">
+                    <!-- BUSCADOR -->
+                    <div v-if="isSidebarPinned || isSidebarHovered" class="relative">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                        <input v-model="search" type="text" placeholder="Buscar alumno..." class="w-full pl-8 pr-7 py-1.5 rounded-lg border focus:border-[#2b94cc] outline-none text-xs bg-white">
+                        <button v-if="search" @click="search = ''" class="absolute right-2.5 top-2 text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-times"></i></button>
                     </div>
-                    <div class="flex items-center gap-2 text-xs text-gray-500 px-1 select-none">
+
+                    <div v-if="isSidebarPinned || isSidebarHovered" class="flex items-center gap-2 text-[11px] text-gray-500 px-1 select-none">
                         <input type="checkbox" v-model="showInactive" id="showInactive" class="rounded text-[#fa65c3] focus:ring-[#fa65c3] cursor-pointer">
                         <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
                     </div>
-                    <button @click="createNew" class="w-full bg-[#2b94cc] text-white py-2.5 rounded-lg hover:bg-[#207bb0] font-bold flex justify-center gap-2 shadow">
-                        <i class="fas fa-plus"></i> Nueva Ficha
+
+                    <!-- BOTÓN NUEVA FICHA -->
+                    <button @click="createNew" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm" :title="!isSidebarPinned && !isSidebarHovered ? 'Nueva Ficha' : ''">
+                        <i class="fas fa-plus"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered" class="truncate">Nueva Ficha</span>
                     </button>
-                    <!-- NUEVO BOTÓN PARA EL CUADRANTE DE HORARIOS -->
-                    <button @click="abrirCuadranteHorarios" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2.5 rounded-lg hover:bg-purple-100 font-bold flex justify-center gap-2 shadow-sm transition">
-                        <i class="fas fa-th"></i> Cuadrante de Horarios
+
+                    <!-- BOTÓN CUADRANTE DE HORARIOS -->
+                    <button @click="abrirCuadranteHorarios" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 font-bold flex items-center justify-center gap-2 text-xs transition" :title="!isSidebarPinned && !isSidebarHovered ? 'Cuadrante de Horarios' : ''">
+                        <i class="fas fa-th text-purple-600"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered" class="truncate">Cuadrante de Horarios</span>
                     </button>
-                    <button @click="abrirGestorExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2.5 rounded-lg hover:bg-indigo-100 font-bold flex justify-center gap-2 shadow-sm transition">
-                        <i class="fas fa-calendar-alt"></i> Gestor de Exámenes
+
+                    <!-- BOTÓN GESTOR EXÁMENES -->
+                    <button @click="abrirGestorExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2 rounded-lg hover:bg-indigo-100 font-bold flex items-center justify-center gap-2 text-xs transition" :title="!isSidebarPinned && !isSidebarHovered ? 'Gestor de Exámenes' : ''">
+                        <i class="fas fa-calendar-alt text-indigo-600"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered" class="truncate">Gestor de Exámenes</span>
                     </button>
-                    <button @click="abrirGestorPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2.5 rounded-lg hover:bg-pink-100 font-bold flex justify-center gap-2 shadow-sm transition">
-                        <i class="fas fa-file-invoice-dollar"></i> Historial Global Pagos
+
+                    <!-- BOTÓN HISTORIAL PAGOS -->
+                    <button @click="abrirGestorPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition" :title="!isSidebarPinned && !isSidebarHovered ? 'Historial Global Pagos' : ''">
+                        <i class="fas fa-file-invoice-dollar text-[#fa65c3]"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered" class="truncate">Historial Global Pagos</span>
                     </button>
-                    <button @click="abrirExploradorFacturas" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2.5 rounded-lg hover:bg-blue-100 font-bold flex justify-center gap-2 shadow-sm transition">
-                        <i class="fas fa-folder-open"></i> Explorador Facturas Nube
+
+                    <!-- BOTÓN EXPLORADOR FACTURAS -->
+                    <button @click="abrirExploradorFacturas" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition" :title="!isSidebarPinned && !isSidebarHovered ? 'Explorador Facturas Nube' : ''">
+                        <i class="fas fa-folder-open text-[#2b94cc]"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered" class="truncate">Explorador Nube</span>
                     </button>
                 </div>
-                <div class="flex-1 overflow-y-auto">
+
+                <!-- LISTADO DE ALUMNOS -->
+                <div class="flex-1 overflow-y-auto overflow-x-hidden">
                     <div v-for="s in filteredList" :key="s.id" @click="selectStudent(s)"
-                        class="p-4 border-b hover:bg-blue-50 cursor-pointer transition relative"
+                        class="p-2.5 sm:p-3 border-b hover:bg-blue-50 cursor-pointer transition relative flex items-center"
                         :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
-                        <div class="flex justify-between items-start">
-                            <div class="font-bold text-base" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'  ">{{ s.apellidos }}, {{ s.nombre }}</div>
-                            <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">BAJA</span>
+                        
+                        <!-- MODO COMPACTO (SOLO ICONO DE INICIALES) -->
+                        <div v-if="!isSidebarPinned && !isSidebarHovered" class="w-full flex justify-center" :title="s.nombre + ' ' + s.apellidos">
+                            <div class="w-8 h-8 rounded-full bg-[#243c7a] text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                                {{ String(s.nombre || '').charAt(0) }}{{ String(s.apellidos || '').charAt(0) }}
+                            </div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-1 flex justify-between uppercase">
-                            <span>{{ s.curso }}</span><span>{{ s.dni }}</span>
+
+                        <!-- MODO COMPLETO (DESPLEGADO) -->
+                        <div v-else class="w-full overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div class="font-bold text-xs truncate" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'">
+                                    {{ s.apellidos }}, {{ s.nombre }}
+                                </div>
+                                <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[8px] px-1 py-0.5 rounded font-bold ml-1">BAJA</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 mt-0.5 flex justify-between uppercase">
+                                <span class="truncate">{{ s.curso || 'Alumno' }}</span>
+                                <span class="ml-1 font-semibold">{{ s.dni }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="p-2 border-t bg-gray-50 text-center flex justify-between px-4">
-                    <button @click="logout" class="text-xs font-bold text-gray-400 hover:text-red-500">CERRAR SESIÓN</button>
-                    <span class="text-xs font-bold text-green-500" title="Conexión Supabase"><i class="fas fa-database"></i> Supabase</span>
+
+                <!-- PIE DE LA BARRA LATERAL -->
+                <div class="p-2 border-t bg-gray-50 text-center flex justify-between items-center px-3 shrink-0">
+                    <button @click="logout" class="text-[10px] font-bold text-gray-400 hover:text-red-500" :title="!isSidebarPinned && !isSidebarHovered ? 'Cerrar Sesión' : ''">
+                        <i class="fas fa-power-off mr-1"></i>
+                        <span v-if="isSidebarPinned || isSidebarHovered">SALIR</span>
+                    </button>
+                    <span v-if="isSidebarPinned || isSidebarHovered" class="text-[10px] font-bold text-green-500"><i class="fas fa-database"></i> Supabase</span>
                 </div>
             </div>
 
-            <!-- ÁREA PRINCIPAL DERECHA -->
-            <div class="w-full md:w-3/4 bg-[#f4f6f9] h-full flex flex-col relative" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'}">
+            <!-- ÁREA PRINCIPAL DERECHA (GANANCIA MÁXIMA DE ESPACIO HORIZONTAL) -->
+            <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'}">
 
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
                     <button @click="cerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
@@ -357,16 +420,16 @@
                     </span>
                 </div>
 
-                <!-- MODULO NUEVO: CUADRANTE DE HORARIOS (INTERACTIVO) -->
+                <!-- MÓDULO DEL CUADRANTE DE HORARIOS (IMPRESIÓN Y REJILLA OPTIMIZADA) -->
                 <div v-if="activeTab === 'cuadrante_horarios' && !selected" class="flex-1 flex flex-col overflow-hidden animate-fade">
                     
                     <!-- BARRA SUPERIOR DE ACCIONES DE HORARIO -->
-                    <div class="no-print bg-white p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
+                    <div class="no-print bg-white p-3 sm:p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="bg-purple-100 p-2 rounded-lg text-purple-800"><i class="fas fa-th text-xl"></i></div>
                             <div>
-                                <h3 class="text-lg font-extrabold text-[#243c7a]">Cuadrante de Horarios</h3>
-                                <p class="text-xs text-gray-400 font-semibold">Refuerzo General e Inglés (15:30 - 20:30)</p>
+                                <h3 class="text-base sm:text-lg font-extrabold text-[#243c7a]">Cuadrante de Horarios</h3>
+                                <p class="text-[11px] text-gray-400 font-semibold">Refuerzo General e Inglés (15:30 - 20:30)</p>
                             </div>
                         </div>
 
@@ -399,11 +462,11 @@
                         </div>
                     </div>
 
-                    <!-- SUB-BARRA DE DÍAS Y PINCEL -->
-                    <div class="no-print bg-gray-50 border-b px-4 py-2.5 flex flex-wrap justify-between items-center gap-3 shrink-0">
+                    <!-- SUB-BARRA DE DÍAS Y PINCEL DE ALUMNO -->
+                    <div class="no-print bg-gray-50 border-b px-4 py-2 flex flex-wrap justify-between items-center gap-3 shrink-0">
                         <div class="flex items-center gap-1">
                             <button v-for="d in diasSemana" :key="d" @click="seleccionarDiaSemana(d)"
-                                class="px-3 py-1.5 rounded-lg text-xs font-extrabold transition border"
+                                class="px-3 py-1 rounded-lg text-xs font-extrabold transition border"
                                 :class="diaSeleccionado === d ? 'bg-[#243c7a] text-white border-[#243c7a]' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-200'">
                                 {{ d }}
                             </button>
@@ -427,14 +490,14 @@
                                 </div>
                             </div>
 
-                            <div v-if="alumnoActivoPincel" class="flex items-center gap-1.5 bg-[#2b94cc] text-white px-2.5 py-1 rounded-lg text-xs font-bold">
+                            <div v-if="alumnoActivoPincel" class="flex items-center gap-1.5 bg-[#2b94cc] text-white px-2.5 py-0.5 rounded-lg text-xs font-bold">
                                 <span class="font-handwriting">{{ alumnoActivoPincel }}</span>
                                 <button @click="alumnoActivoPincel = ''" class="hover:text-red-200"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- CABECERA SOLAMENTE PARA IMPRESIÓN DEL CUADRANTE -->
+                    <!-- CABECERA DE IMPRESIÓN DEL CUADRANTE -->
                     <div class="hidden print-horario-only print-header-horario">
                         <div>
                             <h1 class="text-xl font-black text-[#243c7a] uppercase">Cuadrante Horario CSE Elisa Gundín</h1>
@@ -448,13 +511,13 @@
                         </div>
                     </div>
 
-                    <!-- CONTENEDOR DE LA MATRIZ DE HORARIO -->
-                    <div class="flex-1 overflow-auto p-4 bg-gray-100">
-                        <div class="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5 grid-container-horario">
+                    <!-- MATRIZ DE HORARIOS (AMPLITUD TOTAL SIN CORTE VISUAL) -->
+                    <div class="flex-1 overflow-auto p-3 sm:p-4 bg-gray-100">
+                        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 grid-container-horario">
                             
                             <!-- REFUERZO GENERAL -->
                             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                                <div class="bg-[#243c7a] text-white p-3 font-extrabold text-xs flex justify-between items-center">
+                                <div class="bg-[#243c7a] text-white p-2.5 font-extrabold text-xs flex justify-between items-center">
                                     <span><i class="fas fa-users text-[#2b94cc] mr-1"></i> REFUERZO GENERAL (Plazas 1 a 7)</span>
                                     <span class="bg-white/10 px-2 py-0.5 rounded text-[10px]">15:30 - 20:30</span>
                                 </div>
@@ -463,16 +526,16 @@
                                     <table class="w-full border-collapse text-center tabla-horario-print">
                                         <thead>
                                             <tr class="bg-blue-50/80 text-[#243c7a] text-[10px] uppercase font-extrabold border-b">
-                                                <th class="p-1.5 border-r w-16">Hora</th>
-                                                <th v-for="col in 6" :key="col" class="p-1.5 border-r">P{{ col }}</th>
-                                                <th class="p-1.5 bg-orange-100/70 text-orange-900 border-l border-orange-200">P7 (Extra)</th>
+                                                <th class="p-1 border-r w-14">Hora</th>
+                                                <th v-for="col in 6" :key="col" class="p-1 border-r">P{{ col }}</th>
+                                                <th class="p-1 bg-orange-100/70 text-orange-900 border-l border-orange-200">P7 (Extra)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="hora in tramosHorarios" :key="hora" class="border-b hover:bg-gray-50/50 transition">
                                                 <td class="p-1 border-r bg-gray-50/80 font-black text-xs text-[#243c7a] align-middle">
                                                     {{ hora }}
-                                                    <div class="text-[9px] font-bold" :class="contarOcupacion('GENERAL', hora) > 6 ? 'text-orange-600 font-extrabold' : 'text-gray-400'">
+                                                    <div class="text-[9px] font-bold no-print" :class="contarOcupacion('GENERAL', hora) > 6 ? 'text-orange-600 font-extrabold' : 'text-gray-400'">
                                                         {{ contarOcupacion('GENERAL', hora) }}/6
                                                     </div>
                                                 </td>
@@ -481,18 +544,23 @@
                                                     @contextmenu.prevent="toggleBajaCelda('GENERAL', hora, col)"
                                                     @mouseenter="hoverAlumnoPincel = getCelda('GENERAL', hora, col).nombre"
                                                     @mouseleave="hoverAlumnoPincel = ''"
-                                                    class="p-1 border-r cell-slot align-middle relative cursor-pointer"
+                                                    class="p-0.5 border-r cell-slot align-middle relative cursor-pointer"
                                                     :class="[
-                                                        col === 7 ? 'cell-extra' : '',
+                                                        col === 7 ? 'cell-extra cell-extra-print' : '',
                                                         getCelda('GENERAL', hora, col).nombre ? 'cell-occupied' : '',
                                                         getCelda('GENERAL', hora, col).baja ? 'cell-baja' : '',
                                                         hoverAlumnoPincel && normalizeName(hoverAlumnoPincel) === normalizeName(getCelda('GENERAL', hora, col).nombre) ? 'cell-highlighted' : ''
                                                     ]">
                                                     <div v-if="getCelda('GENERAL', hora, col).nombre" class="flex flex-col items-center justify-center h-full px-0.5">
-                                                        <span class="font-handwriting text-xs text-[#243c7a] leading-tight truncate w-full">
+                                                        <!-- NOMBRE COMPLETO EN PANTALLA -->
+                                                        <span class="font-handwriting text-xs text-[#243c7a] leading-tight truncate w-full no-print">
                                                             {{ getCelda('GENERAL', hora, col).nombre }}
                                                         </span>
-                                                        <span v-if="getCelda('GENERAL', hora, col).baja" class="text-[8px] font-extrabold text-orange-600 uppercase">[Baja]</span>
+                                                        <!-- NOMBRE SMART FORMATEADO PARA IMPRESIÓN (SIN CORTE) -->
+                                                        <span class="font-handwriting text-[10px] text-[#243c7a] leading-tight truncate w-full print-only font-bold">
+                                                            {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
+                                                        </span>
+                                                        <span v-if="getCelda('GENERAL', hora, col).baja" class="text-[8px] font-extrabold text-orange-600 uppercase no-print">[Baja]</span>
                                                     </div>
                                                     <span v-else class="text-gray-200 text-[10px] no-print">+</span>
                                                 </td>
@@ -504,7 +572,7 @@
 
                             <!-- CLASES DE INGLÉS -->
                             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                                <div class="bg-[#fa65c3] text-white p-3 font-extrabold text-xs flex justify-between items-center th-ingles-print">
+                                <div class="bg-[#fa65c3] text-white p-2.5 font-extrabold text-xs flex justify-between items-center th-ingles-print">
                                     <span><i class="fas fa-language mr-1"></i> CLASES DE INGLÉS (Plazas 1 a 7)</span>
                                     <span class="bg-white/20 px-2 py-0.5 rounded text-[10px]">15:30 - 20:30</span>
                                 </div>
@@ -513,16 +581,16 @@
                                     <table class="w-full border-collapse text-center tabla-horario-print">
                                         <thead>
                                             <tr class="bg-pink-50/80 text-[#243c7a] text-[10px] uppercase font-extrabold border-b">
-                                                <th class="p-1.5 border-r w-16">Hora</th>
-                                                <th v-for="col in 6" :key="col" class="p-1.5 border-r">P{{ col }}</th>
-                                                <th class="p-1.5 bg-orange-100/70 text-orange-900 border-l border-orange-200">P7 (Extra)</th>
+                                                <th class="p-1 border-r w-14">Hora</th>
+                                                <th v-for="col in 6" :key="col" class="p-1 border-r">P{{ col }}</th>
+                                                <th class="p-1 bg-orange-100/70 text-orange-900 border-l border-orange-200">P7 (Extra)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="hora in tramosHorarios" :key="hora" class="border-b hover:bg-gray-50/50 transition">
                                                 <td class="p-1 border-r bg-gray-50/80 font-black text-xs text-[#243c7a] align-middle">
                                                     {{ hora }}
-                                                    <div class="text-[9px] font-bold" :class="contarOcupacion('INGLES', hora) > 6 ? 'text-orange-600 font-extrabold' : 'text-gray-400'">
+                                                    <div class="text-[9px] font-bold no-print" :class="contarOcupacion('INGLES', hora) > 6 ? 'text-orange-600 font-extrabold' : 'text-gray-400'">
                                                         {{ contarOcupacion('INGLES', hora) }}/6
                                                     </div>
                                                 </td>
@@ -531,18 +599,23 @@
                                                     @contextmenu.prevent="toggleBajaCelda('INGLES', hora, col)"
                                                     @mouseenter="hoverAlumnoPincel = getCelda('INGLES', hora, col).nombre"
                                                     @mouseleave="hoverAlumnoPincel = ''"
-                                                    class="p-1 border-r cell-slot align-middle relative cursor-pointer"
+                                                    class="p-0.5 border-r cell-slot align-middle relative cursor-pointer"
                                                     :class="[
-                                                        col === 7 ? 'cell-extra' : '',
+                                                        col === 7 ? 'cell-extra cell-extra-print' : '',
                                                         getCelda('INGLES', hora, col).nombre ? 'cell-occupied' : '',
                                                         getCelda('INGLES', hora, col).baja ? 'cell-baja' : '',
                                                         hoverAlumnoPincel && normalizeName(hoverAlumnoPincel) === normalizeName(getCelda('INGLES', hora, col).nombre) ? 'cell-highlighted' : ''
                                                     ]">
                                                     <div v-if="getCelda('INGLES', hora, col).nombre" class="flex flex-col items-center justify-center h-full px-0.5">
-                                                        <span class="font-handwriting text-xs text-[#243c7a] leading-tight truncate w-full">
+                                                        <!-- NOMBRE COMPLETO EN PANTALLA -->
+                                                        <span class="font-handwriting text-xs text-[#243c7a] leading-tight truncate w-full no-print">
                                                             {{ getCelda('INGLES', hora, col).nombre }}
                                                         </span>
-                                                        <span v-if="getCelda('INGLES', hora, col).baja" class="text-[8px] font-extrabold text-orange-600 uppercase">[Baja]</span>
+                                                        <!-- NOMBRE SMART FORMATEADO PARA IMPRESIÓN (SIN CORTE) -->
+                                                        <span class="font-handwriting text-[10px] text-[#243c7a] leading-tight truncate w-full print-only font-bold">
+                                                            {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
+                                                        </span>
+                                                        <span v-if="getCelda('INGLES', hora, col).baja" class="text-[8px] font-extrabold text-orange-600 uppercase no-print">[Baja]</span>
                                                     </div>
                                                     <span v-else class="text-gray-200 text-[10px] no-print">+</span>
                                                 </td>
@@ -575,15 +648,14 @@
                             </div>
                         </div>
 
-                        <div class="mb-6 border-2 border-dashed border-indigo-200 hover:border-[#2b94cc] bg-indigo-50/30 p-6 rounded-2xl text-center transition flex flex-col items-center justify-center gap-3 relative"
-                             @dragover.prevent @drop.prevent="manejarDropNube">
+                        <div class="mb-6 border-2 border-dashed border-indigo-200 hover:border-[#2b94cc] bg-indigo-50/30 p-6 rounded-2xl text-center transition flex flex-col items-center justify-center gap-3 relative">
                             <div class="bg-blue-100 text-[#2b94cc] p-3 rounded-full text-2xl shadow-sm"><i class="fas fa-cloud-upload-alt"></i></div>
                             <div>
-                                <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF sueltas o carpetas aquí</h4>
+                                <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF aquí</h4>
                                 <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos.</p>
                             </div>
                             <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
-                                <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF o carpetas
+                                <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF
                                 <input type="file" accept="application/pdf" multiple @change="subirArchivosSeleccionados" class="hidden">
                             </label>
                         </div>
@@ -1189,6 +1261,11 @@
                 loading: false, saving: false, savingPago: false,
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
+                
+                // CONTROL DE BARRA LATERAL (PIN Y HOVER)
+                isSidebarPinned: false,
+                isSidebarHovered: false,
+
                 nuevoPago: this.pagoVacio(),
                 examenesList: [],
                 ingresosFijosList: [],
@@ -1386,6 +1463,60 @@
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
+
+            // LÓGICA SMART PARA IMPRESIÓN SÚPER OPTIMIZADA SIN DESBORDAMIENTO
+            formatNombrePrint(nombreCompleto) {
+                if (!nombreCompleto) return '';
+                
+                const normInput = this.normalizeName(nombreCompleto);
+                const student = this.list.find(s => 
+                    this.normalizeName(`${s.nombre} ${s.apellidos}`) === normInput || 
+                    this.normalizeName(`${s.apellidos}, ${s.nombre}`) === normInput
+                );
+
+                let nombre = "";
+                let primerApellido = "";
+
+                if (student) {
+                    nombre = student.nombre || "";
+                    primerApellido = (student.apellidos || "").trim().split(/\s+/)[0] || "";
+                } else {
+                    const parts = nombreCompleto.trim().split(/\s+/);
+                    nombre = parts[0] || "";
+                    primerApellido = parts[1] || "";
+                }
+
+                // 1. Formatear Nombre Compuesto (Ej: "Juan Carlos" -> "Juan C.")
+                const nombreParts = nombre.trim().split(/\s+/);
+                let primerNombre = nombreParts[0] || "";
+                let initialSegundoNombre = nombreParts.length > 1 ? ` ${nombreParts[1].charAt(0)}.` : "";
+                let nombreBase = `${primerNombre}${initialSegundoNombre}`;
+
+                // 2. Contar coincidencia de nombres en el cuadrante del día activo
+                let count = 0;
+                const currentGridNames = Object.values(this.gridHorario)
+                    .map(cell => cell ? cell.nombre : '')
+                    .filter(n => !!n);
+
+                currentGridNames.forEach(n => {
+                    const normN = this.normalizeName(n);
+                    const st = this.list.find(s => this.normalizeName(`${s.nombre} ${s.apellidos}`) === normN);
+                    let nFirst = st ? (st.nombre || "") : (n.trim().split(/\s+/)[0] || "");
+                    const nParts = nFirst.trim().split(/\s+/);
+                    const nBase = `${nParts[0]}${nParts.length > 1 ? ` ${nParts[1].charAt(0)}.` : ""}`;
+                    if (this.normalizeName(nBase) === this.normalizeName(nombreBase)) {
+                        count++;
+                    }
+                });
+
+                // 3. Si hay duplicado en el día, añadir inicial del primer apellido (Ej: "María G.")
+                if (count > 1 && primerApellido) {
+                    return `${nombreBase} ${primerApellido.charAt(0)}.`;
+                }
+
+                return nombreBase;
+            },
+
             formatearFecha(f) {
                 if (!f) return '';
                 const parts = f.split('-');
@@ -1513,9 +1644,7 @@
                     this.ingresosFijosList = resFijos.data || [];
                     const resPagos = await _supabase.from('pagos').select('*');
                     this.pagosList = resPagos.data || [];
-                } catch(e) {
-                    console.error("Error cargando desde Supabase:", e);
-                }
+                } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
             abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
@@ -1671,7 +1800,7 @@
             },
             imprimirCuadrante() { window.print(); },
 
-            // RESTO DE FUNCIONALIDADES EXISTENTES (NUBE, ARCHIVOS, EXÁMENES, PAGOS)
+            // RESTO DE FUNCIONALIDADES
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
