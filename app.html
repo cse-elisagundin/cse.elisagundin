@@ -349,7 +349,7 @@
 
         <div v-if="authenticated" class="flex h-full relative overflow-hidden">
             
-            <!-- BARRA LATERAL ULTRA-MINIMALISTA EN MODO REPLEGADO -->
+            <!-- BARRA LATERAL (ABIERTA / FIJADA POR DEFECTO) -->
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
@@ -358,7 +358,7 @@
                  @mouseenter="isSidebarHovered = true"
                  @mouseleave="isSidebarHovered = false">
                 
-                <!-- CONTENIDO DESPLEGABLE (VISIBILIDAD CONTROLADA) -->
+                <!-- CONTENIDO DESPLEGABLE -->
                 <div v-show="isSidebarPinned || isSidebarHovered" class="h-full flex flex-col w-72 sm:w-80">
                     
                     <!-- CABECERA Y CHINCHETA -->
@@ -411,7 +411,7 @@
                         </button>
 
                         <button @click="abrirExploradorFacturas" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
-                            <i class="fas fa-folder-open text-[#2b94cc]"></i> <span class="truncate">Explorador Nube</span>
+                            <i class="fas fa-folder-open text-[#2b94cc]"></i> <span class="truncate">Explorador de Facturas</span>
                         </button>
                     </div>
 
@@ -453,7 +453,7 @@
                         <i class="fas fa-arrow-left"></i> Volver al listado
                     </button>
                     <span class="text-xs font-semibold truncate max-w-[200px]">
-                        {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'cuadrante_horarios' ? 'Cuadrante Horarios' : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : (activeTab === 'gestor_pagos' ? 'Historial Pagos' : 'Explorador Nube')))) }}
+                        {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'cuadrante_horarios' ? 'Cuadrante Horarios' : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : (activeTab === 'gestor_pagos' ? 'Historial Pagos' : 'Explorador de Facturas')))) }}
                     </span>
                 </div>
 
@@ -1275,8 +1275,8 @@
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 
-                // CONTROL DE BARRA LATERAL
-                isSidebarPinned: false,
+                // CONTROL DE BARRA LATERAL (FIJADA Y ABIERTA POR DEFECTO)
+                isSidebarPinned: true,
                 isSidebarHovered: false,
 
                 nuevoPago: this.pagoVacio(),
