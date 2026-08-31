@@ -1937,8 +1937,6 @@
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal }, alumnoNombre);
                 
                 const element = document.getElementById('zona-impresion');
-                
-                // HACEMOS VISIBLE EL ELEMENTO PARA QUE HTML2CANVAS PUEDA CAPTURARLO SIN SALIR EN BLANCO
                 element.classList.remove('hidden');
                 
                 const idSafeForStorage = idFinal.replace(/\//g, '.');
@@ -1953,8 +1951,6 @@
                 };
                 
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
-                
-                // VOLVEMOS A OCULTAR EL ELEMENTO TRAS LA GENERACIÓN DEL PDF
                 element.classList.add('hidden');
                 
                 const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
@@ -2051,36 +2047,38 @@
                 const nombreFinal = alumnoNombre || (this.selected ? `${this.selected.nombre} ${this.selected.apellidos}` : '');
                 
                 let filasHTML = "";
-                if (datos.tarifa) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span></td><td style="text-align:right;font-weight:bold;padding:15px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
-                if (datos.extras) filasHTML += `<tr><td style="padding:15px; border-bottom:1px solid #eee;"><span style="font-size:12px;color:#555;">${datos.extras}</span></td><td style="text-align:right;padding:15px; border-bottom:1px solid #eee;"></td></tr>`;
+                if (datos.tarifa) filasHTML += `<tr><td style="padding:12px; border-bottom:1px solid #eee;"><span style="font-weight:bold;font-size:14px">${datos.tarifa}</span></td><td style="text-align:right;font-weight:bold;padding:12px; border-bottom:1px solid #eee;">${importeTotalStr}</td></tr>`;
+                if (datos.extras) filasHTML += `<tr><td style="padding:12px; border-bottom:1px solid #eee;"><span style="font-size:12px;color:#555;">${datos.extras}</span></td><td style="text-align:right;padding:12px; border-bottom:1px solid #eee;"></td></tr>`;
 
                 document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family:'Helvetica',sans-serif;margin:0;padding:30px;color:#000">
-                        <div style="border:2px solid #000;width:100%;position:relative;min-height:850px;display:flex;flex-direction:column;background:#fff;">
-                            <img src="${logoUrl}" style="position:absolute;top:300px;left:50%;margin-left:-200px;width:400px;opacity:0.05;filter:grayscale(100%);z-index:-1;" />
-                            <table style="width:100%;border-collapse:collapse;margin-bottom:15px;">
+                    <div style="font-family:'Helvetica',sans-serif;margin:0;padding:15px;color:#000;box-sizing:border-box;">
+                        <div style="border:2px solid #000;width:100%;position:relative;height:1050px;display:flex;flex-direction:column;background:#fff;box-sizing:border-box;">
+                            <img src="${logoUrl}" style="position:absolute;top:280px;left:50%;margin-left:-180px;width:360px;opacity:0.05;filter:grayscale(100%);z-index:-1;" />
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
                                 <tr>
-                                    <td style="padding:15px;"><img src="${logoUrl}" style="width:120px;filter:grayscale(100%);" /></td>
+                                    <td style="padding:15px;"><img src="${logoUrl}" style="width:110px;filter:grayscale(100%);" /></td>
                                     <td style="text-align:right;font-size:11px;padding:15px;"><strong>CSE ELISA GUNDÍN</strong><br>NIF: 20054671M<br>C/ Alicante 4, El Pinós (03650)</td>
                                 </tr>
                             </table>
-                            <div style="padding:0 15px 15px 15px; font-size:13px; font-weight:bold;">
+                            <div style="padding:0 15px 12px 15px; font-size:13px; font-weight:bold;">
                                 RECIBIDO DE: <span style="text-transform:uppercase;">${nombreFinal}</span>
                             </div>
-                            <table style="width:100%;border-collapse:collapse;border-top:2px solid #000;border-bottom:2px solid #000;font-weight:bold;font-size:10px;text-transform:uppercase;padding:10px 0;">
+                            <table style="width:100%;border-collapse:collapse;border-top:2px solid #000;border-bottom:2px solid #000;font-weight:bold;font-size:10px;text-transform:uppercase;padding:8px 0;">
                                 <tr>
-                                    <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:14px;margin-top:4px;">${numRecibo}</span></td>
-                                    <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:14px;margin-top:4px;">${fechaE}</span></td>
-                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:14px;margin-top:4px;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</span></td>
+                                    <td style="padding:10px;">Nº RECIBO<span style="display:block;font-size:13px;margin-top:3px;">${numRecibo}</span></td>
+                                    <td style="text-align:center;padding:10px;">FECHA EMISIÓN<span style="display:block;font-size:13px;margin-top:3px;">${fechaE}</span></td>
+                                    <td style="text-align:right;padding:10px;">FORMA DE PAGO<span style="display:block;font-size:13px;margin-top:3px;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</span></td>
                                 </tr>
                             </table>
-                            <table style="width:100%;border-collapse:collapse;">
-                                <tr><th style="text-align:left;border-bottom:1px solid #000;padding:15px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:15px;">IMPORTE</th></tr>
+                            <table style="width:100%;border-collapse:collapse;flex:1;">
+                                <tr><th style="text-align:left;border-bottom:1px solid #000;padding:12px;">CONCEPTO</th><th style="text-align:right;border-bottom:1px solid #000;padding:12px;">IMPORTE</th></tr>
                                 ${filasHTML}
-                                <tr style="height:200px;"><td colspan="2"></td></tr>
-                                <tr style="border-top:2px solid #000;border-bottom:2px solid #000;background:#eee;font-weight:bold;font-size:20px;">
-                                    <td style="font-size:12px;padding:15px;">TOTAL EUROS</td>
-                                    <td style="text-align:right;padding:15px;">${importeTotalStr}</td>
+                                <tr style="height:100px;"><td colspan="2"></td></tr>
+                            </table>
+                            <table style="width:100%;border-collapse:collapse;border-top:2px solid #000;background:#eee;font-weight:bold;font-size:18px;">
+                                <tr style="border-bottom:2px solid #000;">
+                                    <td style="font-size:12px;padding:12px;">TOTAL EUROS</td>
+                                    <td style="text-align:right;padding:12px;">${importeTotalStr}</td>
                                 </tr>
                             </table>
                         </div>
