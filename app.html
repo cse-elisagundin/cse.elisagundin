@@ -1938,8 +1938,17 @@
                 
                 const element = document.getElementById('zona-impresion');
                 
-                // HACEMOS VISIBLE EL ELEMENTO PARA QUE HTML2CANVAS PUEDA CAPTURARLO SIN SALIR EN BLANCO
+                // AJUSTE ISOLADO: FORZADO DE ESTILOS Y POSICIONAMIENTO EN RENDERIZADO
+                element.style.display = 'block';
+                element.style.position = 'absolute';
+                element.style.top = '0px';
+                element.style.left = '0px';
+                element.style.width = '800px';
+                element.style.zIndex = '-9999';
                 element.classList.remove('hidden');
+
+                // PAUSA PARA PERMITIR REFRESCO Y DIBUJO DEL DOM
+                await new Promise(r => setTimeout(r, 350));
                 
                 const idSafeForStorage = idFinal.replace(/\//g, '.');
                 const nombreArchivoStorage = idSafeForStorage + '.pdf';
@@ -1948,13 +1957,26 @@
                     margin: 0, 
                     filename: `${idSafeForStorage}.pdf`, 
                     image: { type: 'jpeg', quality: 0.98 }, 
-                    html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 800
+                    }, 
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 };
                 
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 
-                // VOLVEMOS A OCULTAR EL ELEMENTO TRAS LA GENERACIÓN DEL PDF
+                // RESTAURACIÓN DEL ESTADO ORIGINAL DEL CONTENEDOR
+                element.style.display = '';
+                element.style.position = '';
+                element.style.top = '';
+                element.style.left = '';
+                element.style.width = '';
+                element.style.zIndex = '';
                 element.classList.add('hidden');
                 
                 const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
