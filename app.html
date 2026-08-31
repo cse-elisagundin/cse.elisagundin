@@ -33,9 +33,9 @@
         .loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #e0e7ff; overflow: hidden; }
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
-        /* REGLAS DE IMPRESIÓN AISLADAS Y GARANTIZADAS EN A4 */
+        /* REGLAS DE IMPRESIÓN EN A4 HORIZONTAL EXACTAS AL DISEÑO DE LA IMAGEN */
         @media print {
-            @page { size: A4 landscape; margin: 4mm; }
+            @page { size: A4 landscape; margin: 5mm; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
@@ -44,20 +44,17 @@
             body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
 
             table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-            table.tabla-horario-print th, table.tabla-horario-print td {
-                border: 1px solid #243c7a !important;
+            table.tabla-horario-print td {
+                border: 1px solid #000 !important;
                 padding: 1px 2px !important;
-                height: 21px !important;
-                max-height: 21px !important;
-                font-size: 9px !important;
+                height: 18px !important;
+                max-height: 18px !important;
+                font-size: 8.5px !important;
                 text-align: center !important;
                 overflow: hidden !important;
                 white-space: nowrap !important;
                 text-overflow: ellipsis !important;
             }
-            table.tabla-horario-print th { background-color: #243c7a !important; color: white !important; font-weight: 800 !important; font-size: 9.5px !important; }
-            .th-ingles-print { background-color: #fa65c3 !important; }
-            .cell-extra-print { background-color: #fff9f0 !important; }
         }
 
         .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 12px 0; transition: background 0.2s; }
@@ -68,11 +65,11 @@
         .date-col .day-num { font-size: 24px; font-weight: 900; color: var(--c-primary); line-height: 1; }
         .date-col .day-name { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 2px; }
         .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .exam-pill { border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; background: white; min-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
+        .exam-pill { border-left: 4px solid var(--c-[#243c7a]); padding: 6px 12px; border-radius: 8px; background: white; min-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
         .pill-subject { font-size: 10px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
         .pill-student { font-size: 13px; font-weight: 700; color: #333; }
 
-        /* ESTILOS DE LA REJILLA DEL HORARIO EN PANTALLA */
+        /* ESTILOS DE LA REJILLA EN PANTALLA */
         .cell-slot { height: 38px; font-size: 11px; font-weight: 700; transition: all 0.15s ease; user-select: none; }
         .cell-slot:hover { border-color: var(--c-secondary) !important; background-color: #eef7fc !important; }
         .cell-extra { background-color: #fff9f0; border-style: dashed !important; }
@@ -90,72 +87,63 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN AISLADA Y LIMPIA PARA EL CUADRANTE DE HORARIOS (A4 HORIZONTAL) -->
+    <!-- ZONA DE IMPRESIÓN AISLADA Y LIMPIA PARA EL CUADRANTE DE HORARIOS (DISEÑO FIEL A LA IMAGEN) -->
     <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
-        <div class="mb-2 pb-1 border-b-2 border-[#243c7a] flex justify-between items-center">
+        <!-- CABECERA SUPERIOR -->
+        <div class="flex items-end justify-between mb-3">
+            <!-- IZQUIERDA: DÍA Y SUBTÍTULO -->
             <div>
-                <h1 class="text-lg font-black text-[#243c7a] uppercase tracking-wide">Cuadrante Horario - CSE Elisa Gundín</h1>
-                <p class="text-xs font-bold text-gray-700">
-                    {{ modoVistaHorario === 'diario' ? 'DÍA: ' + diaSeleccionado + ' (' + formatearFecha(fechaSeleccionada) + ')' : 'PLANTILLA BASE SEMANAL - ' + diaSeleccionado }}
-                </p>
+                <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
+                <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
             </div>
-            <div class="text-right text-[10px] font-bold text-gray-600">
-                Apertura: 15:30 h | Cierre: 20:30 h<br>
-                Plazas por tramo: 6 Alumnos (+1 Extra)
+            <!-- DERECHA: NOTAS CON LÍNEA Y LOGO -->
+            <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
+                <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
+                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 w-full">
-            <!-- REFUERZO GENERAL IMPRESIÓN -->
-            <div class="border border-[#243c7a] rounded-lg overflow-hidden">
-                <div class="bg-[#243c7a] text-white p-1 text-center font-black text-xs uppercase">
-                    REFUERZO GENERAL (Plazas 1 a 7)
+        <!-- CONTENIDO: IZQUIERDA HORARIOS (2 TABLAS APILADAS), DERECHA ÁREA LIBRE PARA NOTAS -->
+        <div class="grid grid-cols-12 gap-5 w-full items-start">
+            
+            <!-- COLUMNA IZQUIERDA: LAS DOS TABLAS (50% ANCHO) -->
+            <div class="col-span-6 flex flex-col gap-2">
+                <!-- TABLA 1: REFUERZO GENERAL -->
+                <div class="border border-black overflow-hidden">
+                    <table class="w-full border-collapse text-center tabla-horario-print">
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-9 bg-gray-100">
+                                    {{ hora }}
+                                </td>
+                                <td v-for="col in 6" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8.5px] font-extrabold text-black uppercase truncate max-w-[42px]">
+                                    {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <table class="w-full border-collapse text-center tabla-horario-print">
-                    <thead>
-                        <tr class="bg-blue-100 text-[#243c7a] text-[9px] uppercase font-black border-b border-[#243c7a]">
-                            <th class="p-1 border-r border-[#243c7a] w-12">Hora</th>
-                            <th v-for="col in 6" :key="col" class="p-1 border-r border-[#243c7a]">P{{ col }}</th>
-                            <th class="p-1 bg-orange-200 text-orange-900 font-extrabold">P7 (Ex)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-[#243c7a] last:border-b-0">
-                            <td class="p-0.5 border-r border-[#243c7a] bg-gray-100 font-black text-[10px] text-[#243c7a] align-middle">
-                                {{ hora }}
-                            </td>
-                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-[#243c7a] last:border-r-0 align-middle h-5 text-[9.5px] font-extrabold text-[#243c7a] truncate max-w-[50px]" :class="col === 7 ? 'cell-extra-print' : ''">
-                                {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+                <!-- TABLA 2: INGLÉS -->
+                <div class="border border-black overflow-hidden">
+                    <table class="w-full border-collapse text-center tabla-horario-print">
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-9 bg-gray-100">
+                                    {{ hora }}
+                                </td>
+                                <td v-for="col in 6" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8.5px] font-extrabold text-black uppercase truncate max-w-[42px]">
+                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- CLASES DE INGLÉS IMPRESIÓN -->
-            <div class="border border-[#fa65c3] rounded-lg overflow-hidden">
-                <div class="bg-[#fa65c3] text-white p-1 text-center font-black text-xs uppercase">
-                    CLASES DE INGLÉS (Plazas 1 a 7)
-                </div>
-                <table class="w-full border-collapse text-center tabla-horario-print">
-                    <thead>
-                        <tr class="bg-pink-100 text-[#243c7a] text-[9px] uppercase font-black border-b border-[#fa65c3]">
-                            <th class="p-1 border-r border-[#fa65c3] w-12">Hora</th>
-                            <th v-for="col in 6" :key="col" class="p-1 border-r border-[#fa65c3]">P{{ col }}</th>
-                            <th class="p-1 bg-orange-200 text-orange-900 font-extrabold">P7 (Ex)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-[#fa65c3] last:border-b-0">
-                            <td class="p-0.5 border-r border-[#fa65c3] bg-gray-100 font-black text-[10px] text-[#243c7a] align-middle">
-                                {{ hora }}
-                            </td>
-                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-[#fa65c3] last:border-r-0 align-middle h-5 text-[9.5px] font-extrabold text-[#243c7a] truncate max-w-[50px]" :class="col === 7 ? 'cell-extra-print' : ''">
-                                {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- COLUMNA DERECHA: ESPACIO EN BLANCO PARA NOTAS MANUSCRITAS (50% ANCHO) -->
+            <div class="col-span-6 h-[420px]">
+                <!-- Área vacía para anotaciones a mano -->
             </div>
         </div>
     </div>
@@ -370,7 +358,7 @@
                  @mouseenter="isSidebarHovered = true"
                  @mouseleave="isSidebarHovered = false">
                 
-                <!-- CONTENIDO DESPLEGABLE (SOLO VISIBLE AL PASAR EL RATÓN O FIJAR) -->
+                <!-- CONTENIDO DESPLEGABLE (VISIBILIDAD CONTROLADA) -->
                 <div v-show="isSidebarPinned || isSidebarHovered" class="h-full flex flex-col w-72 sm:w-80">
                     
                     <!-- CABECERA Y CHINCHETA -->
@@ -1287,7 +1275,7 @@
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 
-                // CONTROL DE BARRA LATERAL (PIN Y HOVER ULTRA-MINIMALISTA)
+                // CONTROL DE BARRA LATERAL
                 isSidebarPinned: false,
                 isSidebarHovered: false,
 
@@ -1489,7 +1477,7 @@
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
 
-            // LÓGICA SMART PARA FORMATEO DE NOMBRES
+            // FORMATEO DE NOMBRES INTELIGENTE
             formatNombrePrint(nombreCompleto) {
                 if (!nombreCompleto) return '';
                 
