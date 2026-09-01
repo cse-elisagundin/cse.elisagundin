@@ -33,7 +33,7 @@
         .loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #e0e7ff; overflow: hidden; }
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
-        /* REGLAS DE IMPRESIÓN EN A4 HORIZONTAL EXACTAS AL DISEÑO DE LA IMAGEN */
+        /* REGLAS DE IMPRESIÓN EN A4 HORIZONTAL */
         @media print {
             @page { size: A4 landscape; margin: 5mm; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -69,7 +69,6 @@
         .pill-subject { font-size: 10px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
         .pill-student { font-size: 13px; font-weight: 700; color: #333; }
 
-        /* ESTILOS DE LA REJILLA EN PANTALLA */
         .cell-slot { height: 38px; font-size: 11px; font-weight: 700; transition: all 0.15s ease; user-select: none; }
         .cell-slot:hover { border-color: var(--c-secondary) !important; background-color: #eef7fc !important; }
         .cell-extra { background-color: #fff9f0; border-style: dashed !important; }
@@ -87,28 +86,21 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN AISLADA Y LIMPIA PARA EL CUADRANTE DE HORARIOS (DISEÑO FIEL A LA IMAGEN) -->
+    <!-- ZONA DE IMPRESIÓN AISLADA PARA EL CUADRANTE DE HORARIOS -->
     <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
-        <!-- CABECERA SUPERIOR -->
         <div class="flex items-end justify-between mb-3">
-            <!-- IZQUIERDA: DÍA Y SUBTÍTULO -->
             <div>
                 <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
                 <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
             </div>
-            <!-- DERECHA: NOTAS CON LÍNEA Y LOGO -->
             <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
                 <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
                 <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
             </div>
         </div>
 
-        <!-- CONTENIDO: IZQUIERDA HORARIOS (2 TABLAS APILADAS), DERECHA ÁREA LIBRE PARA NOTAS -->
         <div class="grid grid-cols-12 gap-5 w-full items-start">
-            
-            <!-- COLUMNA IZQUIERDA: LAS DOS TABLAS (50% ANCHO) -->
             <div class="col-span-6 flex flex-col gap-2">
-                <!-- TABLA 1: REFUERZO GENERAL -->
                 <div class="border border-black overflow-hidden">
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
@@ -124,7 +116,6 @@
                     </table>
                 </div>
 
-                <!-- TABLA 2: INGLÉS -->
                 <div class="border border-black overflow-hidden">
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
@@ -141,9 +132,7 @@
                 </div>
             </div>
 
-            <!-- COLUMNA DERECHA: ESPACIO EN BLANCO PARA NOTAS MANUSCRITAS (50% ANCHO) -->
             <div class="col-span-6 h-[420px]">
-                <!-- Área vacía para anotaciones a mano -->
             </div>
         </div>
     </div>
@@ -158,6 +147,26 @@
                     <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
                     <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
                     <p class="text-gray-500 font-semibold text-center">{{ successMessage }}</p>
+                </div>
+            </div>
+        </transition>
+
+        <!-- MODAL PARA ELIMINAR FICHA DE ALUMNO -->
+        <transition name="pop">
+            <div v-if="showDeleteStudentModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-500 p-3 rounded-full text-xl"><i class="fas fa-user-slash"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Eliminar Ficha de Alumno</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar permanentemente a <strong class="text-[#243c7a]">{{ selected?.nombre }} {{ selected?.apellidos }}</strong> del sistema?</p>
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showDeleteStudentModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="ejecutarEliminarAlumno" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
+                    </div>
                 </div>
             </div>
         </transition>
@@ -349,7 +358,7 @@
 
         <div v-if="authenticated" class="flex h-full relative overflow-hidden">
             
-            <!-- BARRA LATERAL (ABIERTA / FIJADA POR DEFECTO) -->
+            <!-- BARRA LATERAL -->
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
@@ -358,10 +367,8 @@
                  @mouseenter="isSidebarHovered = true"
                  @mouseleave="isSidebarHovered = false">
                 
-                <!-- CONTENIDO DESPLEGABLE -->
                 <div v-show="isSidebarPinned || isSidebarHovered" class="h-full flex flex-col w-72 sm:w-80">
                     
-                    <!-- CABECERA Y CHINCHETA -->
                     <div class="p-3 bg-[#243c7a] text-white flex items-center justify-between overflow-hidden shrink-0 h-16">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="bg-white p-1 rounded-lg shrink-0 shadow-sm">
@@ -379,9 +386,7 @@
                         </button>
                     </div>
 
-                    <!-- ACCIONES RÁPIDAS Y NAVEGACIÓN -->
                     <div class="p-3 bg-gray-50 border-b space-y-2 overflow-hidden shrink-0">
-                        <!-- BUSCADOR -->
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
                             <input v-model="search" type="text" placeholder="Buscar alumno..." class="w-full pl-8 pr-7 py-1.5 rounded-lg border focus:border-[#2b94cc] outline-none text-xs bg-white">
@@ -393,7 +398,6 @@
                             <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
                         </div>
 
-                        <!-- BOTONES PRINCIPALES -->
                         <button @click="createNew" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm">
                             <i class="fas fa-plus"></i> <span class="truncate">Nueva Ficha</span>
                         </button>
@@ -415,7 +419,6 @@
                         </button>
                     </div>
 
-                    <!-- LISTADO DE ALUMNOS -->
                     <div class="flex-1 overflow-y-auto overflow-x-hidden">
                         <div v-for="s in filteredList" :key="s.id" @click="selectStudent(s)"
                             class="p-2.5 sm:p-3 border-b hover:bg-blue-50 cursor-pointer transition relative flex items-center"
@@ -435,7 +438,6 @@
                         </div>
                     </div>
 
-                    <!-- PIE DE LA BARRA LATERAL -->
                     <div class="p-2 border-t bg-gray-50 text-center flex justify-between items-center px-3 shrink-0">
                         <button @click="logout" class="text-[10px] font-bold text-gray-400 hover:text-red-500">
                             <i class="fas fa-power-off mr-1"></i> SALIR
@@ -460,7 +462,6 @@
                 <!-- MÓDULO DEL CUADRANTE DE HORARIOS -->
                 <div v-if="activeTab === 'cuadrante_horarios' && !selected" class="flex-1 flex flex-col overflow-hidden animate-fade">
                     
-                    <!-- BARRA SUPERIOR DE ACCIONES DE HORARIO -->
                     <div class="no-print bg-white p-3 sm:p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="bg-purple-100 p-2 rounded-lg text-purple-800"><i class="fas fa-th text-xl"></i></div>
@@ -470,7 +471,6 @@
                             </div>
                         </div>
 
-                        <!-- MODO: DIARIO VS PLANTILLA -->
                         <div class="flex items-center bg-gray-100 p-1 rounded-xl border text-xs font-bold">
                             <button @click="setModoHorario('diario')" 
                                 class="px-3 py-1.5 rounded-lg transition"
@@ -499,7 +499,6 @@
                         </div>
                     </div>
 
-                    <!-- SUB-BARRA DE DÍAS Y PINCEL DE ALUMNO -->
                     <div class="no-print bg-gray-50 border-b px-4 py-2 flex flex-wrap justify-between items-center gap-3 shrink-0">
                         <div class="flex items-center gap-1">
                             <button v-for="d in diasSemana" :key="d" @click="seleccionarDiaSemana(d)"
@@ -515,7 +514,6 @@
                             <input type="date" v-model="fechaSeleccionada" @change="alCambiarFechaHorario" class="bg-white border rounded px-2 py-0.5 font-bold text-[#243c7a] outline-none">
                         </div>
 
-                        <!-- PINCEL DE ALUMNO -->
                         <div class="flex items-center gap-2 bg-white p-1 rounded-xl border shadow-sm relative">
                             <i class="fas fa-search text-gray-400 text-xs ml-2"></i>
                             <input type="text" v-model="searchAlumnoPincel" placeholder="Buscar alumno como pincel..." class="w-48 py-1 pr-2 text-xs outline-none font-bold text-[#243c7a]">
@@ -534,11 +532,8 @@
                         </div>
                     </div>
 
-                    <!-- MATRIZ DE HORARIOS EN PANTALLA -->
                     <div class="flex-1 overflow-auto p-3 sm:p-4 bg-gray-100">
                         <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            
-                            <!-- REFUERZO GENERAL -->
                             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
                                 <div class="bg-[#243c7a] text-white p-2.5 font-extrabold text-xs flex justify-between items-center">
                                     <span><i class="fas fa-users text-[#2b94cc] mr-1"></i> REFUERZO GENERAL (Plazas 1 a 7)</span>
@@ -588,7 +583,6 @@
                                 </div>
                             </div>
 
-                            <!-- CLASES DE INGLÉS -->
                             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
                                 <div class="bg-[#fa65c3] text-white p-2.5 font-extrabold text-xs flex justify-between items-center">
                                     <span><i class="fas fa-language mr-1"></i> CLASES DE INGLÉS (Plazas 1 a 7)</span>
@@ -637,12 +631,11 @@
                                     </table>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
 
-                <!-- EXPLORADOR DE FACTURAS EN LA NUBE -->
+                <!-- EXPLORADOR DE FACTURAS -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -916,12 +909,9 @@
                             </div>
 
                             <div class="flex items-center gap-3">
-                                <div v-if="activeTab === 'ficha'" class="flex items-center gap-2 mr-4 bg-gray-100 p-1.5 rounded-lg select-none">
-                                    <span class="text-[10px] font-bold uppercase" :class="!form.baja ? 'text-green-600' : 'text-gray-400'">Alta</span>
-                                    <button @click="form.baja = !form.baja" class="relative w-10 h-5 rounded-full transition-colors focus:outline-none" :class="form.baja ? 'bg-gray-400' : 'bg-[#25D366]'">
-                                        <div class="absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform" :class="form.baja ? 'translate-x-5' : 'translate-x-0'"></div>
-                                    </button>
-                                </div>
+                                <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
+                                    <i class="fas fa-trash-alt"></i> Eliminar
+                                </button>
                                 <button @click="cerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar</button>
                                 <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-5 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2 text-xs sm:text-sm">
                                     <i v-if="saving" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
@@ -934,9 +924,14 @@
                             <button v-if="activeTab !== 'menu'" @click="activeTab = 'menu'" class="text-xs font-bold text-[#2b94cc] bg-blue-50 px-3 py-2 rounded-lg">
                                 <i class="fas fa-arrow-left"></i> Menú Alumno
                             </button>
-                            <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-xs ml-auto">
-                                {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
-                            </button>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-xs">
+                                    {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
+                                </button>
+                            </div>
                         </div>
 
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
@@ -970,11 +965,14 @@
                             </div>
                         </div>
 
-                        <form v-if="activeTab === 'ficha'" class="p-4 sm:p-8 space-y-6 flex-1" :class="form.baja ? 'opacity-70 grayscale-[0.5]' : ''">
+                        <form v-if="activeTab === 'ficha'" @submit.prevent="saveData" class="p-4 sm:p-8 space-y-6 flex-1">
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2">DATOS PERSONALES</div>
-                                <input v-model="form.nombre" placeholder="Nombre" class="p-3 rounded-lg border bg-gray-50 outline-none">
-                                <input v-model="form.apellidos" placeholder="Apellidos" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2 flex justify-between items-center">
+                                    <span>DATOS PERSONALES</span>
+                                    <span class="text-xs font-normal text-red-500">* Nombre y Apellidos obligatorios</span>
+                                </div>
+                                <input v-model="form.nombre" placeholder="Nombre *" required class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input v-model="form.apellidos" placeholder="Apellidos *" required class="p-3 rounded-lg border bg-gray-50 outline-none">
                                 <input v-model="form.dni" placeholder="DNI/NIE" class="p-3 rounded-lg border bg-gray-50 outline-none">
                                 <input type="date" v-model="form.nacimiento" class="p-3 rounded-lg border bg-gray-50 outline-none">
                             </section>
@@ -992,7 +990,7 @@
                             </section>
 
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
-                                <div class="col-span-1 sm:col-span-2 md:grid-cols-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
                                 <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
                                 <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
@@ -1017,7 +1015,7 @@
                                         </select>
                                         <div class="flex gap-2">
                                             <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
-                                            <a v-if="form.fam1_tlf" :href="'https://wa.me/34'+String(form.fam1_tlf).replace(/\s/g,'')" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600"><i class="fab fa-whatsapp"></i></a>
+                                            <a v-if="form.fam1_tlf" :href="formatWhatsAppUrl(form.fam1_tlf)" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600 transition" title="Enviar WhatsApp"><i class="fab fa-whatsapp"></i></a>
                                         </div>
                                     </div>
                                 </div>
@@ -1031,7 +1029,7 @@
                                         </select>
                                         <div class="flex gap-2">
                                             <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
-                                            <a v-if="form.fam2_tlf" :href="'https://wa.me/34'+String(form.fam2_tlf).replace(/\s/g,'')" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500"><i class="fab fa-whatsapp"></i></a>
+                                            <a v-if="form.fam2_tlf" :href="formatWhatsAppUrl(form.fam2_tlf)" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500 transition" title="Enviar WhatsApp"><i class="fab fa-whatsapp"></i></a>
                                         </div>
                                     </div>
                                 </div>
@@ -1275,7 +1273,6 @@
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 
-                // CONTROL DE BARRA LATERAL (FIJADA Y ABIERTA POR DEFECTO)
                 isSidebarPinned: true,
                 isSidebarHovered: false,
 
@@ -1301,6 +1298,7 @@
                 showDeleteExamenModal: false,
                 editExamenForm: {},
                 examenAEliminar: null,
+                showDeleteStudentModal: false,
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
                 searchPagosGlobal: '',
@@ -1309,7 +1307,6 @@
                 searchExplorador: '',
                 cursoFacturasAbierto: {},
 
-                // DATOS PARA EL MÓDULO DEL CUADRANTE DE HORARIOS
                 modoVistaHorario: 'diario',
                 diaSeleccionado: 'LUNES',
                 fechaSeleccionada: new Date().toISOString().split('T')[0],
@@ -1477,7 +1474,13 @@
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
 
-            // FORMATEO DE NOMBRES INTELIGENTE
+            formatWhatsAppUrl(tlf) {
+                if (!tlf) return '#';
+                let num = String(tlf).replace(/\D/g, '');
+                if (!num.startsWith('34') && num.length === 9) num = '34' + num;
+                return 'https://wa.me/' + num;
+            },
+
             formatNombrePrint(nombreCompleto) {
                 if (!nombreCompleto) return '';
                 
@@ -1527,7 +1530,6 @@
                 return nombreBase;
             },
 
-            // IMPRESIÓN DEL CUADRANTE USANDO EL CONTENEDOR AISLADO
             imprimirCuadrante() {
                 document.body.classList.add('is-printing-horario');
                 setTimeout(() => {
@@ -1671,7 +1673,6 @@
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
             
-            // MÉTODOS DEL CUADRANTE DE HORARIOS
             abrirCuadranteHorarios() {
                 this.selected = null;
                 this.activeTab = 'cuadrante_horarios';
@@ -1820,7 +1821,6 @@
                 this.savingHorario = false;
             },
 
-            // RESTO DE FUNCIONALIDADES
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
@@ -2271,27 +2271,55 @@
                     direccion: '', cp: '', poblacion: '', provincia: '',
                     colegio: '', curso: '', tlf: '',
                     fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
-                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: '',
-                    baja: false
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: ''
                 };
-                this.selected = { id: 'TEMP' };
+                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno' };
             },
             selectStudent(s) { this.form = JSON.parse(JSON.stringify(s)); this.isNew = false; this.activeTab = 'menu'; this.selected = s; },
             cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
+            
+            abrirEliminarAlumno() {
+                if (!this.selected || this.isNew) return;
+                this.showDeleteStudentModal = true;
+            },
+            
+            async ejecutarEliminarAlumno() {
+                if (!this.selected || !this.selected.id) return;
+                try {
+                    await _supabase.from('listado_alumnos').delete().eq('id', this.selected.id);
+                    this.showDeleteStudentModal = false;
+                    this.selected = null;
+                    this.activeTab = 'menu';
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha del alumno eliminada';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error al eliminar alumno:", e);
+                    alert("No se pudo eliminar el alumno.");
+                }
+            },
+
             async saveData() {
+                if (!this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
+                    return;
+                }
+
                 this.saving = true;
                 try {
-                    // Copiar y sanitizar datos para Supabase (PostgreSQL)
                     const payload = { ...this.form };
                     delete payload.id;
-                    delete payload.baja; // Eliminamos 'baja' porque no existe como columna en la tabla 'listado_alumnos' de Supabase
+                    delete payload.baja;
 
-                    // Convertir cadenas vacías en campos tipo DATE/STRING opcionales a null
                     Object.keys(payload).forEach(key => {
-                        if (payload[key] === '') {
+                        if (payload[key] === '' || payload[key] === undefined) {
                             payload[key] = null;
                         }
                     });
+
+                    const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
+                    const newNombreCompleto = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
 
                     if (this.isNew) {
                         const { data, error } = await _supabase
@@ -2301,7 +2329,7 @@
                             .single();
 
                         if (error) {
-                            console.error("Error al crear nuevo alumno en Supabase:", error);
+                            console.error("Error al crear alumno en Supabase:", error);
                             alert("Error al crear alumno: " + error.message);
                             this.saving = false;
                             return;
@@ -2324,16 +2352,27 @@
                             this.saving = false;
                             return;
                         }
+
+                        // SINCRONIZACIÓN EN CASCADA SI CAMBIA EL NOMBRE DEL ALUMNO
+                        if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
+                            await Promise.all([
+                                _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
+                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
+                            ]);
+                        }
                     }
 
                     await this.cargarDatosSupabase();
                     this.showSuccess = true;
-                    this.successMessage = 'Ficha guardada';
+                    this.successMessage = 'Ficha guardada con éxito';
                     setTimeout(() => {
                         this.showSuccess = false;
                         this.selected = null;
                         this.saving = false;
-                    }, 2000);
+                    }, 1800);
                 } catch (e) {
                     console.error("Error inesperado en saveData:", e);
                     alert("Ocurrió un error inesperado al guardar la ficha.");
