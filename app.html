@@ -428,7 +428,7 @@
                                     <div class="font-bold text-xs truncate" :class="s.baja ? 'text-gray-500 line-through' : 'text-[#243c7a]'">
                                         {{ s.apellidos }}, {{ s.nombre }}
                                     </div>
-                                    <span v-if="s.baja" class="bg-gray-200 text-gray-500 text-[8px] px-1 py-0.5 rounded font-bold ml-1">BAJA</span>
+                                    <span v-if="s.baja" class="bg-amber-100 text-amber-800 text-[8px] px-1 py-0.5 rounded font-black ml-1">BAJA</span>
                                 </div>
                                 <div class="text-[10px] text-gray-400 mt-0.5 flex justify-between uppercase">
                                     <span class="truncate">{{ s.curso || 'Alumno' }}</span>
@@ -520,8 +520,9 @@
                             
                             <div v-if="searchAlumnoPincel && alumnosFiltradosPincel.length > 0" class="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border z-50 w-64 max-h-48 overflow-y-auto">
                                 <div v-for="a in alumnosFiltradosPincel" :key="a.id" @click="seleccionarAlumnoPincel(a.nombre + ' ' + a.apellidos)" 
-                                    class="p-2 text-xs font-bold text-[#243c7a] hover:bg-blue-50 cursor-pointer border-b last:border-none flex justify-between">
-                                    <span>{{ a.apellidos }}, {{ a.nombre }}</span>
+                                    class="p-2 text-xs font-bold text-[#243c7a] hover:bg-blue-50 cursor-pointer border-b last:border-none flex justify-between items-center">
+                                    <span :class="a.baja ? 'line-through text-gray-400' : ''">{{ a.apellidos }}, {{ a.nombre }}</span>
+                                    <span v-if="a.baja" class="text-[9px] font-black text-amber-600 uppercase bg-amber-50 px-1 py-0.5 rounded">(BAJA)</span>
                                 </div>
                             </div>
 
@@ -896,19 +897,32 @@
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
                         <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
-                            <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-3">
                                 <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
                                     <i class="fas fa-arrow-left"></i> Volver al menú
                                 </button>
-                                <h2 class="text-xl sm:text-2xl font-extrabold" :class="form.baja ? 'text-gray-400' : 'text-[#243c7a]'">
-                                    {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
-                                </h2>
+                                
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-xl sm:text-2xl font-extrabold" :class="form.baja ? 'text-gray-400 line-through' : 'text-[#243c7a]'">
+                                        {{ isNew ? 'Nuevo Alumno' : form.nombre + ' ' + form.apellidos }}
+                                    </h2>
+                                    <span v-if="form.baja" class="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">BAJA</span>
+                                </div>
+
                                 <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha</span>
                                 <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos</span>
                                 <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
                             </div>
 
                             <div class="flex items-center gap-3">
+                                <!-- BOTÓN DE BAJA / ALTA EN CABECERA -->
+                                <button v-if="activeTab === 'ficha' && !isNew && !form.baja" @click="form.baja = true" type="button" class="bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition" title="Marcar alumno como inactivo">
+                                    <i class="fas fa-user-minus"></i> Dar de baja
+                                </button>
+                                <button v-if="activeTab === 'ficha' && !isNew && form.baja" @click="form.baja = false" type="button" class="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition" title="Reactivar alumno">
+                                    <i class="fas fa-user-check"></i> Dar de alta
+                                </button>
+
                                 <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
                                     <i class="fas fa-trash-alt"></i> Eliminar
                                 </button>
@@ -925,11 +939,17 @@
                                 <i class="fas fa-arrow-left"></i> Menú Alumno
                             </button>
                             <div class="flex items-center gap-2 ml-auto">
+                                <button v-if="activeTab === 'ficha' && !isNew && !form.baja" @click="form.baja = true" type="button" class="bg-amber-50 text-amber-700 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-user-minus"></i> Baja
+                                </button>
+                                <button v-if="activeTab === 'ficha' && !isNew && form.baja" @click="form.baja = false" type="button" class="bg-green-50 text-green-700 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-user-check"></i> Alta
+                                </button>
                                 <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                                 <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-xs">
-                                    {{ saving ? 'Guardando...' : 'Guardar Ficha' }}
+                                    {{ saving ? 'Guardando...' : 'Guardar' }}
                                 </button>
                             </div>
                         </div>
@@ -966,6 +986,20 @@
                         </div>
 
                         <form v-if="activeTab === 'ficha'" @submit.prevent="saveData" class="p-4 sm:p-8 space-y-6 flex-1">
+                            
+                            <div v-if="form.baja" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-amber-100 text-amber-800 p-2.5 rounded-xl"><i class="fas fa-user-slash text-lg"></i></div>
+                                    <div>
+                                        <h4 class="font-bold text-amber-900 text-xs sm:text-sm">Este alumno figura actualmente como BAJA</h4>
+                                        <p class="text-[11px] text-amber-700">Sus datos históricos se conservan. Haz clic en "Dar de alta" para reactivarlo.</p>
+                                    </div>
+                                </div>
+                                <button type="button" @click="form.baja = false" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow">
+                                    Dar de alta
+                                </button>
+                            </div>
+
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2 flex justify-between items-center">
                                     <span>DATOS PERSONALES</span>
@@ -2266,16 +2300,21 @@
                 this.isNew = true;
                 this.activeTab = 'ficha';
                 this.form = {
-                    nombre: '', apellidos: '', dni: '', nacimiento: null,
+                    nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
                     usuario_aules: '', pass_aules: '',
                     direccion: '', cp: '', poblacion: '', provincia: '',
                     colegio: '', curso: '', tlf: '',
                     fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
                     fam2_nombre: '', fam2_relacion: '', fam2_tlf: ''
                 };
-                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno' };
+                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno', baja: false };
             },
-            selectStudent(s) { this.form = JSON.parse(JSON.stringify(s)); this.isNew = false; this.activeTab = 'menu'; this.selected = s; },
+            selectStudent(s) { 
+                this.form = JSON.parse(JSON.stringify(s)); 
+                this.isNew = false; 
+                this.activeTab = 'menu'; 
+                this.selected = s; 
+            },
             cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
             
             abrirEliminarAlumno() {
@@ -2310,7 +2349,9 @@
                 try {
                     const payload = { ...this.form };
                     delete payload.id;
-                    delete payload.baja;
+                    
+                    // Asegurar envío correcto del booleano baja
+                    payload.baja = Boolean(this.form.baja);
 
                     Object.keys(payload).forEach(key => {
                         if (payload[key] === '' || payload[key] === undefined) {
@@ -2392,3 +2433,6 @@
 </script>
 </body>
 </html>
+```eof
+
+El código ya cuenta con el botón de **"Dar de baja / Dar de alta"** restaurado en la ficha del alumno, así como con el guardado correcto del campo `baja` en Supabase y la integración fluida en los listados y submódulos.
