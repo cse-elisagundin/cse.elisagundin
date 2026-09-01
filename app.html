@@ -2262,16 +2262,82 @@
                 this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
             },
             logout() { _supabase.auth.signOut(); location.reload(); },
-            createNew() { this.isNew = true; this.activeTab = 'ficha'; this.form = { nombre:'', apellidos:'', dni:'', nacimiento:'', direccion:'', cp:'', poblacion:'', provincia:'', colegio:'', curso:'', tlf:'', fam1_nombre:'', fam1_relacion:'', fam1_tlf:'', fam2_nombre:'', fam2_relacion:'', fam2_tlf:'', baja: false }; this.selected = { id: 'TEMP' }; },
+            createNew() {
+                this.isNew = true;
+                this.activeTab = 'ficha';
+                this.form = {
+                    nombre: '', apellidos: '', dni: '', nacimiento: null,
+                    usuario_aules: '', pass_aules: '',
+                    direccion: '', cp: '', poblacion: '', provincia: '',
+                    colegio: '', curso: '', tlf: '',
+                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: '',
+                    baja: false
+                };
+                this.selected = { id: 'TEMP' };
+            },
             selectStudent(s) { this.form = JSON.parse(JSON.stringify(s)); this.isNew = false; this.activeTab = 'menu'; this.selected = s; },
             cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
             async saveData() {
                 this.saving = true;
-                if (this.isNew) { delete this.form.id; await _supabase.from('listado_alumnos').insert([this.form]); }
-                else { await _supabase.from('listado_alumnos').update(this.form).eq('id', this.selected.id); }
-                await this.cargarDatosSupabase();
-                this.showSuccess = true; this.successMessage = 'Ficha guardada';
-                setTimeout(() => { this.showSuccess = false; this.selected = null; this.saving = false; }, 2000);
+                try {
+                    // Copiar y sanitizar datos para Supabase (PostgreSQL)
+                    const payload = { ...this.form };
+                    delete payload.id;
+
+                    // Convertir cadenas vacías en campos tipo DATE/STRING opcionales a null
+                    Object.keys(payload).forEach(key => {
+                        if (payload[key] === '') {
+                            payload[key] = null;
+                        }
+                    });
+
+                    if (this.isNew) {
+                        const { data, error } = await _supabase
+                            .from('listado_alumnos')
+                            .insert([payload])
+                            .select()
+                            .single();
+
+                        if (error) {
+                            console.error("Error al crear nuevo alumno en Supabase:", error);
+                            alert("Error al crear alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (data) {
+                            this.selected = data;
+                            this.form = JSON.parse(JSON.stringify(data));
+                            this.isNew = false;
+                        }
+                    } else {
+                        const { error } = await _supabase
+                            .from('listado_alumnos')
+                            .update(payload)
+                            .eq('id', this.selected.id);
+
+                        if (error) {
+                            console.error("Error al actualizar alumno en Supabase:", error);
+                            alert("Error al actualizar alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+                    }
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha guardada';
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                        this.selected = null;
+                        this.saving = false;
+                    }, 2000);
+                } catch (e) {
+                    console.error("Error inesperado en saveData:", e);
+                    alert("Ocurrió un error inesperado al guardar la ficha.");
+                    this.saving = false;
+                }
             }
         },
         async mounted() {
