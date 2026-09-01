@@ -81,7 +81,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN AISLADA PARA TICKETS DE PAGO (OPTIMIZADA A BLANCO Y NEGRO PURO) -->
+    <!-- ZONA DE IMPRESIÓN AISLADA PARA TICKETS DE PAGO (PLANTILLA EXACTA A LA IMAGEN ADJUNTADA) -->
     <div id="zona-impresion" class="hidden bg-white font-sans">
         <div id="ticket-data"></div>
     </div>
@@ -2183,135 +2183,134 @@
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
 
-            // --- GENERADOR DE RECIBOS Y FACTURAS PDF (BLANCO Y NEGRO PURO + AHORRO DE TÓNER) ---
+            // --- GENERADOR DE RECIBOS Y FACTURAS PDF (RÉPLICA EXACTA A LA IMAGEN) ---
             generarReciboHTML(datos, alumnoNombre) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = datos.fecha ? new Date(datos.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
                 const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
-                const nombreFinal = alumnoNombre || (this.selected ? `${this.selected.nombre} ${this.selected.apellidos}` : '');
+                const nombreFinal = (alumnoNombre || (this.selected ? `${this.selected.nombre} ${this.selected.apellidos}` : '')).toUpperCase();
 
                 let totalVal = parseFloat(datos.importe || 0);
                 if (isNaN(totalVal)) totalVal = 0;
-                const totalStr = totalVal.toFixed(2).replace('.', ',') + " €";
+                const totalFormatted = totalVal.toFixed(2).replace('.', ',') + " €";
+                const totalEnteroFormat = Math.round(totalVal) + " €";
 
-                // Limpieza del nombre de la tarifa (Eliminación de paréntesis de antiguos/nuevos alumnos)
+                let mesRaw = datos.mes || '';
+                let mesNombre = mesRaw.split(' ')[0] || '';
+                let mesLower = mesNombre.toLowerCase();
+
                 const tarifaLimpia = String(datos.tarifa || '').replace(/\s*\([^)]*\)/g, '').trim();
                 const extrasLimpio = String(datos.extras || '').trim();
 
-                let filasHTML = "";
+                let conceptoTitulo = "";
+                let conceptoSubtitulo = "Curso académico vigente";
 
-                if (tarifaLimpia && extrasLimpio) {
-                    let baseVal = 0;
-                    const matchT = tarifaLimpia.match(/(\d+(?:[\.,]\d+)?)€/);
-                    if (matchT) {
-                        baseVal = parseFloat(matchT[1].replace(',', '.'));
-                    }
-                    if (baseVal > 0 && baseVal < totalVal) {
-                        const extraVal = totalVal - baseVal;
-                        filasHTML += `
-                            <tr style="border-bottom:1px solid #000;">
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${tarifaLimpia}</td>
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${baseVal.toFixed(2).replace('.', ',')} €</td>
-                            </tr>
-                            <tr style="border-bottom:1px solid #000;">
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${extrasLimpio}</td>
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${extraVal.toFixed(2).replace('.', ',')} €</td>
-                            </tr>`;
-                    } else {
-                        filasHTML += `
-                            <tr style="border-bottom:1px solid #000;">
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${tarifaLimpia} - ${extrasLimpio}</td>
-                                <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${totalStr}</td>
-                            </tr>`;
-                    }
+                if (extrasLimpio) {
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'este mes'}`;
+                    conceptoSubtitulo = `${extrasLimpio} (${conceptoSubtitulo})`;
                 } else if (tarifaLimpia) {
-                    filasHTML += `
-                        <tr style="border-bottom:1px solid #000;">
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${tarifaLimpia}</td>
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${totalStr}</td>
-                        </tr>`;
-                } else if (extrasLimpio) {
-                    filasHTML += `
-                        <tr style="border-bottom:1px solid #000;">
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${extrasLimpio}</td>
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${totalStr}</td>
-                        </tr>`;
+                    conceptoTitulo = `Mensualidad ${mesLower} (${totalEnteroFormat})`;
                 } else {
-                    const mesTxt = datos.mes ? `Cuota Mensual (${datos.mes})` : 'Cuota Mensual';
-                    filasHTML += `
-                        <tr style="border-bottom:1px solid #000;">
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; color:#000;">${mesTxt}</td>
-                            <td style="padding:10px 12px; font-size:12px; font-weight:bold; text-align:right; color:#000; white-space:nowrap;">${totalStr}</td>
-                        </tr>`;
+                    conceptoTitulo = `Mensualidad ${mesLower || 'de clase'}`;
                 }
 
+                const signatureSvg = `<svg width="85" height="35" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 32 C 18 12, 28 42, 38 18 C 48 6, 52 34, 62 22 C 72 12, 78 32, 88 18" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>`;
+
                 document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family:'Helvetica',sans-serif; margin:0; padding:15px; color:#000; background:#fff; box-sizing:border-box;">
+                    <div style="font-family:'Outfit', 'Helvetica', sans-serif; margin:0; padding:15px; color:#000; background:#fff; box-sizing:border-box;">
                         <div style="border:2px solid #000; width:100%; position:relative; min-height:980px; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:20px; box-sizing:border-box;">
                             
-                            <div>
-                                <!-- CABECERA MONOCROMA Y OPTIMIZADA PARA TÓNER -->
-                                <table style="width:100%; border-collapse:collapse; margin-bottom:15px; border-bottom:2px solid #000; padding-bottom:10px;">
+                            <!-- MARCA DE AGUA CENTRAL -->
+                            <img src="${logoUrl}" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:320px; opacity:0.04; filter:grayscale(100%); pointer-events:none; z-index:0;" />
+
+                            <div style="position:relative; z-index:1;">
+                                <!-- CABECERA DE LA EMPRESA -->
+                                <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
                                     <tr>
-                                        <td style="padding:5px 0;">
-                                            <img src="${logoUrl}" style="width:120px; filter:grayscale(100%); display:block;" />
+                                        <td style="padding:0; vertical-align:middle;">
+                                            <img src="${logoUrl}" style="height:70px; width:auto; filter:grayscale(100%); display:block;" />
                                         </td>
-                                        <td style="text-align:right; font-size:11px; color:#000; line-height:1.4;">
-                                            <strong style="font-size:14px; text-transform:uppercase;">CSE ELISA GUNDÍN</strong><br>
+                                        <td style="text-align:right; font-size:11px; font-weight:600; color:#000; line-height:1.35; vertical-align:middle;">
+                                            <strong style="font-size:13px; font-weight:800; text-transform:uppercase;">CSE ELISA GUNDÍN</strong><br>
                                             NIF: 20054671M<br>
-                                            C/ Alicante 4, El Pinós (03650)<br>
-                                            Teléfono: 622 45 88 01
+                                            C/ Alicante 4, El Pinós (03650)
                                         </td>
                                     </tr>
                                 </table>
 
-                                <!-- DATOS DEL ALUMNO Y RECIBO -->
-                                <div style="border:1px solid #000; padding:10px 12px; margin-bottom:15px; font-size:13px; font-weight:bold; background:#fff;">
-                                    RECIBIDO DE: <span style="text-transform:uppercase; font-size:14px;">${nombreFinal}</span>
+                                <!-- FILA 1: METADATOS DEL RECIBO -->
+                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000; margin-bottom:0;">
+                                    <tr>
+                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">Nº RECIBO</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${numRecibo}</div>
+                                        </td>
+                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000; text-align:center;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FECHA EMISIÓN</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${fechaE}</div>
+                                        </td>
+                                        <td style="padding:8px 10px; width:34%; text-align:right;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FORMA DE PAGO</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px; text-transform:uppercase;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- FILA 2: DATOS DEL CLIENTE -->
+                                <div style="border-bottom:2px solid #000; padding:12px 10px; background:#fff;">
+                                    <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">RECIBÍ DE:</div>
+                                    <div style="font-size:16px; font-weight:900; color:#000; text-transform:uppercase; margin-top:3px; letter-spacing:0.5px;">${nombreFinal}</div>
                                 </div>
 
-                                <table style="width:100%; border-collapse:collapse; border:2px solid #000; margin-bottom:20px;">
-                                    <thead>
-                                        <tr style="border-bottom:1px solid #000; font-size:10px; text-transform:uppercase;">
-                                            <th style="padding:8px 12px; text-align:left; border-right:1px solid #000; width:33%;">Nº RECIBO / FACTURA</th>
-                                            <th style="padding:8px 12px; text-align:center; border-right:1px solid #000; width:33%;">FECHA EMISIÓN</th>
-                                            <th style="padding:8px 12px; text-align:right; width:34%;">FORMA DE PAGO</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="font-size:12px; font-weight:bold;">
-                                            <td style="padding:10px 12px; text-align:left; border-right:1px solid #000;">${numRecibo}</td>
-                                            <td style="padding:10px 12px; text-align:center; border-right:1px solid #000;">${fechaE}</td>
-                                            <td style="padding:10px 12px; text-align:right; text-transform:uppercase;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
-                                <!-- TABLA DE CONCEPTOS -->
-                                <table style="width:100%; border-collapse:collapse; border:2px solid #000; margin-bottom:20px;">
-                                    <thead>
-                                        <tr style="border-bottom:2px solid #000; font-size:11px; text-transform:uppercase;">
-                                            <th style="text-align:left; padding:10px 12px; border-right:1px solid #000;">CONCEPTO</th>
-                                            <th style="text-align:right; padding:10px 12px; width:120px;">IMPORTE</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${filasHTML}
-                                    </tbody>
-                                </table>
-
-                                <!-- RESUMEN DE TOTAL -->
-                                <table style="width:100%; border-collapse:collapse; border:2px solid #000;">
-                                    <tr style="font-weight:bold; font-size:16px;">
-                                        <td style="padding:12px; text-align:left; font-size:13px; text-transform:uppercase; border-right:1px solid #000;">TOTAL EUROS</td>
-                                        <td style="padding:12px; text-align:right; font-size:18px; width:140px;">${totalStr}</td>
+                                <!-- FILA 3: ENCABEZADO TABLA DE CONCEPTOS -->
+                                <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #000;">
+                                    <tr>
+                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">CONCEPTO</td>
+                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000; text-align:right; width:120px;">IMPORTE</td>
                                     </tr>
                                 </table>
+
+                                <!-- FILA 4: CUERPO Y CONCEPTO -->
+                                <table style="width:100%; border-collapse:collapse; min-height:160px;">
+                                    <tr>
+                                        <td style="padding:15px 10px; vertical-align:top;">
+                                            <div style="font-size:14px; font-weight:800; color:#000;">${conceptoTitulo}</div>
+                                            <div style="font-size:11px; font-style:italic; color:#555; margin-top:4px;">${conceptoSubtitulo}</div>
+                                        </td>
+                                        <td style="padding:15px 10px; text-align:right; vertical-align:top; font-size:15px; font-weight:900; color:#000; width:120px; white-space:nowrap;">
+                                            ${totalEnteroFormat}
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- FILA 5: TOTAL EUROS -->
+                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000;">
+                                    <tr>
+                                        <td style="padding:12px 10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">TOTAL EUROS</td>
+                                        <td style="padding:12px 10px; font-size:18px; font-weight:900; color:#000; text-align:right; width:140px; white-space:nowrap;">${totalFormatted}</td>
+                                    </tr>
+                                </table>
+
+                                <!-- FILA 6: NOTA Y FIRMA -->
+                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; items-end;">
+                                    <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
+                                        NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
+                                    </div>
+                                    <div style="text-align:center;">
+                                        <div style="display:inline-block; margin-bottom:-8px;">
+                                            ${signatureSvg}
+                                        </div>
+                                        <div style="font-size:10px; color:#000; font-family:monospace; letter-spacing:-1px;">--------------------------------------------------</div>
+                                        <div style="font-size:10px; font-weight:800; color:#000; text-transform:uppercase; margin-top:2px;">FDO. CSE ELISA GUNDÍN</div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- LEYENDA LOPD / RGPD OBLIGATORIA -->
-                            <div style="border-top:1px solid #000; padding-top:10px; margin-top:30px; font-size:8px; line-height:1.3; color:#000; text-align:justify;">
-                                <strong>PROTECCIÓN DE DATOS (RGPD / LOPDGDD 3/2018):</strong> De conformidad con lo dispuesto en el Reglamento General de Protección de Datos (UE) 2016/679 y la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales, le informamos que sus datos de carácter personal son tratados bajo la responsabilidad de <strong>CSE ELISA GUNDÍN</strong> con la finalidad de gestionar la prestación de servicios educativos, contables y de facturación. Los datos se conservarán mientras se mantenga la relación comercial o durante los años necesarios para cumplir con las obligaciones legales. Puede ejercitar en cualquier momento sus derechos de acceso, rectificación, supresión, limitación del tratamiento, portabilidad y oposición dirigiéndose por escrito a la dirección del centro en C/ Alicante 4, El Pinós (03650, Alicante).
+                            <!-- FILA 7: LEYENDA LOPD EN PIE DE PÁGINA -->
+                            <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
+                                PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
                             </div>
 
                         </div>
