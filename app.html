@@ -2284,6 +2284,7 @@
                     // Copiar y sanitizar datos para Supabase (PostgreSQL)
                     const payload = { ...this.form };
                     delete payload.id;
+                    delete payload.baja; // Eliminamos 'baja' porque no existe como columna en la tabla 'listado_alumnos' de Supabase
 
                     // Convertir cadenas vacías en campos tipo DATE/STRING opcionales a null
                     Object.keys(payload).forEach(key => {
