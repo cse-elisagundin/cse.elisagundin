@@ -140,7 +140,7 @@
 
         <!-- OVERLAY DE CARGA PARA PREPARACIÓN DE IMPRESIÓN Y PROCESAMIENTO -->
         <transition name="pop">
-            <div v-if="preparingPrint" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
+            <div v-if="preparingPrint" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 no-print">
                 <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 max-w-sm text-center">
                     <div class="p-4 bg-pink-50 rounded-full text-[#fa65c3]">
                         <i class="fas fa-spinner fa-spin text-3xl"></i>
@@ -2142,9 +2142,20 @@
                 }
             },
 
-            // PROCESAMIENTO OPTIMIZADO: GENERACIÓN DE PDF, NUBE Y APERTURA DE IMPRESIÓN SIN SATURACIÓN
+            // PROCESAMIENTO OPTIMIZADO: GENERACIÓN DE PDF, NUBE Y APERTURA DE IMPRESIÓN SIN SATURACIÓN Y SIN SOLAPAMIENTO DE MODALES
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
+
+                // Cierre preventivo de cualquier modal activo para evitar solapamientos visuales
+                this.showUnsavedHorarioModal = false;
+                this.showCustomModal = false;
+                this.showEditPagoModal = false;
+                this.showDeletePagoModal = false;
+                this.showEditExamenModal = false;
+                this.showDeleteExamenModal = false;
+                this.showDeleteStudentModal = false;
+                this.showDeleteArchivoModal = false;
+
                 this.savingPago = true;
                 this.preparingPrint = true; // Muestra la pantalla de carga limpia
 
@@ -2721,7 +2732,7 @@
                 }
             } catch(e) {
                 console.error("Error al verificar sesión inicial:", e);
-            } font-bold {
+            } finally {
                 this.checkingSession = false;
             }
         }
