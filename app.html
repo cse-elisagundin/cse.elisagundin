@@ -80,7 +80,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA) -->
     <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
@@ -138,7 +138,7 @@
     <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
-        <!-- OVERLAY DE CARGA Y PROCESAMIENTO -->
+        <!-- OVERLAY DE CARGA PARA PREPARACIÓN DE IMPRESIÓN Y PROCESAMIENTO -->
         <transition name="pop">
             <div v-if="preparingPrint" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 no-print">
                 <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 max-w-sm text-center">
@@ -418,7 +418,7 @@
 
         <div v-if="authenticated" class="flex h-full relative overflow-hidden">
             
-            <!-- BARRA LATERAL DE NAVEGACIÓN -->
+            <!-- BARRA LATERAL -->
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
@@ -458,29 +458,29 @@
                             <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
                         </div>
 
-                        <button @click="ejecutarNavegacionCreateNew" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm">
+                        <button @click="ejecutarNavegacionConGuarda(() => createNew())" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm">
                             <i class="fas fa-plus"></i> <span class="truncate">Nueva Ficha</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionCuadrante" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionConGuarda(() => abrirCuadranteHorarios())" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-th text-purple-600"></i> <span class="truncate">Cuadrante de Horarios</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2 rounded-lg hover:bg-indigo-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionConGuarda(() => abrirGestorExamenes())" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2 rounded-lg hover:bg-indigo-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-calendar-alt text-indigo-600"></i> <span class="truncate">Gestor de Exámenes</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionConGuarda(() => abrirGestorPagos())" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-file-invoice-dollar text-[#fa65c3]"></i> <span class="truncate">Historial Global Pagos</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionExplorador" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionConGuarda(() => abrirExploradorFacturas())" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-folder-open text-[#2b94cc]"></i> <span class="truncate">Explorador de Facturas</span>
                         </button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto overflow-x-hidden">
-                        <div v-for="s in filteredList" :key="s.id" @click="ejecutarNavegacionSelectStudent(s)"
+                        <div v-for="s in filteredList" :key="s.id" @click="ejecutarNavegacionConGuarda(() => selectStudent(s))"
                             class="p-2.5 sm:p-3 border-b hover:bg-blue-50 cursor-pointer transition relative flex items-center"
                             :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
                             <div class="w-full overflow-hidden">
@@ -510,15 +510,11 @@
             <!-- ÁREA PRINCIPAL DERECHA -->
             <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'}">
 
-                <!-- ENCABEZADO MÓVIL ADAPTATIVO -->
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
-                    <button v-if="selected && activeTab !== 'menu'" @click="ejecutarNavegacionMenu" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
-                        <i class="fas fa-arrow-left"></i> Menú Alumno
+                    <button @click="ejecutarNavegacionConGuarda(() => cerrarFicha())" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Volver al listado
                     </button>
-                    <button v-else @click="ejecutarNavegacionCerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
-                        <i class="fas fa-arrow-left"></i> Lista Alumnos
-                    </button>
-                    <span class="text-xs font-semibold truncate max-w-[180px]">
+                    <span class="text-xs font-semibold truncate max-w-[200px]">
                         {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'cuadrante_horarios' ? 'Cuadrante Horarios' : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : (activeTab === 'gestor_pagos' ? 'Historial Pagos' : 'Explorador de Facturas')))) }}
                     </span>
                 </div>
@@ -563,7 +559,7 @@
                             <button @click="imprimirCuadrante" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
                                 <i class="fas fa-print"></i> Imprimir A4
                             </button>
-                            <button @click="ejecutarNavegacionMenu" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
+                            <button @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
                         </div>
                     </div>
 
@@ -719,7 +715,7 @@
                                 <button @click="cargarArchivosNube" class="px-4 py-2 text-xs font-bold text-white bg-[#2b94cc] hover:bg-[#207bb0] rounded-lg shadow transition flex items-center gap-2">
                                     <i class="fas fa-sync-alt"></i> Actualizar
                                 </button>
-                                <button @click="ejecutarNavegacionMenu" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
                             </div>
                         </div>
 
@@ -804,7 +800,7 @@
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
                                 <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
-                                <button @click="ejecutarNavegacionMenu" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
                             </div>
                         </div>
 
@@ -869,7 +865,7 @@
                                 <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-tasks"></i></div>
                                 Gestor Masivo de Exámenes
                             </h2>
-                            <button @click="ejecutarNavegacionMenu" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
+                            <button @click="activeTab = 'menu'" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
                         </div>
                         
                         <div class="p-4 sm:p-8 bg-indigo-50/50 border-b">
@@ -965,11 +961,10 @@
                 <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
-                        <!-- BARRA SUPERIOR DE LA FICHA EN DESKTOP -->
                         <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                             <div class="flex items-center gap-3">
-                                <button v-if="activeTab !== 'menu' && !isNew" @click="ejecutarNavegacionMenu" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
-                                    <i class="fas fa-arrow-left"></i> Volver al menú del alumno
+                                <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
+                                    <i class="fas fa-arrow-left"></i> Volver al menú
                                 </button>
                                 
                                 <div class="flex items-center gap-2">
@@ -995,7 +990,7 @@
                                 <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
                                     <i class="fas fa-trash-alt"></i> Eliminar
                                 </button>
-                                <button @click="ejecutarNavegacionCerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar Ficha</button>
+                                <button @click="cerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar</button>
                                 <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-5 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2 text-xs sm:text-sm">
                                     <i v-if="saving" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
                                     {{ saving ? 'Guardando...' : 'Guardar' }}
@@ -1003,10 +998,29 @@
                             </div>
                         </div>
 
-                        <!-- PANEL PRINCIPAL DE OPCIONES DEL ALUMNO (3 BOTONES) -->
+                        <div class="p-4 border-b flex md:hidden justify-between items-center bg-gray-50">
+                            <button v-if="activeTab !== 'menu'" @click="activeTab = 'menu'" class="text-xs font-bold text-[#2b94cc] bg-blue-50 px-3 py-2 rounded-lg">
+                                <i class="fas fa-arrow-left"></i> Menú Alumno
+                            </button>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button v-if="activeTab === 'ficha' && !isNew && !form.baja" @click="form.baja = true" type="button" class="bg-amber-50 text-amber-700 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-user-minus"></i> Baja
+                                </button>
+                                <button v-if="activeTab === 'ficha' && !isNew && form.baja" @click="form.baja = false" type="button" class="bg-green-50 text-green-700 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-user-check"></i> Alta
+                                </button>
+                                <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold text-xs">
+                                    {{ saving ? 'Guardando...' : 'Guardar' }}
+                                </button>
+                            </div>
+                        </div>
+
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
                             <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
-                            <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre || 'este alumno' }}?</p>
+                            <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre }}?</p>
                             
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
                                 <button @click="activeTab = 'ficha'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
@@ -1014,28 +1028,27 @@
                                         <i class="fas fa-id-card text-3xl"></i>
                                     </div>
                                     <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Ficha Académica</span>
-                                    <span class="text-xs text-gray-500 text-center">Modificar datos personales y familiares.</span>
+                                    <span class="text-xs text-gray-500 text-center">Modificar datos y familiares.</span>
                                 </button>
 
-                                <button @click="abrirSeccionPagos" :disabled="isNew" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all flex flex-col items-center gap-3 group" :class="isNew ? 'opacity-50 cursor-not-allowed' : ''">
+                                <button @click="abrirSeccionPagos" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
                                     <div class="bg-pink-50 p-4 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors">
                                         <i class="fas fa-euro-sign text-3xl px-1"></i>
                                     </div>
                                     <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
-                                    <span class="text-xs text-gray-500 text-center">{{ isNew ? 'Guarda la ficha para habilitar pagos.' : 'Cuotas, cobros y recibos PDF.' }}</span>
+                                    <span class="text-xs text-gray-500 text-center">Cuotas, cobros y recibos PDF.</span>
                                 </button>
 
-                                <button @click="abrirSeccionExamenes" :disabled="isNew" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group" :class="isNew ? 'opacity-50 cursor-not-allowed' : ''">
+                                <button @click="activeTab = 'examenes'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
                                     <div class="bg-indigo-50 p-4 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                         <i class="fas fa-graduation-cap text-3xl"></i>
                                     </div>
                                     <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Exámenes</span>
-                                    <span class="text-xs text-gray-500 text-center">{{ isNew ? 'Guarda la ficha para consultar exámenes.' : 'Consultar calendario y notas.' }}</span>
+                                    <span class="text-xs text-gray-500 text-center">Consultar calendario y notas.</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 1: FICHA DEL ALUMNO -->
                         <form v-if="activeTab === 'ficha'" @submit.prevent="saveData" class="p-4 sm:p-8 space-y-6 flex-1">
                             <div v-if="form.baja" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
                                 <div class="flex items-center gap-3">
@@ -1120,7 +1133,6 @@
                             </section>
                         </form>
 
-                        <!-- SECCIÓN 2: PAGOS DEL ALUMNO -->
                         <div v-if="activeTab === 'pagos'" class="p-4 sm:p-8 space-y-6 bg-gray-50 flex-1">
                             <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
@@ -1293,7 +1305,6 @@
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 3: EXÁMENES DEL ALUMNO -->
                         <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
                             <div class="flex justify-between items-center mb-6">
                                 <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
@@ -1325,7 +1336,6 @@
                     </div>
                 </div>
                 
-                <!-- ESTADO POR DEFECTO SIN SELECCIÓN -->
                 <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center no-print">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
@@ -1511,6 +1521,9 @@
                 const resultadoFinal = {};
                 cursosOrdenados.forEach(c => {
                     resultadoFinal[c] = arbol[c];
+                    if (this.cursoFacturasAbierto[c] === undefined) {
+                        this.cursoFacturasAbierto[c] = true;
+                    }
                 });
                 return resultadoFinal;
             },
@@ -1773,25 +1786,9 @@
                     this.pagosList = resPagos.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
-            
-            // Métodos de navegación limpios para evitar lambdas en el template
-            ejecutarNavegacionMenu() { this.ejecutarNavegacionConGuarda(() => { this.activeTab = 'menu'; }); },
-            ejecutarNavegacionCerrarFicha() { this.ejecutarNavegacionConGuarda(() => { this.cerrarFicha(); }); },
-            ejecutarNavegacionCreateNew() { this.ejecutarNavegacionConGuarda(() => { this.createNew(); }); },
-            ejecutarNavegacionCuadrante() { this.ejecutarNavegacionConGuarda(() => { this.abrirCuadranteHorarios(); }); },
-            ejecutarNavegacionExamenes() { this.ejecutarNavegacionConGuarda(() => { this.abrirGestorExamenes(); }); },
-            ejecutarNavegacionPagos() { this.ejecutarNavegacionConGuarda(() => { this.abrirGestorPagos(); }); },
-            ejecutarNavegacionExplorador() { this.ejecutarNavegacionConGuarda(() => { this.abrirExploradorFacturas(); }); },
-            ejecutarNavegacionSelectStudent(s) { this.ejecutarNavegacionConGuarda(() => { this.selectStudent(s); }); },
-            
             abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
-            abrirSeccionExamenes() {
-                if (!this.isNew) {
-                    this.activeTab = 'examenes';
-                }
-            },
             
             getHorarioSnapshot() {
                 const cleanObj = {};
@@ -2077,11 +2074,6 @@
                             const analisis = this.analizarTextoParaCursoYMes(item.path);
                             cursoVal = analisis.curso;
                             mesVal = analisis.mes;
-                        }
-
-                        // Inicialización segura del estado (fuera de computed)
-                        if (cursoVal && this.cursoFacturasAbierto[cursoVal] === undefined) {
-                            this.cursoFacturasAbierto[cursoVal] = true;
                         }
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
@@ -2390,7 +2382,7 @@
                                     </tr>
                                 </table>
 
-                                <div style="padding:25px 10px 10px 10px; display:flex; justify-style:space-between; align-items:flex-end;">
+                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
                                     <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
                                         NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
                                     </div>
@@ -2483,8 +2475,6 @@
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
             abrirSeccionPagos() {
-                if (this.isNew) return;
-                this.nuevoPago = this.pagoVacio();
                 this.activeTab = 'pagos';
                 if (this.listaMesesDinamicos.length > 0) {
                     this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
@@ -2645,11 +2635,13 @@
                     delete payload.id;
                     payload.baja = Boolean(this.form.baja);
 
+                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
+                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
                     Object.keys(payload).forEach(key => {
                         if (key === 'nacimiento') {
                             if (!payload[key]) payload[key] = null;
                         } else if (typeof payload[key] === 'boolean') {
-                            // mantener booleanos
+                            // conservar booleanos
                         } else {
                             if (payload[key] === null || payload[key] === undefined) {
                                 payload[key] = '';
@@ -2710,7 +2702,6 @@
                         this.showSuccess = false;
                         this.selected = null;
                         this.saving = false;
-                        this.activeTab = 'menu';
                     }, 1800);
                 } catch (e) {
                     console.error("Error inesperado en saveData:", e);
