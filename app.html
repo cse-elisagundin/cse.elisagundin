@@ -458,29 +458,29 @@
                             <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
                         </div>
 
-                        <button @click="ejecutarNavegacionConGuarda(() => createNew())" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm">
+                        <button @click="ejecutarNavegacionCreateNew" class="w-full bg-[#2b94cc] text-white py-2 rounded-lg hover:bg-[#207bb0] font-bold flex items-center justify-center gap-2 text-xs shadow-sm">
                             <i class="fas fa-plus"></i> <span class="truncate">Nueva Ficha</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionConGuarda(() => abrirCuadranteHorarios())" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionCuadrante" class="w-full bg-purple-50 text-purple-800 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-th text-purple-600"></i> <span class="truncate">Cuadrante de Horarios</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionConGuarda(() => abrirGestorExamenes())" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2 rounded-lg hover:bg-indigo-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionExamenes" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 py-2 rounded-lg hover:bg-indigo-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-calendar-alt text-indigo-600"></i> <span class="truncate">Gestor de Exámenes</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionConGuarda(() => abrirGestorPagos())" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionPagos" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-file-invoice-dollar text-[#fa65c3]"></i> <span class="truncate">Historial Global Pagos</span>
                         </button>
 
-                        <button @click="ejecutarNavegacionConGuarda(() => abrirExploradorFacturas())" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
+                        <button @click="ejecutarNavegacionExplorador" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-folder-open text-[#2b94cc]"></i> <span class="truncate">Explorador de Facturas</span>
                         </button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto overflow-x-hidden">
-                        <div v-for="s in filteredList" :key="s.id" @click="ejecutarNavegacionConGuarda(() => selectStudent(s))"
+                        <div v-for="s in filteredList" :key="s.id" @click="ejecutarNavegacionSelectStudent(s)"
                             class="p-2.5 sm:p-3 border-b hover:bg-blue-50 cursor-pointer transition relative flex items-center"
                             :class="[selected && selected.id === s.id ? 'bg-blue-50 border-l-4 border-l-[#fa65c3]' : '', s.baja ? 'opacity-60 bg-gray-50' : '']">
                             <div class="w-full overflow-hidden">
@@ -512,10 +512,10 @@
 
                 <!-- ENCABEZADO MÓVIL ADAPTATIVO -->
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
-                    <button v-if="selected && activeTab !== 'menu'" @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
+                    <button v-if="selected && activeTab !== 'menu'" @click="ejecutarNavegacionMenu" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Menú Alumno
                     </button>
-                    <button v-else @click="ejecutarNavegacionConGuarda(() => cerrarFicha())" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
+                    <button v-else @click="ejecutarNavegacionCerrarFicha" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Lista Alumnos
                     </button>
                     <span class="text-xs font-semibold truncate max-w-[180px]">
@@ -563,7 +563,7 @@
                             <button @click="imprimirCuadrante" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
                                 <i class="fas fa-print"></i> Imprimir A4
                             </button>
-                            <button @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
+                            <button @click="ejecutarNavegacionMenu" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
                         </div>
                     </div>
 
@@ -719,7 +719,7 @@
                                 <button @click="cargarArchivosNube" class="px-4 py-2 text-xs font-bold text-white bg-[#2b94cc] hover:bg-[#207bb0] rounded-lg shadow transition flex items-center gap-2">
                                     <i class="fas fa-sync-alt"></i> Actualizar
                                 </button>
-                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                                <button @click="ejecutarNavegacionMenu" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
                             </div>
                         </div>
 
@@ -804,7 +804,7 @@
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
                                 <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
-                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                                <button @click="ejecutarNavegacionMenu" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
                             </div>
                         </div>
 
@@ -869,7 +869,7 @@
                                 <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-tasks"></i></div>
                                 Gestor Masivo de Exámenes
                             </h2>
-                            <button @click="activeTab = 'menu'" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
+                            <button @click="ejecutarNavegacionMenu" class="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-semibold">Cerrar</button>
                         </div>
                         
                         <div class="p-4 sm:p-8 bg-indigo-50/50 border-b">
@@ -968,7 +968,7 @@
                         <!-- BARRA SUPERIOR DE LA FICHA EN DESKTOP -->
                         <div class="p-4 sm:p-6 border-b hidden md:flex justify-between items-center sticky top-0 z-30 bg-white/95 backdrop-blur">
                             <div class="flex items-center gap-3">
-                                <button v-if="activeTab !== 'menu' && !isNew" @click="activeTab = 'menu'" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
+                                <button v-if="activeTab !== 'menu' && !isNew" @click="ejecutarNavegacionMenu" class="bg-blue-50 text-[#2b94cc] p-2 px-4 rounded-lg hover:bg-blue-100 transition font-bold flex items-center gap-2">
                                     <i class="fas fa-arrow-left"></i> Volver al menú del alumno
                                 </button>
                                 
@@ -995,7 +995,7 @@
                                 <button v-if="activeTab === 'ficha' && !isNew" @click="abrirEliminarAlumno" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
                                     <i class="fas fa-trash-alt"></i> Eliminar
                                 </button>
-                                <button @click="cerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar Ficha</button>
+                                <button @click="ejecutarNavegacionCerrarFicha" class="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-semibold text-xs sm:text-sm">Cerrar Ficha</button>
                                 <button v-if="activeTab === 'ficha'" @click="saveData" :disabled="saving" class="bg-[#25D366] text-white px-5 py-2 rounded-lg hover:bg-[#1faa50] font-bold shadow-lg flex items-center gap-2 text-xs sm:text-sm">
                                     <i v-if="saving" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
                                     {{ saving ? 'Guardando...' : 'Guardar' }}
@@ -1025,7 +1025,7 @@
                                     <span class="text-xs text-gray-500 text-center">{{ isNew ? 'Guarda la ficha para habilitar pagos.' : 'Cuotas, cobros y recibos PDF.' }}</span>
                                 </button>
 
-                                <button @click="if(!isNew) activeTab = 'examenes'" :disabled="isNew" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group" :class="isNew ? 'opacity-50 cursor-not-allowed' : ''">
+                                <button @click="abrirSeccionExamenes" :disabled="isNew" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group" :class="isNew ? 'opacity-50 cursor-not-allowed' : ''">
                                     <div class="bg-indigo-50 p-4 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                         <i class="fas fa-graduation-cap text-3xl"></i>
                                     </div>
@@ -1773,9 +1773,25 @@
                     this.pagosList = resPagos.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
+            
+            // Métodos de navegación limpios para evitar lambdas en el template
+            ejecutarNavegacionMenu() { this.ejecutarNavegacionConGuarda(() => { this.activeTab = 'menu'; }); },
+            ejecutarNavegacionCerrarFicha() { this.ejecutarNavegacionConGuarda(() => { this.cerrarFicha(); }); },
+            ejecutarNavegacionCreateNew() { this.ejecutarNavegacionConGuarda(() => { this.createNew(); }); },
+            ejecutarNavegacionCuadrante() { this.ejecutarNavegacionConGuarda(() => { this.abrirCuadranteHorarios(); }); },
+            ejecutarNavegacionExamenes() { this.ejecutarNavegacionConGuarda(() => { this.abrirGestorExamenes(); }); },
+            ejecutarNavegacionPagos() { this.ejecutarNavegacionConGuarda(() => { this.abrirGestorPagos(); }); },
+            ejecutarNavegacionExplorador() { this.ejecutarNavegacionConGuarda(() => { this.abrirExploradorFacturas(); }); },
+            ejecutarNavegacionSelectStudent(s) { this.ejecutarNavegacionConGuarda(() => { this.selectStudent(s); }); },
+            
             abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
+            abrirSeccionExamenes() {
+                if (!this.isNew) {
+                    this.activeTab = 'examenes';
+                }
+            },
             
             getHorarioSnapshot() {
                 const cleanObj = {};
@@ -2063,6 +2079,7 @@
                             mesVal = analisis.mes;
                         }
 
+                        // Inicialización segura del estado (fuera de computed)
                         if (cursoVal && this.cursoFacturasAbierto[cursoVal] === undefined) {
                             this.cursoFacturasAbierto[cursoVal] = true;
                         }
@@ -2693,6 +2710,7 @@
                         this.showSuccess = false;
                         this.selected = null;
                         this.saving = false;
+                        this.activeTab = 'menu';
                     }, 1800);
                 } catch (e) {
                     console.error("Error inesperado en saveData:", e);
