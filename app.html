@@ -39,7 +39,7 @@
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
 
-            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 210mm; height: 296mm; overflow: hidden; }
+            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm; height: 296mm; overflow: hidden; z-index: 99999 !important; }
             body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 5mm; }
 
             table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
@@ -80,8 +80,8 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA -->
-    <div id="zona-impresion" class="hidden bg-white font-sans">
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA PARA EVITAR DESTELLOS VISUALES) -->
+    <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
 
@@ -2128,7 +2128,7 @@
                 }
             },
 
-            // UNIFICACIÓN DE REGISTRO Y GENERACIÓN DE PDF PARA SUBIR A NUBE
+            // UNIFICACIÓN DE REGISTRO Y GENERACIÓN DE PDF PARA SUBIR A NUBE (CORREGIDO SIN PANTALLAZO)
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
@@ -2143,15 +2143,13 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]).select().single();
 
-                    // 1. Renderiza la plantilla unificada con dimensiones físicas A4
+                    // 1. Renderiza la plantilla unificada
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
                     element.classList.remove('hidden');
                     
-                    // Esperar sincronización de fuentes Google Fonts e imágenes
                     if (document.fonts) { await document.fonts.ready; }
-                    await new Promise(r => setTimeout(r, 200));
 
                     const idSafeForStorage = idFinal.replace(/\//g, '.');
                     const nombreArchivoStorage = idSafeForStorage + '.pdf';
@@ -2164,7 +2162,7 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    // 2. Convierte el HTML oficial en archivo Blob PDF idéntico de 1 página exacta
+                    // 2. Convierte el HTML oficial en archivo Blob PDF idéntico
                     const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                     element.classList.add('hidden');
                     
@@ -2181,15 +2179,15 @@
                     await this.cargarDatosSupabase();
                     this.showSuccess = true;
                     this.successMessage = `¡Pago y PDF subidos a la nube!`;
-                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
+                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
                     
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
                         setTimeout(() => {
                             document.body.classList.remove('is-printing-ticket');
-                        }, 500);
-                    }, 400);
+                        }, 300);
+                    }, 50);
                 } catch(e) {
                     console.error("Error al registrar pago y subir a la nube:", e);
                     this.savingPago = false;
@@ -2220,8 +2218,8 @@
                     window.print();
                     setTimeout(() => {
                         document.body.classList.remove('is-printing-ticket');
-                    }, 500);
-                }, 400);
+                    }, 300);
+                }, 100);
             },
             reimprimirPagoHistoricoGlobal(pago) {
                 this.reimprimirPagoHistorico(pago);
