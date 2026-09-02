@@ -34,13 +34,13 @@
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
         @media print {
-            @page { size: A4 portrait; margin: 5mm; }
+            @page { size: A4 portrait; margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
 
-            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
-            body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
+            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; }
+            body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 5mm; }
 
             table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
             table.tabla-horario-print td {
@@ -80,7 +80,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (PLANTILLA OFICIAL ÚNICA DE RECIBOS) -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (PLANTILLA OFICIAL ÚNICA DE RECIBOS Y FACTURAS PDF) -->
     <div id="zona-impresion" class="hidden bg-white font-sans">
         <div id="ticket-data"></div>
     </div>
@@ -2071,59 +2071,69 @@
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
-                const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
-                const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
-                const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
-                
-                const { data: insertedPago } = await _supabase.from('pagos').insert([{
-                    factura_id: idFinal, alumno: alumnoNombre,
-                    tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
-                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
-                }]).select().single();
+                try {
+                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                    const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
+                    const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
+                    
+                    const { data: insertedPago } = await _supabase.from('pagos').insert([{
+                        factura_id: idFinal, alumno: alumnoNombre,
+                        tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                        fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
+                    }]).select().single();
 
-                // 1. Renderiza la plantilla exactamente con los estilos inline unificados
-                this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
-                
-                const element = document.getElementById('zona-impresion');
-                element.classList.remove('hidden');
-                
-                const idSafeForStorage = idFinal.replace(/\//g, '.');
-                const nombreArchivoStorage = idSafeForStorage + '.pdf';
-                
-                const opt = { 
-                    margin: [5, 5, 5, 5], 
-                    filename: `${idSafeForStorage}.pdf`, 
-                    image: { type: 'jpeg', quality: 0.98 }, 
-                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 800 }, 
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-                };
-                
-                // 2. Convierte el HTML oficial en archivo Blob PDF
-                const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
-                element.classList.add('hidden');
-                
-                const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
-                const cursoPath = parsedMonth.cursoKey.replace('/', '-');
-                const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
+                    // 1. Renderiza la plantilla unificada con dimensiones físicas A4
+                    this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
+                    
+                    const element = document.getElementById('zona-impresion');
+                    element.classList.remove('hidden');
+                    
+                    // Esperar sincronización de fuentes Google Fonts e imágenes
+                    if (document.fonts) { await document.fonts.ready; }
+                    await new Promise(r => setTimeout(r, 200));
 
-                const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
+                    const idSafeForStorage = idFinal.replace(/\//g, '.');
+                    const nombreArchivoStorage = idSafeForStorage + '.pdf';
+                    
+                    const opt = { 
+                        margin: 0, 
+                        filename: `${idSafeForStorage}.pdf`, 
+                        image: { type: 'jpeg', quality: 0.98 }, 
+                        html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                    };
+                    
+                    // 2. Convierte el HTML oficial en archivo Blob PDF identico
+                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+                    element.classList.add('hidden');
+                    
+                    const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
+                    const cursoPath = parsedMonth.cursoKey.replace('/', '-');
+                    const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
 
-                // 3. Sube la factura unificada a Supabase Storage
-                await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
-                if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
+                    const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
-                await this.cargarDatosSupabase();
-                this.showSuccess = true;
-                this.successMessage = `¡Pago y PDF subidos a la nube!`;
-                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
-                
-                document.body.classList.add('is-printing-ticket');
-                setTimeout(() => {
-                    window.print();
+                    // 3. Sube la factura unificada a Supabase Storage
+                    await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                    if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = `¡Pago y PDF subidos a la nube!`;
+                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 3000);
+                    
+                    document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
-                        document.body.classList.remove('is-printing-ticket');
-                    }, 500);
-                }, 400);
+                        window.print();
+                        setTimeout(() => {
+                            document.body.classList.remove('is-printing-ticket');
+                        }, 500);
+                    }, 400);
+                } catch(e) {
+                    console.error("Error al registrar pago y subir a la nube:", e);
+                    this.savingPago = false;
+                    alert("Error al procesar el pago y el PDF.");
+                }
             },
             async registrarPagoSolo() {
                 if (!this.form || !this.form.nombre) return;
@@ -2190,7 +2200,7 @@
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
 
-            // GENERADOR DE RECIBOS Y FACTURAS UNIFICADO (PLANTILLA OFICIAL)
+            // GENERADOR DE RECIBOS Y FACTURAS UNIFICADO (PLANTILLA OFICIAL A4 RÍGIDA)
             generarReciboHTML(datos, alumnoNombre) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = datos.fecha ? new Date(datos.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
@@ -2225,8 +2235,8 @@
                 </svg>`;
 
                 document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family:'Outfit', 'Helvetica', sans-serif; margin:0; padding:15px; color:#000; background:#fff; box-sizing:border-box;">
-                        <div style="border:2px solid #000; width:100%; position:relative; min-height:980px; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:20px; box-sizing:border-box;">
+                    <div style="font-family:'Outfit', Arial, sans-serif; margin:0 auto; padding:0; color:#000; background:#fff; box-sizing:border-box; width:210mm; min-height:297mm; position:relative;">
+                        <div style="border:2px solid #000; width:100%; min-height:280mm; position:relative; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:15mm;">
                             
                             <!-- MARCA DE AGUA CENTRAL -->
                             <img src="${logoUrl}" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:320px; opacity:0.04; filter:grayscale(100%); pointer-events:none; z-index:0;" />
