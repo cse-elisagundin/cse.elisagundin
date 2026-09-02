@@ -80,7 +80,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA) -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA -->
     <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
@@ -1003,7 +1003,7 @@
                             </div>
                         </div>
 
-                        <!-- PANEL PRINCIPAL DE OPCIONES DEL ALUMNO (TABLA DE 3 BOTONES) -->
+                        <!-- PANEL PRINCIPAL DE OPCIONES DEL ALUMNO (3 BOTONES) -->
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
                             <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
                             <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre || 'este alumno' }}?</p>
@@ -1325,7 +1325,7 @@
                     </div>
                 </div>
                 
-                <!-- ESTADO POR DEFECTO CUANDO NO HAY SELECCIÓN EN DESKTOP -->
+                <!-- ESTADO POR DEFECTO SIN SELECCIÓN -->
                 <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center no-print">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
@@ -1511,9 +1511,6 @@
                 const resultadoFinal = {};
                 cursosOrdenados.forEach(c => {
                     resultadoFinal[c] = arbol[c];
-                    if (this.cursoFacturasAbierto[c] === undefined) {
-                        this.cursoFacturasAbierto[c] = true;
-                    }
                 });
                 return resultadoFinal;
             },
@@ -2066,6 +2063,10 @@
                             mesVal = analisis.mes;
                         }
 
+                        if (cursoVal && this.cursoFacturasAbierto[cursoVal] === undefined) {
+                            this.cursoFacturasAbierto[cursoVal] = true;
+                        }
+
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
                         return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl };
                     });
@@ -2372,7 +2373,7 @@
                                     </tr>
                                 </table>
 
-                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
+                                <div style="padding:25px 10px 10px 10px; display:flex; justify-style:space-between; align-items:flex-end;">
                                     <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
                                         NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
                                     </div>
@@ -2627,7 +2628,6 @@
                     delete payload.id;
                     payload.baja = Boolean(this.form.baja);
 
-                    // Convertir cadenas vacías o valores nulos no obligatorios a "" para evitar errores NOT NULL en Supabase
                     Object.keys(payload).forEach(key => {
                         if (key === 'nacimiento') {
                             if (!payload[key]) payload[key] = null;
