@@ -39,7 +39,7 @@
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
 
-            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; }
+            body.is-printing-ticket #zona-impresion { display: block !important; position: absolute; left: 0; top: 0; width: 210mm; height: 296mm; overflow: hidden; }
             body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 5mm; }
 
             table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
@@ -2103,7 +2103,7 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    // 2. Convierte el HTML oficial en archivo Blob PDF identico
+                    // 2. Convierte el HTML oficial en archivo Blob PDF idéntico de 1 página exacta
                     const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                     element.classList.add('hidden');
                     
@@ -2230,13 +2230,9 @@
                     conceptoTitulo = `Mensualidad de ${mesLower || 'clase'}`;
                 }
 
-                const signatureSvg = `<svg width="85" height="35" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 32 C 18 12, 28 42, 38 18 C 48 6, 52 34, 62 22 C 72 12, 78 32, 88 18" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-                </svg>`;
-
                 document.getElementById('ticket-data').innerHTML = `
-                    <div style="font-family:'Outfit', Arial, sans-serif; margin:0 auto; padding:0; color:#000; background:#fff; box-sizing:border-box; width:210mm; min-height:297mm; position:relative;">
-                        <div style="border:2px solid #000; width:100%; min-height:280mm; position:relative; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:15mm;">
+                    <div style="font-family:'Outfit', Arial, sans-serif; margin:0 auto; padding:0; color:#000; background:#fff; box-sizing:border-box; width:210mm; height:296mm; position:relative; overflow:hidden;">
+                        <div style="border:2px solid #000; width:100%; height:290mm; position:relative; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:12mm;">
                             
                             <!-- MARCA DE AGUA CENTRAL -->
                             <img src="${logoUrl}" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:320px; opacity:0.04; filter:grayscale(100%); pointer-events:none; z-index:0;" />
@@ -2309,15 +2305,13 @@
                                     </tr>
                                 </table>
 
-                                <!-- NOTA Y FIRMA -->
+                                <!-- NOTA Y FIRMA EN BLANCO -->
                                 <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
                                     <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
                                         NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
                                     </div>
-                                    <div style="text-align:center;">
-                                        <div style="display:inline-block; margin-bottom:-8px;">
-                                            ${signatureSvg}
-                                        </div>
+                                    <div style="text-align:center; min-width:180px;">
+                                        <div style="height:45px;"></div>
                                         <div style="font-size:10px; color:#000; font-family:monospace; letter-spacing:-1px;">--------------------------------------------------</div>
                                         <div style="font-size:10px; font-weight:800; color:#000; text-transform:uppercase; margin-top:2px;">FDO. CSE ELISA GUNDÍN</div>
                                     </div>
