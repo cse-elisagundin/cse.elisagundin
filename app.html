@@ -195,6 +195,28 @@
             </div>
         </transition>
 
+        <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR FACTURA DE LA NUBE -->
+        <transition name="pop">
+            <div v-if="showDeleteArchivoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-500 p-3 rounded-full text-xl"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Eliminar Factura de la Nube</h3>
+                            <p class="text-xs text-gray-400 font-semibold">Esta acción borrará el archivo de Supabase Storage</p>
+                        </div>
+                    </div>
+                    <p class="text-[#243c7a] text-sm font-medium">
+                        ¿Estás seguro de eliminar el archivo <strong class="text-red-600">{{ archivoAEliminarNube?.displayName }}</strong>?
+                    </p>
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showDeleteArchivoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="ejecutarEliminarArchivoNube" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="pop">
             <div v-if="showEditExamenModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
@@ -738,6 +760,7 @@
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
                                                         <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                                        <button @click="abrirEliminarArchivoNube(archivo)" title="Eliminar de la nube" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg border border-red-200 shadow-sm transition"><i class="fas fa-trash-alt text-xs"></i></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1359,6 +1382,8 @@
                 editExamenForm: {},
                 examenAEliminar: null,
                 showDeleteStudentModal: false,
+                showDeleteArchivoModal: false,
+                archivoAEliminarNube: null,
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
                 searchPagosGlobal: '',
@@ -2067,6 +2092,42 @@
                 return total;
             },
 
+            abrirEliminarArchivoNube(archivo) {
+                this.archivoAEliminarNube = archivo;
+                this.showDeleteArchivoModal = true;
+            },
+
+            async ejecutarEliminarArchivoNube() {
+                if (!this.archivoAEliminarNube) return;
+                try {
+                    const pathBuscado = this.archivoAEliminarNube.path;
+
+                    // 1. Eliminación física en Supabase Storage
+                    const { error } = await _supabase.storage.from('facturas').remove([pathBuscado]);
+                    if (error) throw error;
+
+                    // 2. Limpieza de vínculo en la tabla 'pagos' de Supabase
+                    const pagoVinculado = this.pagosList.find(p => p.archivo_url === pathBuscado);
+                    if (pagoVinculado) {
+                        await _supabase.from('pagos').update({ archivo_url: null }).eq('id', pagoVinculado.id);
+                    }
+
+                    this.showDeleteArchivoModal = false;
+                    this.archivoAEliminarNube = null;
+
+                    // 3. Recargar explorador y datos globales
+                    await this.cargarArchivosNube();
+                    await this.cargarDatosSupabase();
+
+                    this.showSuccess = true;
+                    this.successMessage = 'Factura eliminada de la nube';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error al eliminar archivo de la nube:", e);
+                    alert("No se pudo eliminar el archivo de la nube.");
+                }
+            },
+
             // UNIFICACIÓN DE REGISTRO Y GENERACIÓN DE PDF PARA SUBIR A NUBE
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
@@ -2636,7 +2697,7 @@
                 }
             } catch(e) {
                 console.error("Error al verificar sesión inicial:", e);
-            } finally {
+            } font-bold {
                 this.checkingSession = false;
             }
         }
