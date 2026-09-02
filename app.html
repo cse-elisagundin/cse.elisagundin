@@ -1107,7 +1107,7 @@
                                     <div class="space-y-3">
                                         <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
                                         <select v-model="form.fam1_relacion" class="w-full p-2.5 border rounded bg-white">
-                                            <option value="" disabled>Relación...</option>
+                                            <option value="">Relación...</option>
                                             <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
                                         </select>
                                         <div class="flex gap-2">
@@ -1121,7 +1121,7 @@
                                     <div class="space-y-3">
                                         <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
                                         <select v-model="form.fam2_relacion" class="w-full p-2.5 border rounded bg-white">
-                                            <option value="" disabled>Relación...</option>
+                                            <option value="">Relación...</option>
                                             <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
                                         </select>
                                         <div class="flex gap-2">
@@ -2004,7 +2004,6 @@
                 this.savingHorario = false;
             },
 
-            // --- EXPLORADOR DE FACTURAS EN LA NUBE ---
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
@@ -2116,11 +2115,9 @@
                 try {
                     const pathBuscado = this.archivoAEliminarNube.path;
 
-                    // 1. Eliminación física en Supabase Storage
                     const { error } = await _supabase.storage.from('facturas').remove([pathBuscado]);
                     if (error) throw error;
 
-                    // 2. Limpieza de vínculo en la tabla 'pagos' de Supabase
                     const pagoVinculado = this.pagosList.find(p => p.archivo_url === pathBuscado);
                     if (pagoVinculado) {
                         await _supabase.from('pagos').update({ archivo_url: null }).eq('id', pagoVinculado.id);
@@ -2129,7 +2126,6 @@
                     this.showDeleteArchivoModal = false;
                     this.archivoAEliminarNube = null;
 
-                    // 3. Recargar explorador y datos globales
                     await this.cargarArchivosNube();
                     await this.cargarDatosSupabase();
 
@@ -2142,11 +2138,9 @@
                 }
             },
 
-            // PROCESAMIENTO OPTIMIZADO: GENERACIÓN DE PDF, NUBE Y APERTURA DE IMPRESIÓN SIN SATURACIÓN Y SIN SOLAPAMIENTO DE MODALES
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
 
-                // Cierre preventivo de cualquier modal activo para evitar solapamientos visuales
                 this.showUnsavedHorarioModal = false;
                 this.showCustomModal = false;
                 this.showEditPagoModal = false;
@@ -2157,7 +2151,7 @@
                 this.showDeleteArchivoModal = false;
 
                 this.savingPago = true;
-                this.preparingPrint = true; // Muestra la pantalla de carga limpia
+                this.preparingPrint = true;
 
                 try {
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
@@ -2170,7 +2164,6 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]).select().single();
 
-                    // 1. Renderiza la plantilla HTML
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -2189,7 +2182,6 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    // 2. Convierte el HTML en PDF Blob en segundo plano
                     const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                     element.classList.add('hidden');
                     
@@ -2199,19 +2191,16 @@
 
                     const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
-                    // 3. Sube la factura a Supabase Storage
                     await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                     if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
 
                     await this.cargarDatosSupabase();
 
-                    // 4. Pausa de liberación para que la CPU del navegador se recupere completamente del canvas
                     await new Promise(resolve => setTimeout(resolve, 250));
 
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    // 5. Invocación limpia y fluida del cuadro de impresión
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
@@ -2296,7 +2285,6 @@
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
 
-            // GENERADOR DE RECIBOS Y FACTURAS UNIFICADO (PLANTILLA OFICIAL A4 RÍGIDA)
             generarReciboHTML(datos, alumnoNombre) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = datos.fecha ? new Date(datos.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
@@ -2330,11 +2318,9 @@
                     <div style="font-family:'Outfit', Arial, sans-serif; margin:0 auto; padding:0; color:#000; background:#fff; box-sizing:border-box; width:210mm; height:296mm; position:relative; overflow:hidden;">
                         <div style="border:2px solid #000; width:100%; height:290mm; position:relative; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:12mm;">
                             
-                            <!-- MARCA DE AGUA CENTRAL -->
                             <img src="${logoUrl}" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:320px; opacity:0.04; filter:grayscale(100%); pointer-events:none; z-index:0;" />
 
                             <div style="position:relative; z-index:1;">
-                                <!-- CABECERA DE LA EMPRESA -->
                                 <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
                                     <tr>
                                         <td style="padding:0; vertical-align:middle;">
@@ -2348,7 +2334,6 @@
                                     </tr>
                                 </table>
 
-                                <!-- METADATOS DEL RECIBO -->
                                 <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000; margin-bottom:0;">
                                     <tr>
                                         <td style="padding:8px 10px; width:33%; border-right:1px solid #000;">
@@ -2366,13 +2351,11 @@
                                     </tr>
                                 </table>
 
-                                <!-- DATOS DEL CLIENTE -->
                                 <div style="border-bottom:2px solid #000; padding:12px 10px; background:#fff;">
                                     <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">RECIBÍ DE:</div>
                                     <div style="font-size:16px; font-weight:900; color:#000; text-transform:uppercase; margin-top:3px; letter-spacing:0.5px;">${nombreFinal}</div>
                                 </div>
 
-                                <!-- ENCABEZADO TABLA DE CONCEPTOS -->
                                 <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #000;">
                                     <tr>
                                         <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">CONCEPTO</td>
@@ -2380,7 +2363,6 @@
                                     </tr>
                                 </table>
 
-                                <!-- CUERPO Y CONCEPTO -->
                                 <table style="width:100%; border-collapse:collapse; min-height:160px;">
                                     <tr>
                                         <td style="padding:15px 10px; vertical-align:top;">
@@ -2393,7 +2375,6 @@
                                     </tr>
                                 </table>
 
-                                <!-- TOTAL EUROS -->
                                 <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000;">
                                     <tr>
                                         <td style="padding:12px 10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">TOTAL EUROS</td>
@@ -2401,7 +2382,6 @@
                                     </tr>
                                 </table>
 
-                                <!-- NOTA Y FIRMA EN BLANCO -->
                                 <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
                                     <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
                                         NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
@@ -2414,7 +2394,6 @@
                                 </div>
                             </div>
 
-                            <!-- LEYENDA LOPD EN PIE DE PÁGINA -->
                             <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
                                 PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
                             </div>
@@ -2656,9 +2635,17 @@
                     delete payload.id;
                     payload.baja = Boolean(this.form.baja);
 
+                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
+                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
                     Object.keys(payload).forEach(key => {
-                        if (payload[key] === '' || payload[key] === undefined) {
-                            payload[key] = null;
+                        if (key === 'nacimiento') {
+                            if (!payload[key]) payload[key] = null;
+                        } else if (typeof payload[key] === 'boolean') {
+                            // conservar booleanos
+                        } else {
+                            if (payload[key] === null || payload[key] === undefined) {
+                                payload[key] = '';
+                            }
                         }
                     });
 
