@@ -1314,7 +1314,7 @@
     const { createApp } = Vue;
 
     const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6210332540100.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const monthOrder = {
@@ -1714,25 +1714,35 @@
                 if (!this.loginEmail || !this.loginPassword) return;
                 this.loading = true;
                 this.loginError = false;
-                const { data, error } = await _supabase.auth.signInWithPassword({ email: this.loginEmail, password: this.loginPassword });
-                if (error) {
+                try {
+                    const { data, error } = await _supabase.auth.signInWithPassword({ email: this.loginEmail, password: this.loginPassword });
+                    if (error) {
+                        this.loginError = true;
+                        this.errorMsg = 'Credenciales inválidas.';
+                        this.loading = false;
+                        return;
+                    }
+                    await this.cargarDatosSupabase();
+                    this.authenticated = true;
+                } catch(e) {
+                    console.error("Error en login:", e);
                     this.loginError = true;
-                    this.errorMsg = 'Credenciales inválidas.';
+                    this.errorMsg = 'Error al conectar con el servidor.';
+                } finally {
                     this.loading = false;
-                    return;
                 }
-                await this.cargarDatosSupabase();
-                this.authenticated = true;
-                this.loading = false;
             },
             async cargarDatosSupabase() {
                 try {
                     const resAlumnos = await _supabase.from('listado_alumnos').select('*');
                     this.list = (resAlumnos.data || []).sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
+                    
                     const resEx = await _supabase.from('examenes').select('*');
                     this.examenesList = resEx.data || [];
+                    
                     const resFijos = await _supabase.from('ingresos_fijos').select('*');
                     this.ingresosFijosList = resFijos.data || [];
+                    
                     const resPagos = await _supabase.from('pagos').select('*');
                     this.pagosList = resPagos.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
@@ -2614,17 +2624,19 @@
             }
         },
         async mounted() {
-            const { data } = await _supabase.auth.getSession();
-            if (data.session) {
-                this.authenticated = true;
-                await this.cargarDatosSupabase();
+            try {
+                const { data } = await _supabase.auth.getSession();
+                if (data && data.session) {
+                    this.authenticated = true;
+                    await this.cargarDatosSupabase();
+                }
+            } catch(e) {
+                console.error("Error al verificar sesión inicial:", e);
+            } finally {
+                this.checkingSession = false;
             }
-            this.checkingSession = false;
         }
     }).mount('#app');
 </script>
 </body>
 </html>
-```eof
-
-El código ha sido generado. Puedes verificar que la plantilla de recibo queda ahora perfectamente unificada para ambas vías de emisión y que el resto del sistema opera con normalidad.
