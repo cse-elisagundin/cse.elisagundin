@@ -80,7 +80,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (PLANTILLA OFICIAL ÚNICA DE RECIBOS Y FACTURAS PDF) -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA -->
     <div id="zona-impresion" class="hidden bg-white font-sans">
         <div id="ticket-data"></div>
     </div>
@@ -2697,7 +2697,7 @@
                 }
             } catch(e) {
                 console.error("Error al verificar sesión inicial:", e);
-            } font-bold {
+            } finally {
                 this.checkingSession = false;
             }
         }
