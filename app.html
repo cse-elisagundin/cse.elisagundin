@@ -33,7 +33,6 @@
         .loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #e0e7ff; overflow: hidden; }
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
-        /* REGLAS DE IMPRESIÓN EN A4 HORIZONTAL Y TICKET */
         @media print {
             @page { size: A4 portrait; margin: 5mm; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -65,7 +64,7 @@
         .date-col .day-num { font-size: 24px; font-weight: 900; color: var(--c-primary); line-height: 1; }
         .date-col .day-name { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: 2px; }
         .exams-col { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .exam-pill { border-left: 4px solid var(--c-[#243c7a]); padding: 6px 12px; border-radius: 8px; background: white; min-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
+        .exam-pill { border-left: 4px solid var(--c-primary); padding: 6px 12px; border-radius: 8px; background: white; min-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: inline-flex; flex-direction: column; position: relative; }
         .pill-subject { font-size: 10px; font-weight: 800; color: var(--c-accent); text-transform: uppercase; margin-bottom: 2px; }
         .pill-student { font-size: 13px; font-weight: 700; color: #333; }
 
@@ -81,12 +80,12 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN AISLADA PARA TICKETS DE PAGO (PLANTILLA EXACTA A LA IMAGEN ADJUNTADA) -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (PLANTILLA OFICIAL ÚNICA DE RECIBOS) -->
     <div id="zona-impresion" class="hidden bg-white font-sans">
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN AISLADA PARA EL CUADRANTE DE HORARIOS (A4 LANDSCAPE 7 COLUMNAS) -->
+    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
     <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
         <div class="flex items-end justify-between mb-3">
             <div>
@@ -132,15 +131,13 @@
                 </div>
             </div>
 
-            <div class="col-span-6 h-[420px]">
-            </div>
+            <div class="col-span-6 h-[420px]"></div>
         </div>
     </div>
 
     <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
-        <!-- NOTIFICACIONES Y MODALES -->
         <transition name="pop">
             <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none p-4 no-print">
                 <div class="bg-white px-6 py-5 rounded-2xl shadow-2xl border-l-8 border-[#25D366] flex flex-col items-center gap-3 min-w-[280px]">
@@ -151,7 +148,6 @@
             </div>
         </transition>
 
-        <!-- MODAL: ADVERTENCIA DE CAMBIOS SIN GUARDAR EN HORARIO -->
         <transition name="pop">
             <div v-if="showUnsavedHorarioModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -163,7 +159,7 @@
                         </div>
                     </div>
                     <p class="text-gray-600 text-sm font-medium leading-relaxed">
-                        Si cambias de día, de fecha o de sección sin guardar, <strong>perderás las modificaciones hechas en la sesión actual</strong>. ¿Qué deseas hacer?
+                        Si cambias de día, de fecha o de sección sin guardar, <strong>perderás las modificaciones hechas</strong>. ¿Qué deseas hacer?
                     </p>
                     <div class="flex flex-col gap-2.5 pt-2 border-t">
                         <button @click="confirmGuardarYContinuarHorario" class="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#1faa50] text-white font-bold shadow transition flex items-center justify-center gap-2">
@@ -180,7 +176,6 @@
             </div>
         </transition>
 
-        <!-- MODAL PARA ELIMINAR FICHA DE ALUMNO -->
         <transition name="pop">
             <div v-if="showDeleteStudentModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -191,7 +186,7 @@
                             <p class="text-xs text-gray-400 font-semibold">Esta acción es irreversible</p>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar permanentemente a <strong class="text-[#243c7a]">{{ selected?.nombre }} {{ selected?.apellidos }}</strong> del sistema?</p>
+                    <p class="text-gray-600 text-sm font-medium">¿Estás seguro de eliminar permanentemente a <strong class="text-[#243c7a]">{{ selected?.nombre }} {{ selected?.apellidos }}</strong>?</p>
                     <div class="flex gap-3 pt-3 border-t">
                         <button @click="showDeleteStudentModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
                         <button @click="ejecutarEliminarAlumno" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
@@ -488,9 +483,8 @@
                     </span>
                 </div>
 
-                <!-- MÓDULO DEL CUADRANTE DE HORARIOS -->
+                <!-- CUADRANTE DE HORARIOS -->
                 <div v-if="activeTab === 'cuadrante_horarios' && !selected" class="flex-1 flex flex-col overflow-hidden animate-fade">
-                    
                     <div class="no-print bg-white p-3 sm:p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="bg-purple-100 p-2 rounded-lg text-purple-800"><i class="fas fa-th text-xl"></i></div>
@@ -519,7 +513,7 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button v-if="modoVistaHorario === 'diario'" @click="copiarDesdePlantillaHorario" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5" title="Restablecer con la plantilla base">
+                            <button v-if="modoVistaHorario === 'diario'" @click="copiarDesdePlantillaHorario" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5">
                                 <i class="fas fa-sync-alt"></i> Cargar Plantilla
                             </button>
                             <button @click="guardarHorarioEnSupabase" :disabled="savingHorario" class="bg-[#25D366] hover:bg-[#1faa50] text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 disabled:opacity-50">
@@ -670,7 +664,7 @@
                     </div>
                 </div>
 
-                <!-- EXPLORADOR DE FACTURAS -->
+                <!-- EXPLORADOR DE FACTURAS EN LA NUBE -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -678,7 +672,7 @@
                                 <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
                                 <div>
                                     <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Tus facturas originales vinculadas con Supabase</p>
+                                    <p class="text-xs text-gray-400 font-semibold">Facturas originales sincronizadas con Supabase Storage</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -782,7 +776,7 @@
                         </div>
 
                         <div v-if="pagosFiltradosGlobal.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron pagos registrados con ese criterio.
+                            No se encontraron pagos registrados.
                         </div>
                         <div v-else class="overflow-x-auto">
                             <table class="w-full border-collapse text-xs min-w-[600px]">
@@ -949,10 +943,10 @@
                             </div>
 
                             <div class="flex items-center gap-3">
-                                <button v-if="activeTab === 'ficha' && !isNew && !form.baja" @click="form.baja = true" type="button" class="bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition" title="Marcar alumno como inactivo">
+                                <button v-if="activeTab === 'ficha' && !isNew && !form.baja" @click="form.baja = true" type="button" class="bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
                                     <i class="fas fa-user-minus"></i> Dar de baja
                                 </button>
-                                <button v-if="activeTab === 'ficha' && !isNew && form.baja" @click="form.baja = false" type="button" class="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition" title="Reactivar alumno">
+                                <button v-if="activeTab === 'ficha' && !isNew && form.baja" @click="form.baja = false" type="button" class="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition">
                                     <i class="fas fa-user-check"></i> Dar de alta
                                 </button>
 
@@ -1019,7 +1013,6 @@
                         </div>
 
                         <form v-if="activeTab === 'ficha'" @submit.prevent="saveData" class="p-4 sm:p-8 space-y-6 flex-1">
-                            
                             <div v-if="form.baja" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <div class="bg-amber-100 text-amber-800 p-2.5 rounded-xl"><i class="fas fa-user-slash text-lg"></i></div>
@@ -1321,7 +1314,7 @@
     const { createApp } = Vue;
 
     const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6210332540100.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const monthOrder = {
@@ -1748,7 +1741,6 @@
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
             
-            // --- GESTIÓN DE HORARIO Y PROTECCIÓN DE CAMBIOS SIN GUARDAR ---
             getHorarioSnapshot() {
                 const cleanObj = {};
                 Object.keys(this.gridHorario).sort().forEach(k => {
@@ -1963,7 +1955,7 @@
                 this.savingHorario = false;
             },
 
-            // --- NUBE Y EXPLORADOR DE FACTURAS ---
+            // --- EXPLORADOR DE FACTURAS EN LA NUBE ---
             async cargarArchivosNube() {
                 this.loadingArchivos = true;
                 try {
@@ -2064,6 +2056,8 @@
                 for (const m in mesesObj) total += mesesObj[m].length;
                 return total;
             },
+
+            // UNIFICACIÓN DE REGISTRO Y GENERACIÓN DE PDF PARA SUBIR A NUBE
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
@@ -2077,6 +2071,7 @@
                     fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                 }]).select().single();
 
+                // 1. Renderiza la plantilla exactamente con los estilos inline unificados
                 this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                 
                 const element = document.getElementById('zona-impresion');
@@ -2086,13 +2081,14 @@
                 const nombreArchivoStorage = idSafeForStorage + '.pdf';
                 
                 const opt = { 
-                    margin: 0, 
+                    margin: [5, 5, 5, 5], 
                     filename: `${idSafeForStorage}.pdf`, 
                     image: { type: 'jpeg', quality: 0.98 }, 
-                    html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 800 }, 
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 };
                 
+                // 2. Convierte el HTML oficial en archivo Blob PDF
                 const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                 element.classList.add('hidden');
                 
@@ -2102,6 +2098,7 @@
 
                 const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
+                // 3. Sube la factura unificada a Supabase Storage
                 await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                 if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
 
@@ -2183,7 +2180,7 @@
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
 
-            // --- GENERADOR DE RECIBOS Y FACTURAS PDF (RÉPLICA EXACTA A LA IMAGEN) ---
+            // GENERADOR DE RECIBOS Y FACTURAS UNIFICADO (PLANTILLA OFICIAL)
             generarReciboHTML(datos, alumnoNombre) {
                 const numRecibo = datos.id || `S/N`;
                 const fechaE = datos.fecha ? new Date(datos.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
@@ -2193,7 +2190,6 @@
                 let totalVal = parseFloat(datos.importe || 0);
                 if (isNaN(totalVal)) totalVal = 0;
                 const totalFormatted = totalVal.toFixed(2).replace('.', ',') + " €";
-                const totalEnteroFormat = Math.round(totalVal) + " €";
 
                 let mesRaw = datos.mes || '';
                 let mesNombre = mesRaw.split(' ')[0] || '';
@@ -2209,9 +2205,9 @@
                     conceptoTitulo = `Mensualidad de ${mesLower || 'este mes'}`;
                     conceptoSubtitulo = `${extrasLimpio} (${conceptoSubtitulo})`;
                 } else if (tarifaLimpia) {
-                    conceptoTitulo = `Mensualidad ${mesLower} (${totalEnteroFormat})`;
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'este mes'}`;
                 } else {
-                    conceptoTitulo = `Mensualidad ${mesLower || 'de clase'}`;
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'clase'}`;
                 }
 
                 const signatureSvg = `<svg width="85" height="35" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2240,7 +2236,7 @@
                                     </tr>
                                 </table>
 
-                                <!-- FILA 1: METADATOS DEL RECIBO -->
+                                <!-- METADATOS DEL RECIBO -->
                                 <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000; margin-bottom:0;">
                                     <tr>
                                         <td style="padding:8px 10px; width:33%; border-right:1px solid #000;">
@@ -2258,13 +2254,13 @@
                                     </tr>
                                 </table>
 
-                                <!-- FILA 2: DATOS DEL CLIENTE -->
+                                <!-- DATOS DEL CLIENTE -->
                                 <div style="border-bottom:2px solid #000; padding:12px 10px; background:#fff;">
                                     <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">RECIBÍ DE:</div>
                                     <div style="font-size:16px; font-weight:900; color:#000; text-transform:uppercase; margin-top:3px; letter-spacing:0.5px;">${nombreFinal}</div>
                                 </div>
 
-                                <!-- FILA 3: ENCABEZADO TABLA DE CONCEPTOS -->
+                                <!-- ENCABEZADO TABLA DE CONCEPTOS -->
                                 <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #000;">
                                     <tr>
                                         <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">CONCEPTO</td>
@@ -2272,7 +2268,7 @@
                                     </tr>
                                 </table>
 
-                                <!-- FILA 4: CUERPO Y CONCEPTO -->
+                                <!-- CUERPO Y CONCEPTO -->
                                 <table style="width:100%; border-collapse:collapse; min-height:160px;">
                                     <tr>
                                         <td style="padding:15px 10px; vertical-align:top;">
@@ -2280,12 +2276,12 @@
                                             <div style="font-size:11px; font-style:italic; color:#555; margin-top:4px;">${conceptoSubtitulo}</div>
                                         </td>
                                         <td style="padding:15px 10px; text-align:right; vertical-align:top; font-size:15px; font-weight:900; color:#000; width:120px; white-space:nowrap;">
-                                            ${totalEnteroFormat}
+                                            ${Math.round(totalVal)} €
                                         </td>
                                     </tr>
                                 </table>
 
-                                <!-- FILA 5: TOTAL EUROS -->
+                                <!-- TOTAL EUROS -->
                                 <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000;">
                                     <tr>
                                         <td style="padding:12px 10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">TOTAL EUROS</td>
@@ -2293,8 +2289,8 @@
                                     </tr>
                                 </table>
 
-                                <!-- FILA 6: NOTA Y FIRMA -->
-                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; items-end;">
+                                <!-- NOTA Y FIRMA -->
+                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
                                     <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
                                         NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
                                     </div>
@@ -2308,7 +2304,7 @@
                                 </div>
                             </div>
 
-                            <!-- FILA 7: LEYENDA LOPD EN PIE DE PÁGINA -->
+                            <!-- LEYENDA LOPD EN PIE DE PÁGINA -->
                             <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
                                 PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
                             </div>
@@ -2629,3 +2625,6 @@
 </script>
 </body>
 </html>
+```eof
+
+El código ha sido generado. Puedes verificar que la plantilla de recibo queda ahora perfectamente unificada para ambas vías de emisión y que el resto del sistema opera con normalidad.
