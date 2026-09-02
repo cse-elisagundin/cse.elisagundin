@@ -80,7 +80,7 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA PARA EVITAR DESTELLOS VISUALES) -->
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA) -->
     <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
@@ -137,6 +137,21 @@
 
     <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
+
+        <!-- OVERLAY DE CARGA PARA PREPARACIÓN DE IMPRESIÓN Y PROCESAMIENTO -->
+        <transition name="pop">
+            <div v-if="preparingPrint" class="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 max-w-sm text-center">
+                    <div class="p-4 bg-pink-50 rounded-full text-[#fa65c3]">
+                        <i class="fas fa-spinner fa-spin text-3xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-[#243c7a] uppercase">Procesando Factura</h3>
+                        <p class="text-xs text-gray-500 font-semibold mt-1">Generando PDF, subiendo a la nube y preparando impresión...</p>
+                    </div>
+                </div>
+            </div>
+        </transition>
 
         <transition name="pop">
             <div v-if="showSuccess" class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none p-4 no-print">
@@ -195,7 +210,6 @@
             </div>
         </transition>
 
-        <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR FACTURA DE LA NUBE -->
         <transition name="pop">
             <div v-if="showDeleteArchivoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -1283,7 +1297,7 @@
                                         <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-save"></i> REGISTRAR PAGO (SOLO DATOS)
                                         </button>
-                                        <button @click="registrarPagoYSubirNube" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                        <button @click="registrarPagoYSubirNube" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-cloud-upload-alt"></i> GUARDAR Y SUBIR A LA NUBE
                                         </button>
                                     </div>
@@ -1352,7 +1366,7 @@
                 checkingSession: true,
                 loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
                 list: [], search: '', selected: null, isNew: false, 
-                loading: false, saving: false, savingPago: false,
+                loading: false, saving: false, savingPago: false, preparingPrint: false,
                 showSuccess: false, successMessage: '', form: {}, showInactive: false,
                 activeTab: 'menu', 
                 
@@ -2128,10 +2142,12 @@
                 }
             },
 
-            // UNIFICACIÓN DE REGISTRO Y GENERACIÓN DE PDF PARA SUBIR A NUBE (CORREGIDO SIN PANTALLAZO)
+            // PROCESAMIENTO OPTIMIZADO: GENERACIÓN DE PDF, NUBE Y APERTURA DE IMPRESIÓN SIN SATURACIÓN
             async registrarPagoYSubirNube() {
                 if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
+                this.preparingPrint = true; // Muestra la pantalla de carga limpia
+
                 try {
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
@@ -2143,7 +2159,7 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]).select().single();
 
-                    // 1. Renderiza la plantilla unificada
+                    // 1. Renderiza la plantilla HTML
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -2162,7 +2178,7 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    // 2. Convierte el HTML oficial en archivo Blob PDF idéntico
+                    // 2. Convierte el HTML en PDF Blob en segundo plano
                     const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
                     element.classList.add('hidden');
                     
@@ -2172,15 +2188,19 @@
 
                     const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
 
-                    // 3. Sube la factura unificada a Supabase Storage
+                    // 3. Sube la factura a Supabase Storage
                     await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
                     if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
 
                     await this.cargarDatosSupabase();
-                    this.showSuccess = true;
-                    this.successMessage = `¡Pago y PDF subidos a la nube!`;
-                    setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2500);
-                    
+
+                    // 4. Pausa de liberación para que la CPU del navegador se recupere completamente del canvas
+                    await new Promise(resolve => setTimeout(resolve, 250));
+
+                    this.preparingPrint = false;
+                    this.savingPago = false;
+
+                    // 5. Invocación limpia y fluida del cuadro de impresión
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
@@ -2188,9 +2208,15 @@
                             document.body.classList.remove('is-printing-ticket');
                         }, 300);
                     }, 50);
+
+                    this.showSuccess = true;
+                    this.successMessage = `¡Pago guardado y factura procesada!`;
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
+
                 } catch(e) {
                     console.error("Error al registrar pago y subir a la nube:", e);
                     this.savingPago = false;
+                    this.preparingPrint = false;
                     alert("Error al procesar el pago y el PDF.");
                 }
             },
@@ -2695,7 +2721,7 @@
                 }
             } catch(e) {
                 console.error("Error al verificar sesión inicial:", e);
-            } finally {
+            } font-bold {
                 this.checkingSession = false;
             }
         }
