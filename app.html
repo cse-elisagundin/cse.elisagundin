@@ -33,9 +33,6 @@
         .loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #e0e7ff; overflow: hidden; }
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
-        /* Solución al bloqueo de renderizado inicial (Pantalla congelada en blanco o superpuesta) */
-        [v-cloak] { display: none !important; }
-
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -81,13 +78,14 @@
 </head>
 <body class="h-screen overflow-hidden text-sm">
 
-<!-- Atributo v-cloak inyectado para evitar renderizado estático roto antes de la carga de JS -->
-<div id="app" v-cloak class="h-full flex flex-col relative">
+<div id="app" class="h-full flex flex-col relative">
 
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA) -->
     <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
 
+    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
     <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
         <div class="flex items-end justify-between mb-3">
             <div>
@@ -137,8 +135,10 @@
         </div>
     </div>
 
+    <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
+        <!-- OVERLAY DE CARGA PARA PREPARACIÓN DE IMPRESIÓN Y PROCESAMIENTO -->
         <transition name="pop">
             <div v-if="preparingPrint" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 no-print">
                 <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 max-w-sm text-center">
@@ -391,6 +391,7 @@
             </div>
         </transition>
 
+        <!-- PANTALLA DE LOGIN -->
         <transition name="fade">
             <div v-if="!authenticated && !checkingSession" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4 no-print">
                 <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
@@ -417,6 +418,7 @@
 
         <div v-if="authenticated" class="flex h-full relative overflow-hidden">
             
+            <!-- BARRA LATERAL -->
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
@@ -505,6 +507,7 @@
                 </div>
             </div>
 
+            <!-- ÁREA PRINCIPAL DERECHA -->
             <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'}">
 
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
@@ -516,6 +519,7 @@
                     </span>
                 </div>
 
+                <!-- CUADRANTE DE HORARIOS -->
                 <div v-if="activeTab === 'cuadrante_horarios' && !selected" class="flex-1 flex flex-col overflow-hidden animate-fade">
                     <div class="no-print bg-white p-3 sm:p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
                         <div class="flex items-center gap-3">
@@ -696,6 +700,7 @@
                     </div>
                 </div>
 
+                <!-- EXPLORADOR DE FACTURAS EN LA NUBE -->
                 <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -778,9 +783,11 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
+                <!-- HISTORIAL GLOBAL DE PAGOS -->
                 <div v-if="activeTab === 'gestor_pagos' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
@@ -850,6 +857,7 @@
                     </div>
                 </div>
 
+                <!-- GESTOR MASIVO DE EXÁMENES -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col mb-8">
                         <div class="p-4 sm:p-6 border-b flex justify-between items-center bg-white/95 backdrop-blur">
@@ -949,6 +957,7 @@
                     </div>
                 </div>
 
+                <!-- VISTA DE ALUMNO SELECCIONADO -->
                 <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
@@ -1011,9 +1020,327 @@
 
                         <div v-if="activeTab === 'menu'" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
                             <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
-                            <p class="text-gray-500 text-center font-medium max-w-md">Selecciona un alumno de la lista lateral o crea una nueva ficha para comenzar a gestionar sus datos, pagos y exámenes.</p>
+                            <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre }}?</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                                <button @click="activeTab = 'ficha'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-blue-50 p-4 rounded-full text-[#2b94cc] group-hover:bg-[#2b94cc] group-hover:text-white transition-colors">
+                                        <i class="fas fa-id-card text-3xl"></i>
+                                    </div>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Ficha Académica</span>
+                                    <span class="text-xs text-gray-500 text-center">Modificar datos y familiares.</span>
+                                </button>
+
+                                <button @click="abrirSeccionPagos" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#fa65c3] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-pink-50 p-4 rounded-full text-[#fa65c3] group-hover:bg-[#fa65c3] group-hover:text-white transition-colors">
+                                        <i class="fas fa-euro-sign text-3xl px-1"></i>
+                                    </div>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Gestión de Pagos</span>
+                                    <span class="text-xs text-gray-500 text-center">Cuotas, cobros y recibos PDF.</span>
+                                </button>
+
+                                <button @click="activeTab = 'examenes'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-indigo-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-indigo-50 p-4 rounded-full text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                        <i class="fas fa-graduation-cap text-3xl"></i>
+                                    </div>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Exámenes</span>
+                                    <span class="text-xs text-gray-500 text-center">Consultar calendario y notas.</span>
+                                </button>
+                            </div>
                         </div>
+
+                        <form v-if="activeTab === 'ficha'" @submit.prevent="saveData" class="p-4 sm:p-8 space-y-6 flex-1">
+                            <div v-if="form.baja" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-amber-100 text-amber-800 p-2.5 rounded-xl"><i class="fas fa-user-slash text-lg"></i></div>
+                                    <div>
+                                        <h4 class="font-bold text-amber-900 text-xs sm:text-sm">Este alumno figura actualmente como BAJA</h4>
+                                        <p class="text-[11px] text-amber-700">Sus datos históricos se conservan. Haz clic en "Dar de alta" para reactivarlo.</p>
+                                    </div>
+                                </div>
+                                <button type="button" @click="form.baja = false" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow">
+                                    Dar de alta
+                                </button>
+                            </div>
+
+                            <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-4 font-bold text-[#243c7a] border-b pb-2 flex justify-between items-center">
+                                    <span>DATOS PERSONALES</span>
+                                    <span class="text-xs font-normal text-red-500">* Nombre y Apellidos obligatorios</span>
+                                </div>
+                                <input v-model="form.nombre" placeholder="Nombre *" required class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input v-model="form.apellidos" placeholder="Apellidos *" required class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input v-model="form.dni" placeholder="DNI/NIE" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                                <input type="date" v-model="form.nacimiento" class="p-3 rounded-lg border bg-gray-50 outline-none">
+                            </section>
+                            
+                            <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50 p-4 sm:p-6 rounded-2xl border border-blue-100">
+                                <div class="col-span-1 sm:col-span-2 font-bold text-[#2b94cc] border-b border-blue-200 pb-2"><i class="fas fa-laptop-code"></i> ACCESO AULES</div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 mb-1">Usuario</label>
+                                    <input v-model="form.usuario_aules" placeholder="Ej: lozano_leo" class="w-full p-3 rounded-lg border bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-blue-800 mb-1">Contraseña</label>
+                                    <input v-model="form.pass_aules" placeholder="Contraseña" class="w-full p-3 rounded-lg border bg-white outline-none">
+                                </div>
+                            </section>
+
+                            <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
+                                <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.cp" placeholder="CP" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.poblacion" placeholder="Población" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.provincia" placeholder="Provincia" class="p-3 rounded-lg border bg-gray-50">
+                            </section>
+
+                            <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="col-span-1 sm:col-span-3 font-bold text-[#243c7a] border-b pb-2">ACADÉMICO</div>
+                                <input v-model="form.colegio" placeholder="Colegio" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.curso" placeholder="Curso" class="p-3 rounded-lg border bg-gray-50">
+                                <input v-model="form.tlf" placeholder="Teléfono Alumno" class="p-3 rounded-lg border bg-gray-50">
+                            </section>
+
+                            <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-green-50 p-4 sm:p-6 rounded-2xl border border-green-200">
+                                    <div class="font-bold text-green-800 mb-4">FAMILIAR 1</div>
+                                    <div class="space-y-3">
+                                        <input v-model="form.fam1_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
+                                        <select v-model="form.fam1_relacion" class="w-full p-2.5 border rounded bg-white">
+                                            <option value="">Relación...</option>
+                                            <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
+                                        </select>
+                                        <div class="flex gap-2">
+                                            <input v-model="form.fam1_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
+                                            <a v-if="form.fam1_tlf" :href="formatWhatsAppUrl(form.fam1_tlf)" target="_blank" class="bg-[#25D366] text-white px-3 rounded flex items-center hover:bg-green-600 transition" title="Enviar WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-100 p-4 sm:p-6 rounded-2xl border border-gray-200">
+                                    <div class="font-bold text-gray-600 mb-4">FAMILIAR 2</div>
+                                    <div class="space-y-3">
+                                        <input v-model="form.fam2_nombre" placeholder="Nombre Completo" class="w-full p-2.5 border rounded bg-white">
+                                        <select v-model="form.fam2_relacion" class="w-full p-2.5 border rounded bg-white">
+                                            <option value="">Relación...</option>
+                                            <option>Mamá</option><option>Papá</option><option>Tutor</option><option>Otro</option>
+                                        </select>
+                                        <div class="flex gap-2">
+                                            <input v-model="form.fam2_tlf" placeholder="Teléfono" class="w-full p-2.5 border rounded bg-white">
+                                            <a v-if="form.fam2_tlf" :href="formatWhatsAppUrl(form.fam2_tlf)" target="_blank" class="bg-gray-400 text-white px-3 rounded flex items-center hover:bg-gray-500 transition" title="Enviar WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </form>
+
+                        <div v-if="activeTab === 'pagos'" class="p-4 sm:p-8 space-y-6 bg-gray-50 flex-1">
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 mb-5 gap-3">
+                                    <h3 class="font-extrabold text-[#243c7a] uppercase flex items-center gap-2 text-xs sm:text-sm">
+                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i> Cuotas Cursos Escolares ({{ form.nombre }})
+                                    </h3>
+                                    <button @click="generarSiguienteMes" class="bg-pink-50 text-[#fa65c3] border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold text-xs flex items-center gap-2 transition shadow-sm">
+                                        <i class="fas fa-plus"></i> Generar Mes
+                                    </button>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div v-for="(mesesCurso, cursoKey) in mesesAgrupadosPorCursoEscolar" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <div @click="toggleCurso(cursoKey)" class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
+                                            <div class="flex items-center gap-2 sm:gap-3">
+                                                <i class="fas fa-folder-open text-[#fa65c3]" v-if="cursoAbierto[cursoKey]"></i>
+                                                <i class="fas fa-folder text-gray-400" v-else></i>
+                                                <span>Curso {{ cursoKey }}</span>
+                                                <span class="text-[10px] sm:text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }}m</span>
+                                            </div>
+                                            <i class="fas fa-chevron-down transition-transform duration-350" :class="cursoAbierto[cursoKey] ? 'rotate-180' : ''"></i>
+                                        </div>
+
+                                        <div v-if="cursoAbierto[cursoKey]" class="p-2 sm:p-3 overflow-x-auto">
+                                            <table class="w-full border-collapse text-xs min-w-[320px]">
+                                                <thead>
+                                                    <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                        <th class="p-2 border text-left">Mes</th>
+                                                        <th class="p-2 border text-center w-28 sm:w-36">Cuota (€)</th>
+                                                        <th class="p-2 border text-center w-20 sm:w-28">Pagado</th>
+                                                        <th class="p-2 border text-center w-20">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="mes in mesesCurso" :key="mes" class="hover:bg-blue-50/40 transition">
+                                                        <td class="p-2.5 border font-bold text-[#243c7a]">{{ formatMesUnificado(mes) }}</td>
+                                                        <td class="p-2 border text-center">
+                                                            <input type="number" step="0.01" 
+                                                                :value="getCuotaValor(form.nombre + ' ' + form.apellidos, mes)" 
+                                                                @input="updateCuotaLocal(form.nombre + ' ' + form.apellidos, mes, $event.target.value)"
+                                                                @change="guardarCeldaIngresosFijos(form.nombre + ' ' + form.apellidos, mes)"
+                                                                class="w-full sm:w-28 p-1.5 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none">
+                                                        </td>
+                                                        <td class="p-2 border text-center" :class="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes) ? 'bg-green-100' : 'bg-white'">
+                                                            <input type="checkbox" 
+                                                                :checked="isPagadoTrue(form.nombre + ' ' + form.apellidos, mes)" 
+                                                                @change="togglePagadoIngresosFijos(form.nombre + ' ' + form.apellidos, mes, $event.target.checked)"
+                                                                class="w-5 h-5 accent-green-600 rounded cursor-pointer">
+                                                        </td>
+                                                        <td class="p-2 border text-center space-x-1 sm:space-x-2">
+                                                            <button @click="abrirModalEditar(mes)" title="Modificar" class="text-blue-500 hover:text-blue-700 p-1"><i class="fas fa-edit text-sm"></i></button>
+                                                            <button @click="abrirModalEliminar(mes)" title="Eliminar" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt text-sm"></i></button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+                                <h3 class="font-extrabold text-[#243c7a] uppercase text-xs sm:text-sm mb-4 flex items-center gap-2 border-b pb-3">
+                                    <i class="fas fa-history text-[#2b94cc]"></i> Historial de Pagos Recientes ({{ form.nombre }})
+                                </h3>
+                                <div v-if="pagosAlumnoActual.length === 0" class="text-xs text-gray-400 italic text-center py-4">
+                                    No hay pagos registrados para este alumno todavía.
+                                </div>
+                                <div v-else class="overflow-x-auto">
+                                    <table class="w-full border-collapse text-xs min-w-[360px]">
+                                        <thead>
+                                            <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                <th class="p-2 border text-center">ID</th>
+                                                <th class="p-2 border text-center">Fecha</th>
+                                                <th class="p-2 border text-left">Mes</th>
+                                                <th class="p-2 border text-left">Concepto</th>
+                                                <th class="p-2 border text-center">Importe</th>
+                                                <th class="p-2 border text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="pago in pagosAlumnoActual" :key="pago.id" class="hover:bg-blue-50/40 transition">
+                                                <td class="p-2 border text-center font-bold text-gray-500">{{ pago.factura_id || 'S/N' }}</td>
+                                                <td class="p-2 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
+                                                <td class="p-2 border font-bold text-[#243c7a]">{{ formatMesUnificado(pago.mes) }}</td>
+                                                <td class="p-2 border text-gray-600">
+                                                    <span class="font-bold">{{ pago.tarifa }}</span>
+                                                    <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
+                                                </td>
+                                                <td class="p-2 border text-center font-black text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
+                                                <td class="p-2 border text-center space-x-1">
+                                                    <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
+                                                    <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
+                                                    <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-4 sm:p-6 rounded-xl border shadow-sm relative">
+                                <div class="border-b pb-3 mb-5">
+                                    <h3 class="font-extrabold text-[#fa65c3] uppercase text-xs sm:text-sm"><i class="fas fa-cash-register mr-2"></i> Registrar Cobro</h3>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Fecha de Pago</label>
+                                        <input type="date" v-model="nuevoPago.fecha" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Smart / Automático)</label>
+                                        <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
+                                            <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ formatMesUnificado(m) }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4 p-3 sm:p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
+                                    <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">Método de Cobro</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button type="button" @click="nuevoPago.metodo = 'EFECTIVO'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'EFECTIVO' ? 'border-[#243c7a] bg-blue-50 text-[#243c7a]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-money-bill-wave"></i> EFECTIVO
+                                        </button>
+                                        <button type="button" @click="nuevoPago.metodo = 'BIZUM'" class="py-2.5 px-3 rounded-xl border-2 font-bold text-xs uppercase transition flex items-center justify-center gap-1 sm:gap-2" :class="nuevoPago.metodo === 'BIZUM' ? 'border-[#fa65c3] bg-pink-50 text-[#fa65c3]' : 'border-gray-200 text-gray-500'">
+                                            <i class="fas fa-mobile-alt"></i> BIZUM
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
+                                        <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
+                                            <option value="" disabled>Selecciona tarifa...</option>
+                                            <option value="1h/semana 40€">1h/semana 40€</option>
+                                            <option value="1,5h/semana 50€ (antiguos alumnos)">1,5h/semana 50€ (antiguos alumnos)</option>
+                                            <option value="1,5h/semana 60€ (nuevos alumnos)">1,5h/semana 60€ (nuevos alumnos)</option>
+                                            <option value="2h/semana 80€">2h/semana 80€</option>
+                                            <option value="3h/semana 85€">3h/semana 85€</option>
+                                            <option value="4h/semana 110€">4h/semana 110€</option>
+                                            <option value="5h/semana 135€">5h/semana 135€</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Extra (Opcional)</label>
+                                        <input v-model="nuevoPago.extras" placeholder="Ej: Material (10€)" class="w-full p-2.5 rounded-lg border outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Importe Total (€)</label>
+                                        <input type="number" step="0.01" v-model="nuevoPago.importe" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
+                                    <div class="flex flex-col text-center sm:text-left">
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
+                                        <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                                        <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                            <i class="fas fa-save"></i> REGISTRAR PAGO (SOLO DATOS)
+                                        </button>
+                                        <button @click="registrarPagoYSubirNube" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                            <i class="fas fa-cloud-upload-alt"></i> GUARDAR Y SUBIR A LA NUBE
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="activeTab === 'examenes'" class="p-4 sm:p-8 flex-1 bg-white">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-extrabold text-indigo-800 uppercase text-base sm:text-lg"><i class="fas fa-calendar-alt mr-2"></i> Próximos Exámenes ({{ form.nombre }})</h3>
+                                <button @click="cargarDatosSupabase" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+                            <div v-if="examenesAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">No se encontraron exámenes para este alumno.</div>
+                            <div v-else class="flex flex-col">
+                                <div v-for="(grupo, fecha) in examenesAgrupados" :key="fecha" class="timeline-row">
+                                    <div class="date-col">
+                                        <span class="day-num">{{ fecha.split('-')[2] }}</span>
+                                        <span class="day-name">{{ obtenerNombreMesCorto(fecha) }}</span>
+                                    </div>
+                                    <div class="exams-col">
+                                        <div v-for="(ex, index) in grupo" :key="index" class="exam-pill group">
+                                            <span class="pill-subject">{{ ex.asignatura }}</span>
+                                            <span class="pill-grade font-semibold text-gray-800">Nota: {{ ex.nota || 'Pendiente' }}</span>
+                                            <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded shadow-sm border border-gray-100">
+                                                <button @click.stop="abrirEditarExamen(ex)" title="Modificar examen" class="text-blue-500 hover:text-blue-700 p-1 transition"><i class="fas fa-edit text-xs"></i></button>
+                                                <button @click.stop="abrirEliminarExamen(ex)" title="Eliminar examen" class="text-red-500 hover:text-red-700 p-1 transition"><i class="fas fa-trash-alt text-xs"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+                </div>
+                
+                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center no-print">
+                    <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
+                        <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold text-[#243c7a]">Selecciona un alumno del listado</h2>
                 </div>
             </div>
         </div>
@@ -1021,217 +1348,1380 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp } = Vue;
+
+    const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const monthOrder = {
+        'SEPTIEMBRE': 1, 'OCTUBRE': 2, 'NOVIEMBRE': 3, 'DICIEMBRE': 4,
+        'ENERO': 5, 'FEBRERO': 6, 'MARZO': 7, 'ABRIL': 8, 'MAYO': 9, 'JUNIO': 10, 'JULIO': 11, 'AGOSTO': 12
+    };
 
     createApp({
-        setup() {
-            // -- Inicialización reactiva genérica para evitar cuelgues UI por el corte --
-            
-            // Estado Base UI / Auth
-            const preparingPrint = ref(false);
-            const showSuccess = ref(false);
-            const successMessage = ref('');
-            const authenticated = ref(true); // Permitir paso a app (simulado o a reemplazar con token)
-            const checkingSession = ref(false);
-            const loading = ref(false);
-            const loginEmail = ref('');
-            const loginPassword = ref('');
-            const loginError = ref(false);
-            const errorMsg = ref('');
-            const isSidebarPinned = ref(true);
-            const isSidebarHovered = ref(false);
-            
-            // Estado Principal de Datos
-            const list = ref([]);
-            const filteredList = computed(() => list.value); // Stub filter
-            const activeTab = ref('menu');
-            const search = ref('');
-            const showInactive = ref(false);
-            
-            // Formularios y Selecciones
-            const isNew = ref(false);
-            const selected = ref(null);
-            const form = ref({ nombre: '', apellidos: '', baja: false });
-            const saving = ref(false);
-            
-            // Modales Modificación y Eliminación
-            const showDeleteStudentModal = ref(false);
-            
-            const showEditExamenModal = ref(false);
-            const editExamenForm = ref({});
-            const showDeleteExamenModal = ref(false);
-            const examenAEliminar = ref(null);
-            
-            const showCustomModal = ref(false);
-            const modalType = ref('');
-            const modalTitle = ref('');
-            const modalMessage = ref('');
-            const modalInputVal = ref('');
-            
-            const showEditPagoModal = ref(false);
-            const editPagoForm = ref({});
-            const listaMesesDinamicos = ref([]);
-            const showDeletePagoModal = ref(false);
-            const pagoAEliminar = ref(null);
-            
-            // Horarios
-            const isHorarioDirty = ref(false);
-            const modoVistaHorario = ref('diario');
-            const savingHorario = ref(false);
-            const showUnsavedHorarioModal = ref(false);
-            const diaSeleccionado = ref('Lunes');
-            const diasSemana = ref(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
-            const fechaSeleccionada = ref('');
-            const searchAlumnoPincel = ref('');
-            const alumnosFiltradosPincel = ref([]);
-            const alumnoActivoPincel = ref('');
-            const tramosHorarios = ref(['15:30', '16:00', '16:30', '17:00']); // Stub
-            
-            // Facturas
-            const showDeleteArchivoModal = ref(false);
-            const archivoAEliminarNube = ref(null);
-            const searchExplorador = ref('');
-            const loadingArchivos = ref(false);
-            const archivosNubeFiltrados = ref([]);
-            const cursosArchivosAgrupados = ref({});
-            const cursoFacturasAbierto = ref({});
-            
-            // Pagos Globales
-            const searchPagosGlobal = ref('');
-            const pagosFiltradosGlobal = ref([]);
-            
-            // Exámenes Masivos y Calendario
-            const gestorExamenes = ref({ fecha: '', asignatura: '', alumnosSeleccionados: [] });
-            const searchGestor = ref('');
-            const alumnosFiltradosGestor = ref([]);
-            const savingExamenes = ref(false);
-            const filtroAlumnoCalendario = ref('todos');
-            const mesVisualizadoTexto = ref('Septiembre 2026');
-            const diasMesActual = ref([]);
-
-            // Mocks de funciones vitales referenciadas en HTML para evitar undefined errors
-            const formatNombrePrint = (v) => v || '';
-            const getCelda = () => ({ nombre: '', baja: false });
-            const clickCelda = () => {};
-            const toggleBajaCelda = () => {};
-            const hoverAlumnoPincel = ref('');
-            const contarOcupacion = () => 0;
-            const normalizeName = (n) => n;
-            const formatMesUnificado = (m) => m;
-            const formatImporte = (i) => i || 0;
-            const formatearFecha = (f) => f;
-            const contarArchivosCurso = () => 0;
-
-            const login = () => { authenticated.value = true; };
-            const logout = () => { authenticated.value = false; };
-            const ejecutarNavegacionConGuarda = (fn) => fn();
-            const createNew = () => { isNew.value = true; activeTab.value = 'ficha'; selected.value = null; };
-            const selectStudent = (s) => { selected.value = s; isNew.value = false; form.value = {...s}; activeTab.value = 'menu'; };
-            const cerrarFicha = () => { selected.value = null; isNew.value = false; activeTab.value = 'menu'; };
-            const saveData = () => {};
-            const abrirEliminarAlumno = () => { showDeleteStudentModal.value = true; };
-            const ejecutarEliminarAlumno = () => { showDeleteStudentModal.value = false; };
-
-            const abrirCuadranteHorarios = () => { activeTab.value = 'cuadrante_horarios'; selected.value = null; };
-            const setModoHorario = (m) => { modoVistaHorario.value = m; };
-            const copiarDesdePlantillaHorario = () => {};
-            const guardarHorarioEnSupabase = () => {};
-            const imprimirCuadrante = () => {
-                preparingPrint.value = true;
-                setTimeout(() => { preparingPrint.value = false; showSuccess.value = true; successMessage.value = 'Cuadrante impreso'; setTimeout(() => showSuccess.value=false, 2000);}, 1500);
-            };
-            const seleccionarDiaSemana = (d) => { diaSeleccionado.value = d; };
-            const solicitarCambioFechaHorario = (v) => {};
-            const seleccionarAlumnoPincel = (a) => { alumnoActivoPincel.value = a; };
-            const confirmGuardarYContinuarHorario = () => {};
-            const confirmDescartarYContinuarHorario = () => {};
-            const cancelarCambioHorario = () => { showUnsavedHorarioModal.value = false; };
-
-            const abrirGestorExamenes = () => { activeTab.value = 'gestor_examenes'; selected.value = null; };
-            const seleccionarTodos = () => {};
-            const guardarExamenesMasivos = () => {};
-            const cambiarMesCalendario = () => {};
-            const abrirEditarExamen = () => { showEditExamenModal.value = true; };
-            const abrirEliminarExamen = () => { showDeleteExamenModal.value = true; };
-            const guardarEdicionExamen = () => { showEditExamenModal.value = false; };
-            const ejecutarEliminarExamen = () => { showDeleteExamenModal.value = false; };
-
-            const abrirGestorPagos = () => { activeTab.value = 'gestor_pagos'; selected.value = null; };
-            const cargarDatosSupabase = () => {};
-            const reimprimirPagoHistoricoGlobal = () => {};
-            const abrirEditarPago = () => { showEditPagoModal.value = true; };
-            const abrirEliminarPago = () => { showDeletePagoModal.value = true; };
-            const guardarEdicionPago = () => { showEditPagoModal.value = false; };
-            const ejecutarEliminarPago = () => { showDeletePagoModal.value = false; };
-
-            const abrirExploradorFacturas = () => { activeTab.value = 'explorador_facturas'; selected.value = null; };
-            const cargarArchivosNube = () => {};
-            const subirArchivosSeleccionados = () => {};
-            const toggleCursoFacturas = (c) => { cursoFacturasAbierto.value[c] = !cursoFacturasAbierto.value[c]; };
-            const abrirEliminarArchivoNube = () => { showDeleteArchivoModal.value = true; };
-            const ejecutarEliminarArchivoNube = () => { showDeleteArchivoModal.value = false; };
-
-            const cerrarCustomModal = () => { showCustomModal.value = false; };
-            const ejecutarAccionModal = () => { showCustomModal.value = false; };
-
+        data() {
             return {
-                // UI & Auth
-                preparingPrint, showSuccess, successMessage, authenticated, checkingSession,
-                loading, loginEmail, loginPassword, loginError, errorMsg,
-                isSidebarPinned, isSidebarHovered, activeTab, list, filteredList,
-                search, showInactive,
+                authenticated: false, 
+                checkingSession: true,
+                loginEmail: '', loginPassword: '', loginError: false, errorMsg: '',
+                list: [], search: '', selected: null, isNew: false, 
+                loading: false, saving: false, savingPago: false, preparingPrint: false,
+                showSuccess: false, successMessage: '', form: {}, showInactive: false,
+                activeTab: 'menu', 
                 
-                // Form & Selected
-                isNew, selected, form, saving,
-                
-                // Modals
-                showDeleteStudentModal, showEditExamenModal, editExamenForm,
-                showDeleteExamenModal, examenAEliminar, showCustomModal, modalType,
-                modalTitle, modalMessage, modalInputVal, showEditPagoModal, editPagoForm,
-                listaMesesDinamicos, showDeletePagoModal, pagoAEliminar, showDeleteArchivoModal,
-                archivoAEliminarNube, showUnsavedHorarioModal,
-                
-                // Horarios
-                isHorarioDirty, modoVistaHorario, savingHorario, diaSeleccionado, diasSemana,
-                fechaSeleccionada, searchAlumnoPincel, alumnosFiltradosPincel, alumnoActivoPincel,
-                tramosHorarios, hoverAlumnoPincel,
-                
-                // Facturas
-                searchExplorador, loadingArchivos, archivosNubeFiltrados,
-                cursosArchivosAgrupados, cursoFacturasAbierto,
-                
-                // Pagos
-                searchPagosGlobal, pagosFiltradosGlobal,
-                
-                // Examenes
-                gestorExamenes, searchGestor, alumnosFiltradosGestor, savingExamenes,
-                filtroAlumnoCalendario, mesVisualizadoTexto, diasMesActual,
+                isSidebarPinned: true,
+                isSidebarHovered: false,
 
-                // Métodos
-                login, logout, ejecutarNavegacionConGuarda, createNew, selectStudent,
-                cerrarFicha, saveData, abrirEliminarAlumno, ejecutarEliminarAlumno,
+                nuevoPago: this.pagoVacio(),
+                examenesList: [],
+                ingresosFijosList: [],
+                pagosList: [],
+                savingExamenes: false,
+                searchGestor: '',
+                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
+                cursoAbierto: {},
+                showCustomModal: false,
+                modalType: 'edit',
+                modalTitle: '',
+                modalMessage: '',
+                modalInputVal: '',
+                modalTargetMes: '',
+                showEditPagoModal: false,
+                showDeletePagoModal: false,
+                editPagoForm: {},
+                pagoAEliminar: null,
+                showEditExamenModal: false,
+                showDeleteExamenModal: false,
+                editExamenForm: {},
+                examenAEliminar: null,
+                showDeleteStudentModal: false,
+                showDeleteArchivoModal: false,
+                archivoAEliminarNube: null,
+                mesVisualizadoCalendario: new Date(),
+                filtroAlumnoCalendario: 'todos',
+                searchPagosGlobal: '',
+                archivosNube: [],
+                loadingArchivos: false,
+                searchExplorador: '',
+                cursoFacturasAbierto: {},
+
+                modoVistaHorario: 'diario',
+                diaSeleccionado: 'LUNES',
+                fechaSeleccionada: new Date().toISOString().split('T')[0],
+                previousDiaSeleccionado: 'LUNES',
+                previousFechaSeleccionada: new Date().toISOString().split('T')[0],
+                diasSemana: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
+                tramosHorarios: ['15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
+                gridHorario: {},
+                originalHorarioSnapshot: '{}',
+                showUnsavedHorarioModal: false,
+                pendingHorarioAction: null,
+                searchAlumnoPincel: '',
+                alumnoActivoPincel: '',
+                hoverAlumnoPincel: '',
+                savingHorario: false
+            }
+        },
+        watch: {
+            'nuevoPago.tarifa'() { this.calcularImporteTotalPago(); },
+            'nuevoPago.extras'() { this.calcularImporteTotalPago(); }
+        },
+        computed: {
+            isHorarioDirty() {
+                return this.getHorarioSnapshot() !== this.originalHorarioSnapshot;
+            },
+            filteredList() {
+                const t = this.normalizeName(this.search);
+                return this.list.filter(s => {
+                    if (!this.showInactive && s.baja) return false;
+                    const nombreCompleto = this.normalizeName(`${s.nombre || ""} ${s.apellidos || ""}`);
+                    return nombreCompleto.includes(t) || (s.dni || "").toLowerCase().includes(t);
+                });
+            },
+            alumnosFiltradosGestor() {
+                const t = this.normalizeName(this.searchGestor);
+                return this.list.filter(a => {
+                    if (a.baja) return false;
+                    const nombreCompleto = this.normalizeName(`${a.nombre} ${a.apellidos}`);
+                    return nombreCompleto.includes(t);
+                });
+            },
+            alumnosFiltradosPincel() {
+                const t = this.normalizeName(this.searchAlumnoPincel);
+                if (!t) return [];
+                return this.list.filter(a => {
+                    const nombreCompleto = this.normalizeName(`${a.nombre} ${a.apellidos}`);
+                    return nombreCompleto.includes(t);
+                }).slice(0, 8);
+            },
+            importeCalculado() { return Number(this.nuevoPago.importe) || 0; },
+            examenesAlumno() {
+                if (!this.selected) return [];
+                const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                return this.examenesList.filter(ex => this.normalizeName(ex.alumno) === nombreLimpio);
+            },
+            examenesAgrupados() {
+                const grupos = {};
+                this.examenesAlumno.forEach(ex => {
+                    let fechaOrd = String(ex.fecha || '').replace(/\//g, '-');
+                    if (!grupos[fechaOrd]) grupos[fechaOrd] = [];
+                    grupos[fechaOrd].push(ex);
+                });
+                return grupos;
+            },
+            pagosAlumnoActual() {
+                if (!this.selected) return [];
+                const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                return this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreLimpio)
+                    .sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+            },
+            pagosFiltradosGlobal() {
+                const t = this.normalizeName(this.searchPagosGlobal);
+                return this.pagosList.filter(p => {
+                    const alumnoNorm = this.normalizeName(p.alumno || '');
+                    const mesNorm = this.normalizeName(p.mes || '');
+                    const facturaNorm = this.normalizeName(p.factura_id || '');
+                    return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
+                }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+            },
+            archivosNubeFiltrados() {
+                const t = this.normalizeName(this.searchExplorador);
+                return this.archivosNube.filter(a => 
+                    this.normalizeName(a.displayName).includes(t) || 
+                    this.normalizeName(a.alumnoAsociado).includes(t) || 
+                    this.normalizeName(a.curso).includes(t) || 
+                    this.normalizeName(a.mes).includes(t)
+                );
+            },
+            cursosArchivosAgrupados() {
+                const arbol = {};
+                this.archivosNubeFiltrados.forEach(a => {
+                    const curso = a.curso || '2025/2026';
+                    const mes = a.mes || 'OCTUBRE';
+                    if (!arbol[curso]) arbol[curso] = {};
+                    if (!arbol[curso][mes]) arbol[curso][mes] = [];
+                    arbol[curso][mes].push(a);
+                });
+
+                for (const cursoKey in arbol) {
+                    const mesesOrdenados = {};
+                    const clavesMeses = Object.keys(arbol[cursoKey]).sort((m1, m2) => {
+                        const idx1 = monthOrder[m1.toUpperCase()] || 99;
+                        const idx2 = monthOrder[m2.toUpperCase()] || 99;
+                        return idx1 - idx2;
+                    });
+                    clavesMeses.forEach(m => {
+                        mesesOrdenados[m] = arbol[cursoKey][m];
+                    });
+                    arbol[cursoKey] = mesesOrdenados;
+                }
+
+                const cursosOrdenados = Object.keys(arbol).sort().reverse();
+                const resultadoFinal = {};
+                cursosOrdenados.forEach(c => {
+                    resultadoFinal[c] = arbol[c];
+                    if (this.cursoFacturasAbierto[c] === undefined) {
+                        this.cursoFacturasAbierto[c] = true;
+                    }
+                });
+                return resultadoFinal;
+            },
+            listaMesesDinamicos() {
+                const mesesBD = this.ingresosFijosList.map(f => f.mes);
+                const porDefecto = ["Octubre 2025", "Noviembre 2025", "Diciembre 2025", "Enero 2026", "Febrero 2026", "Marzo 2026", "Abril 2026", "Mayo 2026", "Junio 2026"];
+                const todos = [...new Set([...porDefecto, ...mesesBD])];
+                return todos.sort((a, b) => {
+                    const pa = this.parseMonthOrder(a);
+                    const pb = this.parseMonthOrder(b);
+                    if (pa.cursoKey !== pb.cursoKey) return pa.cursoKey.localeCompare(pb.cursoKey);
+                    return pa.monthIdx - pb.monthIdx;
+                });
+            },
+            mesesAgrupadosPorCursoEscolar() {
+                const agrupados = {};
+                this.listaMesesDinamicos.forEach(mes => {
+                    const parsed = this.parseMonthOrder(mes);
+                    const cursoKey = parsed.cursoKey;
+                    if (!agrupados[cursoKey]) agrupados[cursoKey] = [];
+                    agrupados[cursoKey].push(mes);
+                });
+                return agrupados;
+            },
+            mesVisualizadoTexto() {
+                return this.mesVisualizadoCalendario.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            },
+            diasMesActual() {
+                const year = this.mesVisualizadoCalendario.getFullYear();
+                const month = this.mesVisualizadoCalendario.getMonth();
+                const diasTotales = new Date(year, month + 1, 0).getDate();
+                const hoyStr = new Date().toISOString().split('T')[0];
+                const arrayDias = [];
+
+                for (let d = 1; d <= diasTotales; d++) {
+                    const fStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const fechaObj = new Date(year, month, d);
+                    const nombreDia = fechaObj.toLocaleDateString('es-ES', { weekday: 'short' });
+
+                    const evs = this.examenesList.filter(ex => {
+                        const coincideFecha = String(ex.fecha || '').replace(/\//g, '-') === fStr;
+                        const coincideAlumno = this.filtroAlumnoCalendario === 'todos' || this.normalizeName(ex.alumno) === this.normalizeName(this.filtroAlumnoCalendario);
+                        return coincideFecha && coincideAlumno;
+                    });
+
+                    if (evs.length > 0 || fStr === hoyStr) {
+                        arrayDias.push({ diaNum: d, nombreDia: nombreDia, fechaStr: fStr, esHoy: fStr === hoyStr, examenes: evs });
+                    }
+                }
+                return arrayDias;
+            }
+        },
+        methods: {
+            normalizeName(str) { 
+                return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
+            },
+
+            formatWhatsAppUrl(tlf) {
+                if (!tlf) return '#';
+                let num = String(tlf).replace(/\D/g, '');
+                if (!num.startsWith('34') && num.length === 9) num = '34' + num;
+                return 'https://wa.me/' + num;
+            },
+
+            formatNombrePrint(nombreCompleto) {
+                if (!nombreCompleto) return '';
                 
-                abrirCuadranteHorarios, setModoHorario, copiarDesdePlantillaHorario,
-                guardarHorarioEnSupabase, imprimirCuadrante, seleccionarDiaSemana,
-                solicitarCambioFechaHorario, seleccionarAlumnoPincel, confirmGuardarYContinuarHorario,
-                confirmDescartarYContinuarHorario, cancelarCambioHorario,
+                const normInput = this.normalizeName(nombreCompleto);
+                const student = this.list.find(s => 
+                    this.normalizeName(`${s.nombre} ${s.apellidos}`) === normInput || 
+                    this.normalizeName(`${s.apellidos}, ${s.nombre}`) === normInput
+                );
+
+                let nombre = "";
+                let primerApellido = "";
+
+                if (student) {
+                    nombre = student.nombre || "";
+                    primerApellido = (student.apellidos || "").trim().split(/\s+/)[0] || "";
+                } else {
+                    const parts = nombreCompleto.trim().split(/\s+/);
+                    nombre = parts[0] || "";
+                    primerApellido = parts[1] || "";
+                }
+
+                const nombreParts = nombre.trim().split(/\s+/);
+                let primerNombre = nombreParts[0] || "";
+                let initialSegundoNombre = nombreParts.length > 1 ? ` ${nombreParts[1].charAt(0)}.` : "";
+                let nombreBase = `${primerNombre}${initialSegundoNombre}`;
+
+                let count = 0;
+                const currentGridNames = Object.values(this.gridHorario)
+                    .map(cell => cell ? cell.nombre : '')
+                    .filter(n => !!n);
+
+                currentGridNames.forEach(n => {
+                    const normN = this.normalizeName(n);
+                    const st = this.list.find(s => this.normalizeName(`${s.nombre} ${s.apellidos}`) === normN);
+                    let nFirst = st ? (st.nombre || "") : (n.trim().split(/\s+/)[0] || "");
+                    const nParts = nFirst.trim().split(/\s+/);
+                    const nBase = `${nParts[0]}${nParts.length > 1 ? ` ${nParts[1].charAt(0)}.` : ""}`;
+                    if (this.normalizeName(nBase) === this.normalizeName(nombreBase)) {
+                        count++;
+                    }
+                });
+
+                if (count > 1 && primerApellido) {
+                    return `${nombreBase} ${primerApellido.charAt(0)}.`;
+                }
+
+                return nombreBase;
+            },
+
+            imprimirCuadrante() {
+                document.body.classList.add('is-printing-horario');
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        document.body.classList.remove('is-printing-horario');
+                    }, 500);
+                }, 100);
+            },
+
+            formatearFecha(f) {
+                if (!f) return '';
+                const parts = f.split('-');
+                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                return f;
+            },
+            formatImporte(val) {
+                if (val === null || val === undefined || val === '') return '0.00';
+                const clean = String(val).replace(/[€\s]/g, '').replace(',', '.');
+                const num = Number(clean);
+                return isNaN(num) ? val : num.toFixed(2);
+            },
+            formatMesUnificado(mesStr) {
+                if (!mesStr) return '-';
+                let limpio = String(mesStr).toUpperCase().trim();
+                let parts = limpio.replace(/'/g, '').split(' ');
+                if (parts.length >= 2) {
+                    let mesUpper = parts[0];
+                    let mesCap = mesUpper.charAt(0) + mesUpper.slice(1).toLowerCase();
+                    let anioRaw = parts[parts.length - 1];
+                    let anioFull = anioRaw.length === 2 ? "20" + anioRaw : anioRaw;
+                    return `${mesCap} ${anioFull}`;
+                }
+                return limpio.charAt(0) + limpio.slice(1).toLowerCase();
+            },
+            obtenerNombreMesCorto(f) {
+                if (!f) return '';
+                const d = new Date(f);
+                return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
+            },
+            calcularImporteTotalPago() {
+                let base = 0;
+                if (this.nuevoPago.tarifa) {
+                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
+                    if (matchT) base = Number(matchT[1]);
+                }
+                let extra = 0;
+                if (this.nuevoPago.extras) {
+                    const matchE = this.nuevoPago.extras.match(/(\d+(?:[\.,]\d)?)€/);
+                    if (matchE) {
+                        extra = Number(matchE[1].replace(',', '.'));
+                    } else {
+                        const cleanNum = parseFloat(this.nuevoPago.extras.replace(/[^\d,\.]/g, '').replace(',', '.'));
+                        if (!isNaN(cleanNum)) extra = cleanNum;
+                    }
+                }
+                const total = base + extra;
+                this.nuevoPago.importe = total > 0 ? total : '';
+            },
+            parseMonthOrder(m_str) {
+                const parts = m_str.replace(/'/g, "").trim().split(' ');
+                if (parts.length >= 2) {
+                    const m_name = parts[0].toUpperCase();
+                    const y_raw = parts[1];
+                    const yearNum = Number("20" + (y_raw.length === 2 ? y_raw : y_raw.slice(-2)));
+                    const monthIdx = monthOrder[m_name] || 1;
+                    let startYear = (monthIdx >= 1 && monthIdx <= 4) ? yearNum : yearNum - 1;
+                    const cursoKey = `${startYear}/${startYear + 1}`;
+                    return { cursoKey, monthIdx };
+                }
+                return { cursoKey: '2025/2026', monthIdx: 1 };
+            },
+            pagoVacio() {
+                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'EFECTIVO' };
+            },
+            generarIdFactura(nombre, apellidos, fecha, mesStr) {
+                let maxNum = 106;
+                if (this.pagosList && this.pagosList.length > 0) {
+                    const numeros = this.pagosList.map(p => {
+                        if (p.factura_id) {
+                            const partes = String(p.factura_id).split('-');
+                            const numeroFrente = parseInt(partes[0]);
+                            return isNaN(numeroFrente) ? 0 : numeroFrente;
+                        }
+                        return 0;
+                    });
+                    maxNum = Math.max(...numeros, 106);
+                }
+                const siguienteNum = maxNum + 1;
                 
-                abrirGestorExamenes, seleccionarTodos, guardarExamenesMasivos,
-                cambiarMesCalendario, abrirEditarExamen, abrirEliminarExamen,
-                guardarEdicionExamen, ejecutarEliminarExamen,
+                let nombreLimpio = String(nombre || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+                let apellidoLimpio = String(apellidos || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
                 
-                abrirGestorPagos, cargarDatosSupabase, reimprimirPagoHistoricoGlobal,
-                abrirEditarPago, abrirEliminarPago, guardarEdicionPago, ejecutarEliminarPago,
+                const palabrasNombre = nombreLimpio.split(/\s+/).filter(w => w.length > 0);
+                let inicialesNombres = palabrasNombre.map(w => w.charAt(0)).join('');
+                if (!inicialesNombres) inicialesNombres = 'X';
                 
-                abrirExploradorFacturas, cargarArchivosNube, subirArchivosSeleccionados,
-                toggleCursoFacturas, abrirEliminarArchivoNube, ejecutarEliminarArchivoNube,
+                const palabrasApellidos = apellidoLimpio.split(/\s+/).filter(w => w.length > 0);
+                let inicialApellido1 = palabrasApellidos.length > 0 ? palabrasApellidos[0].charAt(0) : 'X';
+                let inicialApellido2 = palabrasApellidos.length > 1 ? palabrasApellidos[1].charAt(0) : '';
                 
-                cerrarCustomModal, ejecutarAccionModal,
+                const codigoAlumno = `${inicialesNombres}${inicialApellido1}${inicialApellido2}`;
+                let mesLimpio = String(mesStr || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+                let mesPartes = mesLimpio.replace(/'/g, '').split(' ');
+                let mesLetras = mesPartes[0] ? mesPartes[0].substring(0, 3) : "GEN";
                 
-                formatNombrePrint, getCelda, clickCelda, toggleBajaCelda,
-                contarOcupacion, normalizeName, formatMesUnificado, formatImporte,
-                formatearFecha, contarArchivosCurso
-            };
+                const parsedMonth = this.parseMonthOrder(mesStr);
+                const [anioInicioStr, anioFinStr] = parsedMonth.cursoKey.split('/');
+                const cursoEscolar = `${anioInicioStr.slice(-2)}/${anioFinStr.slice(-2)}`;
+                
+                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
+            },
+            async login() {
+                if (!this.loginEmail || !this.loginPassword) return;
+                this.loading = true;
+                this.loginError = false;
+                try {
+                    const { data, error } = await _supabase.auth.signInWithPassword({ email: this.loginEmail, password: this.loginPassword });
+                    if (error) {
+                        this.loginError = true;
+                        this.errorMsg = 'Credenciales inválidas.';
+                        this.loading = false;
+                        return;
+                    }
+                    await this.cargarDatosSupabase();
+                    this.authenticated = true;
+                } catch(e) {
+                    console.error("Error en login:", e);
+                    this.loginError = true;
+                    this.errorMsg = 'Error al conectar con el servidor.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+            async cargarDatosSupabase() {
+                try {
+                    const resAlumnos = await _supabase.from('listado_alumnos').select('*');
+                    this.list = (resAlumnos.data || []).sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
+                    
+                    const resEx = await _supabase.from('examenes').select('*');
+                    this.examenesList = resEx.data || [];
+                    
+                    const resFijos = await _supabase.from('ingresos_fijos').select('*');
+                    this.ingresosFijosList = resFijos.data || [];
+                    
+                    const resPagos = await _supabase.from('pagos').select('*');
+                    this.pagosList = resPagos.data || [];
+                } catch(e) { console.error("Error cargando desde Supabase:", e); }
+            },
+            abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
+            abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
+            abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
+            
+            getHorarioSnapshot() {
+                const cleanObj = {};
+                Object.keys(this.gridHorario).sort().forEach(k => {
+                    if (this.gridHorario[k] && this.gridHorario[k].nombre) {
+                        cleanObj[k] = {
+                            nombre: this.gridHorario[k].nombre,
+                            baja: Boolean(this.gridHorario[k].baja)
+                        };
+                    }
+                });
+                return JSON.stringify(cleanObj);
+            },
+            markHorarioClean() {
+                this.originalHorarioSnapshot = this.getHorarioSnapshot();
+            },
+            ejecutarNavegacionConGuarda(action) {
+                if (this.activeTab === 'cuadrante_horarios' && this.isHorarioDirty) {
+                    this.pendingHorarioAction = action;
+                    this.showUnsavedHorarioModal = true;
+                } else {
+                    action();
+                }
+            },
+            async confirmGuardarYContinuarHorario() {
+                this.showUnsavedHorarioModal = false;
+                await this.guardarHorarioEnSupabase();
+                if (this.pendingHorarioAction) {
+                    const act = this.pendingHorarioAction;
+                    this.pendingHorarioAction = null;
+                    act();
+                }
+            },
+            confirmDescartarYContinuarHorario() {
+                this.showUnsavedHorarioModal = false;
+                this.markHorarioClean();
+                if (this.pendingHorarioAction) {
+                    const act = this.pendingHorarioAction;
+                    this.pendingHorarioAction = null;
+                    act();
+                }
+            },
+            cancelarCambioHorario() {
+                this.showUnsavedHorarioModal = false;
+                this.pendingHorarioAction = null;
+                this.diaSeleccionado = this.previousDiaSeleccionado;
+                this.fechaSeleccionada = this.previousFechaSeleccionada;
+            },
+
+            abrirCuadranteHorarios() {
+                this.selected = null;
+                this.activeTab = 'cuadrante_horarios';
+                this.alCambiarFechaHorario();
+            },
+            setModoHorario(modo) {
+                if (this.modoVistaHorario === modo) return;
+                this.ejecutarNavegacionConGuarda(() => {
+                    this.modoVistaHorario = modo;
+                    this.cargarHorario();
+                });
+            },
+            seleccionarDiaSemana(dia) {
+                if (this.diaSeleccionado === dia) return;
+                this.ejecutarNavegacionConGuarda(() => {
+                    this.diaSeleccionado = dia;
+                    this.previousDiaSeleccionado = dia;
+                    this.cargarHorario();
+                });
+            },
+            solicitarCambioFechaHorario(nuevaFecha) {
+                if (this.fechaSeleccionada === nuevaFecha) return;
+                this.ejecutarNavegacionConGuarda(() => {
+                    this.fechaSeleccionada = nuevaFecha;
+                    this.alCambiarFechaHorario();
+                });
+            },
+            alCambiarFechaHorario() {
+                if (!this.fechaSeleccionada) return;
+                const d = new Date(this.fechaSeleccionada);
+                const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+                const nombreDia = dias[d.getDay()];
+                if (this.diasSemana.includes(nombreDia)) {
+                    this.diaSeleccionado = nombreDia;
+                    this.previousDiaSeleccionado = nombreDia;
+                }
+                this.previousFechaSeleccionada = this.fechaSeleccionada;
+                this.cargarHorario();
+            },
+            seleccionarAlumnoPincel(nombreCompleto) {
+                this.alumnoActivoPincel = nombreCompleto;
+                this.searchAlumnoPincel = '';
+            },
+            getCeldaKey(tipo, hora, col) { return `${tipo}_${hora}_${col}`; },
+            getCelda(tipo, hora, col) {
+                const key = this.getCeldaKey(tipo, hora, col);
+                return this.gridHorario[key] || { nombre: '', baja: false };
+            },
+            clickCelda(tipo, hora, col) {
+                const key = this.getCeldaKey(tipo, hora, col);
+                const celdaActual = this.getCelda(tipo, hora, col);
+
+                if (this.alumnoActivoPincel) {
+                    if (this.normalizeName(celdaActual.nombre) === this.normalizeName(this.alumnoActivoPincel)) {
+                        delete this.gridHorario[key];
+                    } else {
+                        this.gridHorario[key] = { nombre: this.alumnoActivoPincel, baja: false };
+                    }
+                } else {
+                    if (celdaActual.nombre) {
+                        this.alumnoActivoPincel = celdaActual.nombre;
+                    }
+                }
+            },
+            toggleBajaCelda(tipo, hora, col) {
+                const key = this.getCeldaKey(tipo, hora, col);
+                const celdaActual = this.getCelda(tipo, hora, col);
+                if (celdaActual.nombre) {
+                    this.gridHorario[key].baja = !this.gridHorario[key].baja;
+                }
+            },
+            contarOcupacion(tipo, hora) {
+                let count = 0;
+                for (let col = 1; col <= 7; col++) {
+                    if (this.getCelda(tipo, hora, col).nombre) count++;
+                }
+                return count;
+            },
+            async cargarHorario() {
+                this.gridHorario = {};
+                try {
+                    if (this.modoVistaHorario === 'plantilla') {
+                        const { data } = await _supabase
+                            .from('horario_plantilla')
+                            .select('*')
+                            .eq('dia_semana', this.diaSeleccionado);
+                        if (data) {
+                            data.forEach(r => {
+                                const key = this.getCeldaKey(r.tipo, r.hora, r.columna);
+                                const esBaja = String(r.observaciones || '').includes('[B]');
+                                this.gridHorario[key] = { nombre: r.alumno_nombre, baja: esBaja };
+                            });
+                        }
+                    } else {
+                        const { data: dataDiario } = await _supabase
+                            .from('horario_diario')
+                            .select('*')
+                            .eq('fecha', this.fechaSeleccionada);
+
+                        if (dataDiario && dataDiario.length > 0) {
+                            dataDiario.forEach(r => {
+                                const key = this.getCeldaKey(r.tipo, r.hora, r.columna);
+                                const esBaja = String(r.observaciones || '').includes('[B]');
+                                this.gridHorario[key] = { nombre: r.alumno_nombre, baja: esBaja };
+                            });
+                        } else {
+                            await this.copiarDesdePlantillaSilenciosoHorario();
+                        }
+                    }
+                } catch(e) { console.error("Error cargando horario:", e); }
+                this.markHorarioClean();
+            },
+            async copiarDesdePlantillaSilenciosoHorario() {
+                const { data: dataPlantilla } = await _supabase
+                    .from('horario_plantilla')
+                    .select('*')
+                    .eq('dia_semana', this.diaSeleccionado);
+                if (dataPlantilla) {
+                    dataPlantilla.forEach(r => {
+                        const key = this.getCeldaKey(r.tipo, r.hora, r.columna);
+                        const esBaja = String(r.observaciones || '').includes('[B]');
+                        this.gridHorario[key] = { nombre: r.alumno_nombre, baja: esBaja };
+                    });
+                }
+            },
+            async copiarDesdePlantillaHorario() {
+                await this.copiarDesdePlantillaSilenciosoHorario();
+                this.showSuccess = true;
+                this.successMessage = `Plantilla base cargada para el ${this.diaSeleccionado}`;
+                setTimeout(() => { this.showSuccess = false; }, 2500);
+            },
+            async guardarHorarioEnSupabase() {
+                this.savingHorario = true;
+                try {
+                    const rowsToInsert = [];
+                    for (const key in this.gridHorario) {
+                        const item = this.gridHorario[key];
+                        if (!item || !item.nombre) continue;
+
+                        const [tipo, hora, colStr] = key.split('_');
+                        const columna = parseInt(colStr);
+                        const obs = item.baja ? '[B]' : '';
+
+                        if (this.modoVistaHorario === 'plantilla') {
+                            rowsToInsert.push({ dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
+                        } else {
+                            rowsToInsert.push({ fecha: this.fechaSeleccionada, dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
+                        }
+                    }
+
+                    if (this.modoVistaHorario === 'plantilla') {
+                        await _supabase.from('horario_plantilla').delete().eq('dia_semana', this.diaSeleccionado);
+                        if (rowsToInsert.length > 0) await _supabase.from('horario_plantilla').insert(rowsToInsert);
+                    } else {
+                        await _supabase.from('horario_diario').delete().eq('fecha', this.fechaSeleccionada);
+                        if (rowsToInsert.length > 0) await _supabase.from('horario_diario').insert(rowsToInsert);
+                    }
+
+                    this.markHorarioClean();
+                    this.showSuccess = true;
+                    this.successMessage = '¡Cuadrante de Horario guardado en Supabase!';
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
+                } catch(e) { console.error("Error guardando horario:", e); }
+                this.savingHorario = false;
+            },
+
+            async cargarArchivosNube() {
+                this.loadingArchivos = true;
+                try {
+                    let allFiles = [];
+                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 1000 });
+                    if (rootError) throw rootError;
+
+                    if (rootItems) {
+                        for (const rootItem of rootItems) {
+                            const rootName = rootItem.name;
+                            if (!rootName || rootName === '.emptyFolderPlaceholder') continue;
+
+                            if (rootName.toLowerCase().endsWith('.pdf')) {
+                                allFiles.push({ name: rootName, path: rootName });
+                            } else {
+                                const cursoFolder = rootName;
+                                const { data: monthItems } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 1000 });
+                                
+                                if (monthItems) {
+                                    for (const monthItem of monthItems) {
+                                        const mName = monthItem.name;
+                                        if (!mName || mName === '.emptyFolderPlaceholder') continue;
+
+                                        if (mName.toLowerCase().endsWith('.pdf')) {
+                                            allFiles.push({ name: mName, path: `${cursoFolder}/${mName}` });
+                                        } else {
+                                            const folderPath = `${cursoFolder}/${mName}`;
+                                            const { data: pdfItems } = await _supabase.storage.from('facturas').list(folderPath, { limit: 1000 });
+                                            if (pdfItems) {
+                                                for (const pdfItem of pdfItems) {
+                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
+                                                        allFiles.push({ name: pdfItem.name, path: `${folderPath}/${pdfItem.name}` });
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    this.archivosNube = allFiles.map(item => {
+                        let fileNameDecoded = "";
+                        try { fileNameDecoded = decodeURIComponent(item.name).replace('.pdf', ''); } catch(e) { fileNameDecoded = item.name.replace('.pdf', ''); }
+
+                        let pagoEncontrado = this.pagosList.find(p => {
+                            if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
+                            if (p.factura_id) {
+                                let facturaIdDb = String(p.factura_id).trim();
+                                let facturaIdSafe = facturaIdDb.replace(/\//g, '.');
+                                if (facturaIdDb.toUpperCase() === fileNameDecoded.toUpperCase() || facturaIdSafe.toUpperCase() === fileNameDecoded.toUpperCase()) return true;
+                            }
+                            return false;
+                        });
+
+                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameDecoded.replace(/\./g, '/')}.pdf`;
+                        let alumnoAsociado = pagoEncontrado && pagoEncontrado.alumno ? pagoEncontrado.alumno : 'Desconocido';
+
+                        let cursoVal = "2025/2026";
+                        let mesVal = "OCTUBRE";
+
+                        if (pagoEncontrado && pagoEncontrado.mes) {
+                            const parsedM = this.parseMonthOrder(pagoEncontrado.mes);
+                            cursoVal = parsedM.cursoKey;
+                            mesVal = pagoEncontrado.mes.split(' ')[0].toUpperCase();
+                        } else {
+                            const analisis = this.analizarTextoParaCursoYMes(item.path);
+                            cursoVal = analisis.curso;
+                            mesVal = analisis.mes;
+                        }
+
+                        const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
+                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl };
+                    });
+                } catch(e) { console.error("Error en nube:", e); }
+                this.loadingArchivos = false;
+            },
+            analizarTextoParaCursoYMes(pathCompleto) {
+                let decodedPath = pathCompleto;
+                try { decodedPath = decodeURIComponent(pathCompleto); } catch(e) { }
+                const pathUp = String(decodedPath).toUpperCase();
+                let cursoKey = "2025/2026";
+                let mesDetectado = "OCTUBRE";
+
+                if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027") || pathUp.includes("26.27")) cursoKey = "2026/2027";
+                else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026") || pathUp.includes("25.26")) cursoKey = "2025/2026";
+
+                const mesesMap = { 'SEPTIEMBRE': 'SEPTIEMBRE', 'OCTUBRE': 'OCTUBRE', 'NOVIEMBRE': 'NOVIEMBRE', 'DICIEMBRE': 'DICIEMBRE', 'ENERO': 'ENERO', 'FEBRERO': 'FEBRERO', 'MARZO': 'MARZO', 'ABRIL': 'ABRIL', 'MAYO': 'MAYO', 'JUNIO': 'JUNIO', 'JULIO': 'JULIO', 'AGOSTO': 'AGOSTO' };
+                for (const [abbr, fullName] of Object.entries(mesesMap)) {
+                    if (pathUp.includes(abbr)) { mesDetectado = fullName; break; }
+                }
+                return { curso: cursoKey, mes: mesDetectado };
+            },
+            toggleCursoFacturas(cursoKey) { this.cursoFacturasAbierto[cursoKey] = !this.cursoFacturasAbierto[cursoKey]; },
+            contarArchivosCurso(mesesObj) {
+                let total = 0;
+                for (const m in mesesObj) total += mesesObj[m].length;
+                return total;
+            },
+
+            abrirEliminarArchivoNube(archivo) {
+                this.archivoAEliminarNube = archivo;
+                this.showDeleteArchivoModal = true;
+            },
+
+            async ejecutarEliminarArchivoNube() {
+                if (!this.archivoAEliminarNube) return;
+                try {
+                    const pathBuscado = this.archivoAEliminarNube.path;
+
+                    const { error } = await _supabase.storage.from('facturas').remove([pathBuscado]);
+                    if (error) throw error;
+
+                    const pagoVinculado = this.pagosList.find(p => p.archivo_url === pathBuscado);
+                    if (pagoVinculado) {
+                        await _supabase.from('pagos').update({ archivo_url: null }).eq('id', pagoVinculado.id);
+                    }
+
+                    this.showDeleteArchivoModal = false;
+                    this.archivoAEliminarNube = null;
+
+                    await this.cargarArchivosNube();
+                    await this.cargarDatosSupabase();
+
+                    this.showSuccess = true;
+                    this.successMessage = 'Factura eliminada de la nube';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error al eliminar archivo de la nube:", e);
+                    alert("No se pudo eliminar el archivo de la nube.");
+                }
+            },
+
+            async registrarPagoYSubirNube() {
+                if (!this.form || !this.form.nombre) return;
+
+                this.showUnsavedHorarioModal = false;
+                this.showCustomModal = false;
+                this.showEditPagoModal = false;
+                this.showDeletePagoModal = false;
+                this.showEditExamenModal = false;
+                this.showDeleteExamenModal = false;
+                this.showDeleteStudentModal = false;
+                this.showDeleteArchivoModal = false;
+
+                this.savingPago = true;
+                this.preparingPrint = true;
+
+                try {
+                    const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                    const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
+                    const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
+                    
+                    const { data: insertedPago } = await _supabase.from('pagos').insert([{
+                        factura_id: idFinal, alumno: alumnoNombre,
+                        tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                        fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
+                    }]).select().single();
+
+                    this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
+                    
+                    const element = document.getElementById('zona-impresion');
+                    element.classList.remove('hidden');
+                    
+                    if (document.fonts) { await document.fonts.ready; }
+
+                    const idSafeForStorage = idFinal.replace(/\//g, '.');
+                    const nombreArchivoStorage = idSafeForStorage + '.pdf';
+                    
+                    const opt = { 
+                        margin: 0, 
+                        filename: `${idSafeForStorage}.pdf`, 
+                        image: { type: 'jpeg', quality: 0.98 }, 
+                        html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                    };
+                    
+                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+                    element.classList.add('hidden');
+                    
+                    const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
+                    const cursoPath = parsedMonth.cursoKey.replace('/', '-');
+                    const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
+
+                    const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
+
+                    await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
+                    if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
+
+                    await this.cargarDatosSupabase();
+
+                    await new Promise(resolve => setTimeout(resolve, 250));
+
+                    this.preparingPrint = false;
+                    this.savingPago = false;
+
+                    document.body.classList.add('is-printing-ticket');
+                    setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                            document.body.classList.remove('is-printing-ticket');
+                        }, 300);
+                    }, 50);
+
+                    this.showSuccess = true;
+                    this.successMessage = `¡Pago guardado y factura procesada!`;
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
+
+                } catch(e) {
+                    console.error("Error al registrar pago y subir a la nube:", e);
+                    this.savingPago = false;
+                    this.preparingPrint = false;
+                    alert("Error al procesar el pago y el PDF.");
+                }
+            },
+            async registrarPagoSolo() {
+                if (!this.form || !this.form.nombre) return;
+                this.savingPago = true;
+                const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
+                const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
+                
+                await _supabase.from('pagos').insert([{
+                    factura_id: idFinal, alumno: this.form.nombre + ' ' + this.form.apellidos,
+                    tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
+                    fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
+                }]);
+
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = `¡Pago registrado en la base de datos!`;
+                setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
+            },
+            reimprimirPagoHistorico(pago) {
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
+                document.body.classList.add('is-printing-ticket');
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        document.body.classList.remove('is-printing-ticket');
+                    }, 300);
+                }, 100);
+            },
+            reimprimirPagoHistoricoGlobal(pago) {
+                this.reimprimirPagoHistorico(pago);
+            },
+            abrirEditarPago(pago) {
+                this.editPagoForm = JSON.parse(JSON.stringify(pago));
+                this.showEditPagoModal = true;
+            },
+            async guardarEdicionPago() {
+                if (!this.editPagoForm.id) return;
+                await _supabase.from('pagos').update({
+                    fecha_pago: this.editPagoForm.fecha_pago,
+                    mes: this.editPagoForm.mes,
+                    tarifa: this.editPagoForm.tarifa,
+                    extras: this.editPagoForm.extras,
+                    importe: Number(this.editPagoForm.importe),
+                    metodo_pago: String(this.editPagoForm.metodo_pago).toUpperCase()
+                }).eq('id', this.editPagoForm.id);
+                this.showEditPagoModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago actualizado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirEliminarPago(pago) {
+                this.pagoAEliminar = pago;
+                this.showDeletePagoModal = true;
+            },
+            async ejecutarEliminarPago() {
+                if (!this.pagoAEliminar) return;
+                await _supabase.from('pagos').delete().eq('id', this.pagoAEliminar.id);
+                this.showDeletePagoModal = false;
+                this.pagoAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Pago eliminado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+
+            generarReciboHTML(datos, alumnoNombre) {
+                const numRecibo = datos.id || `S/N`;
+                const fechaE = datos.fecha ? new Date(datos.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
+                const logoUrl = "https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png";
+                const nombreFinal = (alumnoNombre || (this.selected ? `${this.selected.nombre} ${this.selected.apellidos}` : '')).toUpperCase();
+
+                let totalVal = parseFloat(datos.importe || 0);
+                if (isNaN(totalVal)) totalVal = 0;
+                const totalFormatted = totalVal.toFixed(2).replace('.', ',') + " €";
+
+                let mesRaw = datos.mes || '';
+                let mesNombre = mesRaw.split(' ')[0] || '';
+                let mesLower = mesNombre.toLowerCase();
+
+                const tarifaLimpia = String(datos.tarifa || '').replace(/\s*\([^)]*\)/g, '').trim();
+                const extrasLimpio = String(datos.extras || '').trim();
+
+                let conceptoTitulo = "";
+                let conceptoSubtitulo = "Curso académico vigente";
+
+                if (extrasLimpio) {
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'este mes'}`;
+                    conceptoSubtitulo = `${extrasLimpio} (${conceptoSubtitulo})`;
+                } else if (tarifaLimpia) {
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'este mes'}`;
+                } else {
+                    conceptoTitulo = `Mensualidad de ${mesLower || 'clase'}`;
+                }
+
+                document.getElementById('ticket-data').innerHTML = `
+                    <div style="font-family:'Outfit', Arial, sans-serif; margin:0 auto; padding:0; color:#000; background:#fff; box-sizing:border-box; width:210mm; height:296mm; position:relative; overflow:hidden;">
+                        <div style="border:2px solid #000; width:100%; height:290mm; position:relative; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; background:#fff; padding:12mm;">
+                            
+                            <img src="${logoUrl}" style="position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:320px; opacity:0.04; filter:grayscale(100%); pointer-events:none; z-index:0;" />
+
+                            <div style="position:relative; z-index:1;">
+                                <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+                                    <tr>
+                                        <td style="padding:0; vertical-align:middle;">
+                                            <img src="${logoUrl}" style="height:70px; width:auto; filter:grayscale(100%); display:block;" />
+                                        </td>
+                                        <td style="text-align:right; font-size:11px; font-weight:600; color:#000; line-height:1.35; vertical-align:middle;">
+                                            <strong style="font-size:13px; font-weight:800; text-transform:uppercase;">CSE ELISA GUNDÍN</strong><br>
+                                            NIF: 20054671M<br>
+                                            C/ Alicante 4, El Pinós (03650)
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000; margin-bottom:0;">
+                                    <tr>
+                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">Nº RECIBO</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${numRecibo}</div>
+                                        </td>
+                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000; text-align:center;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FECHA EMISIÓN</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${fechaE}</div>
+                                        </td>
+                                        <td style="padding:8px 10px; width:34%; text-align:right;">
+                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FORMA DE PAGO</div>
+                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px; text-transform:uppercase;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <div style="border-bottom:2px solid #000; padding:12px 10px; background:#fff;">
+                                    <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">RECIBÍ DE:</div>
+                                    <div style="font-size:16px; font-weight:900; color:#000; text-transform:uppercase; margin-top:3px; letter-spacing:0.5px;">${nombreFinal}</div>
+                                </div>
+
+                                <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #000;">
+                                    <tr>
+                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">CONCEPTO</td>
+                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000; text-align:right; width:120px;">IMPORTE</td>
+                                    </tr>
+                                </table>
+
+                                <table style="width:100%; border-collapse:collapse; min-height:160px;">
+                                    <tr>
+                                        <td style="padding:15px 10px; vertical-align:top;">
+                                            <div style="font-size:14px; font-weight:800; color:#000;">${conceptoTitulo}</div>
+                                            <div style="font-size:11px; font-style:italic; color:#555; margin-top:4px;">${conceptoSubtitulo}</div>
+                                        </td>
+                                        <td style="padding:15px 10px; text-align:right; vertical-align:top; font-size:15px; font-weight:900; color:#000; width:120px; white-space:nowrap;">
+                                            ${Math.round(totalVal)} €
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000;">
+                                    <tr>
+                                        <td style="padding:12px 10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">TOTAL EUROS</td>
+                                        <td style="padding:12px 10px; font-size:18px; font-weight:900; color:#000; text-align:right; width:140px; white-space:nowrap;">${totalFormatted}</td>
+                                    </tr>
+                                </table>
+
+                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
+                                    <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
+                                        NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
+                                    </div>
+                                    <div style="text-align:center; min-width:180px;">
+                                        <div style="height:45px;"></div>
+                                        <div style="font-size:10px; color:#000; font-family:monospace; letter-spacing:-1px;">--------------------------------------------------</div>
+                                        <div style="font-size:10px; font-weight:800; color:#000; text-transform:uppercase; margin-top:2px;">FDO. CSE ELISA GUNDÍN</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
+                                PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
+                            </div>
+
+                        </div>
+                    </div>`;
+            },
+
+            abrirEditarExamen(ex) {
+                this.editExamenForm = JSON.parse(JSON.stringify(ex));
+                this.showEditExamenModal = true;
+            },
+            async guardarEdicionExamen() {
+                if (!this.editExamenForm.id) return;
+                await _supabase.from('examenes').update({
+                    fecha: this.editExamenForm.fecha,
+                    asignatura: this.editExamenForm.asignatura,
+                    nota: this.editExamenForm.nota
+                }).eq('id', this.editExamenForm.id);
+                this.showEditExamenModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen actualizado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirEliminarExamen(ex) {
+                this.examenAEliminar = ex;
+                this.showDeleteExamenModal = true;
+            },
+            async ejecutarEliminarExamen() {
+                if (!this.examenAEliminar) return;
+                await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
+                this.showDeleteExamenModal = false;
+                this.examenAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen eliminado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            async guardarExamenesMasivos() {
+                if (!this.gestorExamenes.fecha || !this.gestorExamenes.asignatura || this.gestorExamenes.alumnosSeleccionados.length === 0) return;
+                this.savingExamenes = true;
+                const filas = this.gestorExamenes.alumnosSeleccionados.map(alumno => ({
+                    fecha: this.gestorExamenes.fecha,
+                    asignatura: this.gestorExamenes.asignatura,
+                    alumno: alumno
+                }));
+                await _supabase.from('examenes').insert(filas);
+                this.gestorExamenes.alumnosSeleccionados = [];
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = '¡Exámenes creados con éxito!';
+                setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 2000);
+            },
+            seleccionarTodos(val) {
+                if (val) {
+                    this.gestorExamenes.alumnosSeleccionados = this.alumnosFiltradosGestor.map(a => `${a.nombre} ${a.apellidos}`);
+                } else {
+                    this.gestorExamenes.alumnosSeleccionados = [];
+                }
+            },
+            cambiarMesCalendario(dir) {
+                const d = new Date(this.mesVisualizadoCalendario);
+                d.setMonth(d.getMonth() + dir);
+                this.mesVisualizadoCalendario = d;
+            },
+            async subirArchivosSeleccionados(event) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+                this.loadingArchivos = true;
+                for (const file of files) {
+                    const path = `subidas_manuales/${file.name}`;
+                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                }
+                await this.cargarArchivosNube();
+                this.loadingArchivos = false;
+                this.showSuccess = true;
+                this.successMessage = 'Archivos subidos correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirSeccionPagos() {
+                this.activeTab = 'pagos';
+                if (this.listaMesesDinamicos.length > 0) {
+                    this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
+                }
+            },
+            async generarSiguienteMes() {
+                const ult = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'Junio 2026';
+                const mNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                let idx = mNombres.findIndex(m => m.toLowerCase() === ult.split(' ')[0].toLowerCase());
+                let year = parseInt(ult.split(' ')[1]) || 2026;
+                idx++;
+                if (idx > 11) { idx = 0; year++; }
+                const nuevoMes = `${mNombres[idx]} ${year}`;
+                if (this.selected) {
+                    await _supabase.from('ingresos_fijos').insert([{ alumno: `${this.selected.nombre} ${this.selected.apellidos}`, mes: nuevoMes, cuota: 0, pagado: false }]);
+                    await this.cargarDatosSupabase();
+                }
+            },
+            getCuotaValor(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? reg.cuota : '';
+            },
+            updateCuotaLocal(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.cuota = Number(val);
+                } else {
+                    this.ingresosFijosList.push({ alumno, mes, cuota: Number(val), pagado: false });
+                }
+            },
+            async guardarCeldaIngresosFijos(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (!reg) return;
+                if (reg.id) {
+                    await _supabase.from('ingresos_fijos').update({ cuota: reg.cuota }).eq('id', reg.id);
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota, pagado: false }]).select().single();
+                    if (data) reg.id = data.id;
+                }
+            },
+            isPagadoTrue(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? Boolean(reg.pagado) : false;
+            },
+            async togglePagadoIngresosFijos(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.pagado = val;
+                    if (reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ pagado: val }).eq('id', reg.id);
+                    } else {
+                        const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota || 0, pagado: val }]).select().single();
+                        if (data) reg.id = data.id;
+                    }
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: 0, pagado: val }]).select().single();
+                    if (data) this.ingresosFijosList.push(data);
+                }
+            },
+            abrirModalEditar(mes) {
+                this.modalTargetMes = mes;
+                this.modalInputVal = mes;
+                this.modalType = 'edit';
+                this.modalTitle = 'Renombrar Mes';
+                this.modalMessage = `Introduce el nuevo nombre para ${mes}:`;
+                this.showCustomModal = true;
+            },
+            abrirModalEliminar(mes) {
+                this.modalTargetMes = mes;
+                this.modalType = 'delete';
+                this.modalTitle = 'Eliminar Mes';
+                this.modalMessage = `¿Seguro que deseas eliminar la cuota del mes ${mes}?`;
+                this.showCustomModal = true;
+            },
+            cerrarCustomModal() {
+                this.showCustomModal = false;
+            },
+            async ejecutarAccionModal() {
+                if (this.modalType === 'edit' && this.modalInputVal && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ mes: this.modalInputVal }).eq('id', reg.id);
+                    }
+                } else if (this.modalType === 'delete' && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').delete().eq('id', reg.id);
+                    }
+                }
+                this.showCustomModal = false;
+                await this.cargarDatosSupabase();
+            },
+            toggleCurso(cursoKey) {
+                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
+            },
+            logout() { _supabase.auth.signOut(); location.reload(); },
+            createNew() {
+                this.isNew = true;
+                this.activeTab = 'ficha';
+                this.form = {
+                    nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
+                    usuario_aules: '', pass_aules: '',
+                    direccion: '', cp: '', poblacion: '', provincia: '',
+                    colegio: '', curso: '', tlf: '',
+                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: ''
+                };
+                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno', baja: false };
+            },
+            selectStudent(s) { 
+                this.form = JSON.parse(JSON.stringify(s)); 
+                this.isNew = false; 
+                this.activeTab = 'menu'; 
+                this.selected = s; 
+            },
+            cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
+            
+            abrirEliminarAlumno() {
+                if (!this.selected || this.isNew) return;
+                this.showDeleteStudentModal = true;
+            },
+            
+            async ejecutarEliminarAlumno() {
+                if (!this.selected || !this.selected.id) return;
+                try {
+                    await _supabase.from('listado_alumnos').delete().eq('id', this.selected.id);
+                    this.showDeleteStudentModal = false;
+                    this.selected = null;
+                    this.activeTab = 'menu';
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha del alumno eliminada';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error al eliminar alumno:", e);
+                    alert("No se pudo eliminar el alumno.");
+                }
+            },
+
+            async saveData() {
+                if (!this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
+                    return;
+                }
+
+                this.saving = true;
+                try {
+                    const payload = { ...this.form };
+                    delete payload.id;
+                    payload.baja = Boolean(this.form.baja);
+
+                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
+                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
+                    Object.keys(payload).forEach(key => {
+                        if (key === 'nacimiento') {
+                            if (!payload[key]) payload[key] = null;
+                        } else if (typeof payload[key] === 'boolean') {
+                            // conservar booleanos
+                        } else {
+                            if (payload[key] === null || payload[key] === undefined) {
+                                payload[key] = '';
+                            }
+                        }
+                    });
+
+                    const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
+                    const newNombreCompleto = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
+
+                    if (this.isNew) {
+                        const { data, error } = await _supabase
+                            .from('listado_alumnos')
+                            .insert([payload])
+                            .select()
+                            .single();
+
+                        if (error) {
+                            console.error("Error al crear alumno en Supabase:", error);
+                            alert("Error al crear alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (data) {
+                            this.selected = data;
+                            this.form = JSON.parse(JSON.stringify(data));
+                            this.isNew = false;
+                        }
+                    } else {
+                        const { error } = await _supabase
+                            .from('listado_alumnos')
+                            .update(payload)
+                            .eq('id', this.selected.id);
+
+                        if (error) {
+                            console.error("Error al actualizar alumno en Supabase:", error);
+                            alert("Error al actualizar alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
+                            await Promise.all([
+                                _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
+                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
+                            ]);
+                        }
+                    }
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha guardada con éxito';
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                        this.selected = null;
+                        this.saving = false;
+                    }, 1800);
+                } catch (e) {
+                    console.error("Error inesperado en saveData:", e);
+                    alert("Ocurrió un error inesperado al guardar la ficha.");
+                    this.saving = false;
+                }
+            }
+        },
+        async mounted() {
+            try {
+                const { data } = await _supabase.auth.getSession();
+                if (data && data.session) {
+                    this.authenticated = true;
+                    await this.cargarDatosSupabase();
+                }
+            } catch(e) {
+                console.error("Error al verificar sesión inicial:", e);
+            } finally {
+                this.checkingSession = false;
+            }
         }
     }).mount('#app');
 </script>
