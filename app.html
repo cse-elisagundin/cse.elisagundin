@@ -2323,85 +2323,306 @@
                             <div style="position:relative; z-index:1;">
                                 <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
                                     <tr>
-                                        <td style="padding:0; vertical-align:middle;">
-                                            <img src="${logoUrl}" style="height:70px; width:auto; filter:grayscale(100%); display:block;" />
+                                        <td style="vertical-align:top; width:60%;">
+                                            <img src="${logoUrl}" style="height:55px; width:auto; display:block; margin-bottom:10px;" />
+                                            <h2 style="font-size:16px; font-weight:900; margin:0 0 4px 0; color:#243c7a; text-transform:uppercase;">CSE ELISA GUNDÍN</h2>
+                                            <p style="font-size:10px; font-weight:600; margin:0; color:#555; line-height:1.4;">
+                                                Centro de Servicios Educativos<br>
+                                                C/ Badía, 18 - Pinoso (Alicante)<br>
+                                                Tel: 644 26 36 29 | NIF: 48372619X
+                                            </p>
                                         </td>
-                                        <td style="text-align:right; font-size:11px; font-weight:600; color:#000; line-height:1.35; vertical-align:middle;">
-                                            <strong style="font-size:13px; font-weight:800; text-transform:uppercase;">CSE ELISA GUNDÍN</strong><br>
-                                            NIF: 20054671M<br>
-                                            C/ Alicante 4, El Pinós (03650)
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000; margin-bottom:0;">
-                                    <tr>
-                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000;">
-                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">Nº RECIBO</div>
-                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${numRecibo}</div>
-                                        </td>
-                                        <td style="padding:8px 10px; width:33%; border-right:1px solid #000; text-align:center;">
-                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FECHA EMISIÓN</div>
-                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">${fechaE}</div>
-                                        </td>
-                                        <td style="padding:8px 10px; width:34%; text-align:right;">
-                                            <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">FORMA DE PAGO</div>
-                                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px; text-transform:uppercase;">${String(datos.metodo || 'EFECTIVO').toUpperCase()}</div>
+                                        <td style="vertical-align:top; text-align:right; width:40%;">
+                                            <div style="background:#f4f6f9; border:1.5px solid #243c7a; border-radius:10px; padding:10px; display:inline-block; text-align:right; width:100%; box-sizing:border-box;">
+                                                <div style="font-size:10px; font-weight:800; color:#fa65c3; text-transform:uppercase; letter-spacing:0.5px;">RECIBO / FACTURA</div>
+                                                <div style="font-size:15px; font-weight:900; color:#243c7a; margin:3px 0;">Nº ${numRecibo}</div>
+                                                <div style="font-size:10px; font-weight:700; color:#555;">Fecha: ${fechaE}</div>
+                                            </div>
                                         </td>
                                     </tr>
                                 </table>
 
-                                <div style="border-bottom:2px solid #000; padding:12px 10px; background:#fff;">
-                                    <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:#000;">RECIBÍ DE:</div>
-                                    <div style="font-size:16px; font-weight:900; color:#000; text-transform:uppercase; margin-top:3px; letter-spacing:0.5px;">${nombreFinal}</div>
+                                <div style="border:1.5px solid #243c7a; border-radius:10px; padding:12px; margin-bottom:20px; background:#fafbff;">
+                                    <div style="font-size:9px; font-weight:800; color:#2b94cc; text-transform:uppercase; margin-bottom:4px; letter-spacing:0.5px;">DATOS DEL ALUMNO / CLIENTE</div>
+                                    <div style="font-size:14px; font-weight:900; color:#243c7a;">${nombreFinal}</div>
+                                    <div style="font-size:10px; font-weight:600; color:#555; margin-top:3px;">
+                                        ${this.selected && this.selected.dni ? 'DNI/NIE: ' + this.selected.dni + ' | ' : ''}
+                                        ${this.selected && this.selected.curso ? 'Curso: ' + this.selected.curso : 'Servicios Educativos'}
+                                    </div>
                                 </div>
 
-                                <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #000;">
-                                    <tr>
-                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">CONCEPTO</td>
-                                        <td style="padding:10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000; text-align:right; width:120px;">IMPORTE</td>
-                                    </tr>
+                                <table style="width:100%; border-collapse:collapse; margin-bottom:20px; border:1px solid #000;">
+                                    <thead>
+                                        <tr style="background:#243c7a; color:#fff; font-size:10px; text-transform:uppercase;">
+                                            <th style="padding:8px 10px; text-align:left; border:1px solid #000; width:55%;">Concepto</th>
+                                            <th style="padding:8px 10px; text-align:center; border:1px solid #000; width:20%;">Forma de Pago</th>
+                                            <th style="padding:8px 10px; text-align:right; border:1px solid #000; width:25%;">Importe</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding:10px; border:1px solid #000; vertical-align:top;">
+                                                <div style="font-size:11px; font-weight:800; color:#243c7a;">${conceptoTitulo}</div>
+                                                <div style="font-size:9px; font-weight:600; color:#666; margin-top:2px;">${tarifaLimpia ? 'Tarifa: ' + tarifaLimpia : ''}</div>
+                                                <div style="font-size:9px; font-weight:500; color:#888; margin-top:2px;">${conceptoSubtitulo}</div>
+                                            </td>
+                                            <td style="padding:10px; border:1px solid #000; text-align:center; vertical-align:top; font-size:10px; font-weight:800; color:#243c7a; text-transform:uppercase;">
+                                                ${datos.metodo || 'EFECTIVO'}
+                                            </td>
+                                            <td style="padding:10px; border:1px solid #000; text-align:right; vertical-align:top; font-size:12px; font-weight:900; color:#243c7a;">
+                                                ${totalFormatted}
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
 
-                                <table style="width:100%; border-collapse:collapse; min-height:160px;">
-                                    <tr>
-                                        <td style="padding:15px 10px; vertical-align:top;">
-                                            <div style="font-size:14px; font-weight:800; color:#000;">${conceptoTitulo}</div>
-                                            <div style="font-size:11px; font-style:italic; color:#555; margin-top:4px;">${conceptoSubtitulo}</div>
-                                        </td>
-                                        <td style="padding:15px 10px; text-align:right; vertical-align:top; font-size:15px; font-weight:900; color:#000; width:120px; white-space:nowrap;">
-                                            ${Math.round(totalVal)} €
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <table style="width:100%; border-collapse:collapse; border-top:2px solid #000; border-bottom:2px solid #000;">
-                                    <tr>
-                                        <td style="padding:12px 10px; font-size:12px; font-weight:900; text-transform:uppercase; color:#000;">TOTAL EUROS</td>
-                                        <td style="padding:12px 10px; font-size:18px; font-weight:900; color:#000; text-align:right; width:140px; white-space:nowrap;">${totalFormatted}</td>
-                                    </tr>
-                                </table>
-
-                                <div style="padding:25px 10px 10px 10px; display:flex; justify-content:space-between; align-items:flex-end;">
-                                    <div style="font-size:10px; font-weight:800; color:#000; max-width:60%;">
-                                        NOTA: Formación exenta de IVA (Art. 20.Uno.9º Ley 37/1992).
-                                    </div>
-                                    <div style="text-align:center; min-width:180px;">
-                                        <div style="height:45px;"></div>
-                                        <div style="font-size:10px; color:#000; font-family:monospace; letter-spacing:-1px;">--------------------------------------------------</div>
-                                        <div style="font-size:10px; font-weight:800; color:#000; text-transform:uppercase; margin-top:2px;">FDO. CSE ELISA GUNDÍN</div>
-                                    </div>
+                                <div style="display:flex; justify-content:flex-end; margin-bottom:25px;">
+                                    <table style="border-collapse:collapse; width:220px; border:2px solid #243c7a;">
+                                        <tr style="background:#243c7a; color:#fff;">
+                                            <td style="padding:6px 10px; font-size:10px; font-weight:800; text-transform:uppercase;">TOTAL PAGADO</td>
+                                            <td style="padding:6px 10px; font-size:14px; font-weight:900; text-align:right;">${totalFormatted}</td>
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
 
-                            <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
-                                PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
+                            <div style="position:relative; z-index:1; border-top:1px solid #ccc; padding-top:15px;">
+                                <table style="width:100%; border-collapse:collapse;">
+                                    <tr>
+                                        <td style="width:50%; vertical-align:bottom;">
+                                            <p style="font-size:8px; color:#777; margin:0; line-height:1.3;">
+                                                Este documento sirve como comprobante de pago de los servicios educativos indicados.<br>
+                                                CSE Elisa Gundín - Todos los derechos reservados.
+                                            </p>
+                                        </td>
+                                        <td style="width:50%; text-align:right; vertical-align:bottom;">
+                                            <div style="display:inline-block; border:1px dashed #aaa; padding:10px 20px; text-align:center; min-width:140px;">
+                                                <span style="font-size:8px; font-weight:700; color:#aaa; text-transform:uppercase;">SELLO / FIRMA CENTRO</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
 
                         </div>
-                    </div>`;
+                    </div>
+                `;
             },
 
+            createNew() {
+                this.selected = { id: null };
+                this.isNew = true;
+                this.activeTab = 'ficha';
+                this.form = {
+                    nombre: '', apellidos: '', dni: '', nacimiento: '',
+                    usuario_aules: '', pass_aules: '',
+                    direccion: '', cp: '', poblacion: '', provincia: '',
+                    colegio: '', curso: '', tlf: '',
+                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: '',
+                    baja: false
+                };
+            },
+            selectStudent(s) {
+                this.selected = s;
+                this.isNew = false;
+                this.activeTab = 'menu';
+                this.form = JSON.parse(JSON.stringify(s));
+                this.nuevoPago = this.pagoVacio();
+                if (this.listaMesesDinamicos.length > 0) {
+                    this.nuevoPago.mes = this.listaMesesDinamicos[0];
+                }
+            },
+            cerrarFicha() {
+                this.selected = null;
+                this.isNew = false;
+                this.activeTab = 'menu';
+                this.form = {};
+            },
+            async saveData() {
+                if (!this.form.nombre || !this.form.apellidos) {
+                    alert("El nombre y los apellidos son obligatorios.");
+                    return;
+                }
+                this.saving = true;
+                try {
+                    if (this.isNew) {
+                        const { data, error } = await _supabase.from('listado_alumnos').insert([this.form]).select().single();
+                        if (error) throw error;
+                        this.selected = data;
+                        this.form = JSON.parse(JSON.stringify(data));
+                        this.isNew = false;
+                    } else {
+                        const { error } = await _supabase.from('listado_alumnos').update(this.form).eq('id', this.form.id);
+                        if (error) throw error;
+                    }
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = "Ficha guardada correctamente";
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch (e) {
+                    console.error("Error al guardar alumno:", e);
+                    alert("Error al guardar los datos.");
+                } finally {
+                    this.saving = false;
+                }
+            },
+            abrirEliminarAlumno() {
+                this.showDeleteStudentModal = true;
+            },
+            async ejecutarEliminarAlumno() {
+                if (!this.selected || !this.selected.id) return;
+                try {
+                    await _supabase.from('listado_alumnos').delete().eq('id', this.selected.id);
+                    this.showDeleteStudentModal = false;
+                    this.cerrarFicha();
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = "Alumno eliminado";
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error eliminando alumno:", e);
+                }
+            },
+            abrirSeccionPagos() {
+                this.activeTab = 'pagos';
+                this.nuevoPago = this.pagoVacio();
+                if (this.listaMesesDinamicos.length > 0) {
+                    this.nuevoPago.mes = this.listaMesesDinamicos[0];
+                }
+            },
+            generarSiguienteMes() {
+                this.modalType = 'edit';
+                this.modalTitle = 'Generar Nuevo Mes';
+                this.modalMessage = 'Introduce el nombre del nuevo mes para la gestión de cobros (Ej: Noviembre 2026):';
+                this.modalInputVal = '';
+                this.modalTargetMes = '';
+                this.showCustomModal = true;
+            },
+            toggleCurso(cursoKey) {
+                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
+            },
+            getCuotaValor(nombreAlumno, mes) {
+                const item = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                return item ? item.cuota : '';
+            },
+            updateCuotaLocal(nombreAlumno, mes, val) {
+                let item = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                if (item) {
+                    item.cuota = val;
+                } else {
+                    this.ingresosFijosList.push({ alumno: nombreAlumno, mes: mes, cuota: val, pagado: false });
+                }
+            },
+            async guardarCeldaIngresosFijos(nombreAlumno, mes) {
+                const item = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                if (!item) return;
+                try {
+                    const { data: existing } = await _supabase.from('ingresos_fijos')
+                        .select('*')
+                        .eq('alumno', nombreAlumno)
+                        .eq('mes', mes)
+                        .maybeSingle();
+
+                    if (existing) {
+                        await _supabase.from('ingresos_fijos')
+                            .update({ cuota: item.cuota, pagado: item.pagado })
+                            .eq('id', existing.id);
+                    } else {
+                        await _supabase.from('ingresos_fijos')
+                            .insert([{ alumno: nombreAlumno, mes: mes, cuota: item.cuota, pagado: item.pagado }]);
+                    }
+                } catch(e) { console.error("Error guardando cuota fija:", e); }
+            },
+            isPagadoTrue(nombreAlumno, mes) {
+                const item = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                return item ? Boolean(item.pagado) : false;
+            },
+            async togglePagadoIngresosFijos(nombreAlumno, mes, isChecked) {
+                let item = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === this.normalizeName(nombreAlumno) && f.mes === mes);
+                if (item) {
+                    item.pagado = isChecked;
+                } else {
+                    item = { alumno: nombreAlumno, mes: mes, cuota: 0, pagado: isChecked };
+                    this.ingresosFijosList.push(item);
+                }
+                await this.guardarCeldaIngresosFijos(nombreAlumno, mes);
+            },
+            abrirModalEditar(mes) {
+                this.modalType = 'edit';
+                this.modalTitle = 'Modificar Nombre del Mes';
+                this.modalMessage = `Estás editando la etiqueta del mes "${mes}".`;
+                this.modalInputVal = mes;
+                this.modalTargetMes = mes;
+                this.showCustomModal = true;
+            },
+            abrirModalEliminar(mes) {
+                this.modalType = 'delete';
+                this.modalTitle = 'Eliminar Registro de Mes';
+                this.modalMessage = `¿Estás seguro de eliminar el mes "${mes}" de la lista de ingresos fijos?`;
+                this.modalInputVal = '';
+                this.modalTargetMes = mes;
+                this.showCustomModal = true;
+            },
+            cerrarCustomModal() {
+                this.showCustomModal = false;
+                this.modalInputVal = '';
+                this.modalTargetMes = '';
+            },
+            async ejecutarAccionModal() {
+                if (this.modalType === 'delete') {
+                    if (this.modalTargetMes) {
+                        await _supabase.from('ingresos_fijos').delete().eq('mes', this.modalTargetMes);
+                        await this.cargarDatosSupabase();
+                    }
+                } else {
+                    if (this.modalInputVal.trim()) {
+                        const nuevoNombre = this.modalInputVal.trim();
+                        if (this.modalTargetMes) {
+                            await _supabase.from('ingresos_fijos').update({ mes: nuevoNombre }).eq('mes', this.modalTargetMes);
+                        } else {
+                            const demoAlumno = this.list[0] ? `${this.list[0].nombre} ${this.list[0].apellidos}` : 'GENERAL';
+                            await _supabase.from('ingresos_fijos').insert([{ alumno: demoAlumno, mes: nuevoNombre, cuota: 0, pagado: false }]);
+                        }
+                        await this.cargarDatosSupabase();
+                    }
+                }
+                this.cerrarCustomModal();
+            },
+            async guardarExamenesMasivos() {
+                if (!this.gestorExamenes.fecha || !this.gestorExamenes.asignatura || this.gestorExamenes.alumnosSeleccionados.length === 0) return;
+                this.savingExamenes = true;
+                try {
+                    const registros = this.gestorExamenes.alumnosSeleccionados.map(alumno => ({
+                        fecha: this.gestorExamenes.fecha,
+                        asignatura: this.gestorExamenes.asignatura,
+                        alumno: alumno,
+                        nota: ''
+                    }));
+                    await _supabase.from('examenes').insert(registros);
+                    await this.cargarDatosSupabase();
+                    this.gestorExamenes.alumnosSeleccionados = [];
+                    this.showSuccess = true;
+                    this.successMessage = 'Exámenes creados correctamente';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error guardando exámenes masivos:", e);
+                } finally {
+                    this.savingExamenes = false;
+                }
+            },
+            seleccionarTodos(val) {
+                if (val) {
+                    this.gestorExamenes.alumnosSeleccionados = this.alumnosFiltradosGestor.map(a => `${a.nombre} ${a.apellidos}`);
+                } else {
+                    this.gestorExamenes.alumnosSeleccionados = [];
+                }
+            },
+            cambiarMesCalendario(dir) {
+                const d = new Date(this.mesVisualizadoCalendario);
+                d.setMonth(d.getMonth() + dir);
+                this.mesVisualizadoCalendario = d;
+            },
             abrirEditarExamen(ex) {
                 this.editExamenForm = JSON.parse(JSON.stringify(ex));
                 this.showEditExamenModal = true;
@@ -2433,292 +2654,45 @@
                 this.successMessage = 'Examen eliminado';
                 setTimeout(() => { this.showSuccess = false; }, 2000);
             },
-            async guardarExamenesMasivos() {
-                if (!this.gestorExamenes.fecha || !this.gestorExamenes.asignatura || this.gestorExamenes.alumnosSeleccionados.length === 0) return;
-                this.savingExamenes = true;
-                const filas = this.gestorExamenes.alumnosSeleccionados.map(alumno => ({
-                    fecha: this.gestorExamenes.fecha,
-                    asignatura: this.gestorExamenes.asignatura,
-                    alumno: alumno
-                }));
-                await _supabase.from('examenes').insert(filas);
-                this.gestorExamenes.alumnosSeleccionados = [];
-                await this.cargarDatosSupabase();
-                this.showSuccess = true;
-                this.successMessage = '¡Exámenes creados con éxito!';
-                setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 2000);
-            },
-            seleccionarTodos(val) {
-                if (val) {
-                    this.gestorExamenes.alumnosSeleccionados = this.alumnosFiltradosGestor.map(a => `${a.nombre} ${a.apellidos}`);
-                } else {
-                    this.gestorExamenes.alumnosSeleccionados = [];
-                }
-            },
-            cambiarMesCalendario(dir) {
-                const d = new Date(this.mesVisualizadoCalendario);
-                d.setMonth(d.getMonth() + dir);
-                this.mesVisualizadoCalendario = d;
-            },
             async subirArchivosSeleccionados(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
-                this.loadingArchivos = true;
-                for (const file of files) {
-                    const path = `subidas_manuales/${file.name}`;
-                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
-                }
-                await this.cargarArchivosNube();
-                this.loadingArchivos = false;
-                this.showSuccess = true;
-                this.successMessage = 'Archivos subidos correctamente';
-                setTimeout(() => { this.showSuccess = false; }, 2000);
-            },
-            abrirSeccionPagos() {
-                this.activeTab = 'pagos';
-                if (this.listaMesesDinamicos.length > 0) {
-                    this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
-                }
-            },
-            async generarSiguienteMes() {
-                const ult = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'Junio 2026';
-                const mNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                let idx = mNombres.findIndex(m => m.toLowerCase() === ult.split(' ')[0].toLowerCase());
-                let year = parseInt(ult.split(' ')[1]) || 2026;
-                idx++;
-                if (idx > 11) { idx = 0; year++; }
-                const nuevoMes = `${mNombres[idx]} ${year}`;
-                if (this.selected) {
-                    await _supabase.from('ingresos_fijos').insert([{ alumno: `${this.selected.nombre} ${this.selected.apellidos}`, mes: nuevoMes, cuota: 0, pagado: false }]);
-                    await this.cargarDatosSupabase();
-                }
-            },
-            getCuotaValor(alumno, mes) {
-                const normA = this.normalizeName(alumno);
-                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
-                return reg ? reg.cuota : '';
-            },
-            updateCuotaLocal(alumno, mes, val) {
-                const normA = this.normalizeName(alumno);
-                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
-                if (reg) {
-                    reg.cuota = Number(val);
-                } else {
-                    this.ingresosFijosList.push({ alumno, mes, cuota: Number(val), pagado: false });
-                }
-            },
-            async guardarCeldaIngresosFijos(alumno, mes) {
-                const normA = this.normalizeName(alumno);
-                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
-                if (!reg) return;
-                if (reg.id) {
-                    await _supabase.from('ingresos_fijos').update({ cuota: reg.cuota }).eq('id', reg.id);
-                } else {
-                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota, pagado: false }]).select().single();
-                    if (data) reg.id = data.id;
-                }
-            },
-            isPagadoTrue(alumno, mes) {
-                const normA = this.normalizeName(alumno);
-                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
-                return reg ? Boolean(reg.pagado) : false;
-            },
-            async togglePagadoIngresosFijos(alumno, mes, val) {
-                const normA = this.normalizeName(alumno);
-                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
-                if (reg) {
-                    reg.pagado = val;
-                    if (reg.id) {
-                        await _supabase.from('ingresos_fijos').update({ pagado: val }).eq('id', reg.id);
-                    } else {
-                        const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota || 0, pagado: val }]).select().single();
-                        if (data) reg.id = data.id;
-                    }
-                } else {
-                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: 0, pagado: val }]).select().single();
-                    if (data) this.ingresosFijosList.push(data);
-                }
-            },
-            abrirModalEditar(mes) {
-                this.modalTargetMes = mes;
-                this.modalInputVal = mes;
-                this.modalType = 'edit';
-                this.modalTitle = 'Renombrar Mes';
-                this.modalMessage = `Introduce el nuevo nombre para ${mes}:`;
-                this.showCustomModal = true;
-            },
-            abrirModalEliminar(mes) {
-                this.modalTargetMes = mes;
-                this.modalType = 'delete';
-                this.modalTitle = 'Eliminar Mes';
-                this.modalMessage = `¿Seguro que deseas eliminar la cuota del mes ${mes}?`;
-                this.showCustomModal = true;
-            },
-            cerrarCustomModal() {
-                this.showCustomModal = false;
-            },
-            async ejecutarAccionModal() {
-                if (this.modalType === 'edit' && this.modalInputVal && this.selected) {
-                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
-                    const normA = this.normalizeName(alumno);
-                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
-                    if (reg && reg.id) {
-                        await _supabase.from('ingresos_fijos').update({ mes: this.modalInputVal }).eq('id', reg.id);
-                    }
-                } else if (this.modalType === 'delete' && this.selected) {
-                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
-                    const normA = this.normalizeName(alumno);
-                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
-                    if (reg && reg.id) {
-                        await _supabase.from('ingresos_fijos').delete().eq('id', reg.id);
-                    }
-                }
-                this.showCustomModal = false;
-                await this.cargarDatosSupabase();
-            },
-            toggleCurso(cursoKey) {
-                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
-            },
-            logout() { _supabase.auth.signOut(); location.reload(); },
-            createNew() {
-                this.isNew = true;
-                this.activeTab = 'ficha';
-                this.form = {
-                    nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
-                    usuario_aules: '', pass_aules: '',
-                    direccion: '', cp: '', poblacion: '', provincia: '',
-                    colegio: '', curso: '', tlf: '',
-                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
-                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: ''
-                };
-                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno', baja: false };
-            },
-            selectStudent(s) { 
-                this.form = JSON.parse(JSON.stringify(s)); 
-                this.isNew = false; 
-                this.activeTab = 'menu'; 
-                this.selected = s; 
-            },
-            cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
-            
-            abrirEliminarAlumno() {
-                if (!this.selected || this.isNew) return;
-                this.showDeleteStudentModal = true;
-            },
-            
-            async ejecutarEliminarAlumno() {
-                if (!this.selected || !this.selected.id) return;
+                this.preparingPrint = true;
                 try {
-                    await _supabase.from('listado_alumnos').delete().eq('id', this.selected.id);
-                    this.showDeleteStudentModal = false;
-                    this.selected = null;
-                    this.activeTab = 'menu';
-                    await this.cargarDatosSupabase();
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const name = file.name;
+                        const analisis = this.analizarTextoParaCursoYMes(name);
+                        const cursoPath = analisis.curso.replace('/', '-');
+                        const mesNombreStr = analisis.mes;
+                        const rutaStorage = `${cursoPath}/${mesNombreStr}/${name}`;
+                        await _supabase.storage.from('facturas').upload(rutaStorage, file, { contentType: 'application/pdf', upsert: true });
+                    }
+                    await this.cargarArchivosNube();
                     this.showSuccess = true;
-                    this.successMessage = 'Ficha del alumno eliminada';
-                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                    this.successMessage = `${files.length} factura(s) subida(s) con éxito`;
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
                 } catch(e) {
-                    console.error("Error al eliminar alumno:", e);
-                    alert("No se pudo eliminar el alumno.");
+                    console.error("Error subiendo archivos:", e);
+                    alert("Error al subir los archivos PDF.");
+                } finally {
+                    this.preparingPrint = false;
                 }
             },
-
-            async saveData() {
-                if (!this.form.nombre || !this.form.apellidos) {
-                    alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
-                    return;
-                }
-
-                this.saving = true;
-                try {
-                    const payload = { ...this.form };
-                    delete payload.id;
-                    payload.baja = Boolean(this.form.baja);
-
-                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
-                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
-                    Object.keys(payload).forEach(key => {
-                        if (key === 'nacimiento') {
-                            if (!payload[key]) payload[key] = null;
-                        } else if (typeof payload[key] === 'boolean') {
-                            // conservar booleanos
-                        } else {
-                            if (payload[key] === null || payload[key] === undefined) {
-                                payload[key] = '';
-                            }
-                        }
-                    });
-
-                    const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
-                    const newNombreCompleto = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
-
-                    if (this.isNew) {
-                        const { data, error } = await _supabase
-                            .from('listado_alumnos')
-                            .insert([payload])
-                            .select()
-                            .single();
-
-                        if (error) {
-                            console.error("Error al crear alumno en Supabase:", error);
-                            alert("Error al crear alumno: " + error.message);
-                            this.saving = false;
-                            return;
-                        }
-
-                        if (data) {
-                            this.selected = data;
-                            this.form = JSON.parse(JSON.stringify(data));
-                            this.isNew = false;
-                        }
-                    } else {
-                        const { error } = await _supabase
-                            .from('listado_alumnos')
-                            .update(payload)
-                            .eq('id', this.selected.id);
-
-                        if (error) {
-                            console.error("Error al actualizar alumno en Supabase:", error);
-                            alert("Error al actualizar alumno: " + error.message);
-                            this.saving = false;
-                            return;
-                        }
-
-                        if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
-                            await Promise.all([
-                                _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                                _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                                _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                                _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
-                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
-                            ]);
-                        }
-                    }
-
-                    await this.cargarDatosSupabase();
-                    this.showSuccess = true;
-                    this.successMessage = 'Ficha guardada con éxito';
-                    setTimeout(() => {
-                        this.showSuccess = false;
-                        this.selected = null;
-                        this.saving = false;
-                    }, 1800);
-                } catch (e) {
-                    console.error("Error inesperado en saveData:", e);
-                    alert("Ocurrió un error inesperado al guardar la ficha.");
-                    this.saving = false;
-                }
+            async logout() {
+                await _supabase.auth.signOut();
+                this.authenticated = false;
             }
         },
         async mounted() {
             try {
-                const { data } = await _supabase.auth.getSession();
-                if (data && data.session) {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (session) {
                     this.authenticated = true;
                     await this.cargarDatosSupabase();
                 }
             } catch(e) {
-                console.error("Error al verificar sesión inicial:", e);
+                console.error("Error al comprobar sesión:", e);
             } finally {
                 this.checkingSession = false;
             }
