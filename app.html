@@ -773,7 +773,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
-                                                        <button @click="reimprimirPagoHistorico(archivo)" title="Imprimir recibo" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-print text-xs"></i></button>
+                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
                                                         <button @click="abrirEliminarArchivoNube(archivo)" title="Eliminar de la nube" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg border border-red-200 shadow-sm transition"><i class="fas fa-trash-alt text-xs"></i></button>
                                                     </div>
                                                 </div>
@@ -2077,7 +2077,7 @@
                         }
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
-                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl, pago: pagoEncontrado };
+                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl };
                     });
                 } catch(e) { console.error("Error en nube:", e); }
                 this.loadingArchivos = false;
@@ -2237,19 +2237,8 @@
                 this.successMessage = `¡Pago registrado en la base de datos!`;
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
             },
-            reimprimirPagoHistorico(item) {
-                if (!item) return;
-                const pago = item.pago || item;
-                const fecha = pago.fecha_pago || pago.fecha || new Date().toISOString().split('T')[0];
-                const metodo = String(pago.metodo_pago || pago.metodo || 'EFECTIVO').toUpperCase();
-                const tarifa = pago.tarifa || '';
-                const extras = pago.extras || '';
-                const importe = pago.importe || 0;
-                const id = pago.factura_id || (pago.displayName ? pago.displayName.replace('.pdf', '') : 'S/N');
-                const mes = pago.mes || '';
-                const alumno = pago.alumno || pago.alumnoAsociado || '';
-
-                this.generarReciboHTML({ fecha: fecha, metodo: metodo, tarifa: tarifa, extras: extras, importe: importe, id: id, mes: mes }, alumno);
+            reimprimirPagoHistorico(pago) {
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
                 document.body.classList.add('is-printing-ticket');
                 setTimeout(() => {
                     window.print();
@@ -2406,11 +2395,332 @@
                             </div>
 
                             <div style="border-top:1px solid #000; padding-top:6px; margin-top:15px; font-size:7.5px; line-height:1.2; color:#000; text-align:justify; position:relative; z-index:1;">
-                                PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercitar sus derechos de acceso, rectificación, supresión y oposición dirigiéndose a la dirección del centro.
+                                PROTECCIÓN DE DATOS: En cumplimiento del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), los datos personales facilitados serán tratados por CSE ELISA GUNDÍN con la finalidad de gestionar la prestación de servicios educativos y la facturación correspondiente. Los datos se conservarán mientras se mantenga la relación comercial y durante los plazos legalmente exigidos. Puede ejercer sus derechos de acceso, rectificación, supresión y demás derechos enviando una solicitud por escrito a C/ Alicante 4, El Pinós (03650, Alicante).
                             </div>
+
                         </div>
-                    </div>
-                `;
+                    </div>`;
+            },
+
+            abrirEditarExamen(ex) {
+                this.editExamenForm = JSON.parse(JSON.stringify(ex));
+                this.showEditExamenModal = true;
+            },
+            async guardarEdicionExamen() {
+                if (!this.editExamenForm.id) return;
+                await _supabase.from('examenes').update({
+                    fecha: this.editExamenForm.fecha,
+                    asignatura: this.editExamenForm.asignatura,
+                    nota: this.editExamenForm.nota
+                }).eq('id', this.editExamenForm.id);
+                this.showEditExamenModal = false;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen actualizado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirEliminarExamen(ex) {
+                this.examenAEliminar = ex;
+                this.showDeleteExamenModal = true;
+            },
+            async ejecutarEliminarExamen() {
+                if (!this.examenAEliminar) return;
+                await _supabase.from('examenes').delete().eq('id', this.examenAEliminar.id);
+                this.showDeleteExamenModal = false;
+                this.examenAEliminar = null;
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = 'Examen eliminado';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            async guardarExamenesMasivos() {
+                if (!this.gestorExamenes.fecha || !this.gestorExamenes.asignatura || this.gestorExamenes.alumnosSeleccionados.length === 0) return;
+                this.savingExamenes = true;
+                const filas = this.gestorExamenes.alumnosSeleccionados.map(alumno => ({
+                    fecha: this.gestorExamenes.fecha,
+                    asignatura: this.gestorExamenes.asignatura,
+                    alumno: alumno
+                }));
+                await _supabase.from('examenes').insert(filas);
+                this.gestorExamenes.alumnosSeleccionados = [];
+                await this.cargarDatosSupabase();
+                this.showSuccess = true;
+                this.successMessage = '¡Exámenes creados con éxito!';
+                setTimeout(() => { this.showSuccess = false; this.savingExamenes = false; }, 2000);
+            },
+            seleccionarTodos(val) {
+                if (val) {
+                    this.gestorExamenes.alumnosSeleccionados = this.alumnosFiltradosGestor.map(a => `${a.nombre} ${a.apellidos}`);
+                } else {
+                    this.gestorExamenes.alumnosSeleccionados = [];
+                }
+            },
+            cambiarMesCalendario(dir) {
+                const d = new Date(this.mesVisualizadoCalendario);
+                d.setMonth(d.getMonth() + dir);
+                this.mesVisualizadoCalendario = d;
+            },
+            async subirArchivosSeleccionados(event) {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+                this.loadingArchivos = true;
+                for (const file of files) {
+                    const path = `subidas_manuales/${file.name}`;
+                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                }
+                await this.cargarArchivosNube();
+                this.loadingArchivos = false;
+                this.showSuccess = true;
+                this.successMessage = 'Archivos subidos correctamente';
+                setTimeout(() => { this.showSuccess = false; }, 2000);
+            },
+            abrirSeccionPagos() {
+                this.activeTab = 'pagos';
+                if (this.listaMesesDinamicos.length > 0) {
+                    this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
+                }
+            },
+            async generarSiguienteMes() {
+                const ult = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1] || 'Junio 2026';
+                const mNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                let idx = mNombres.findIndex(m => m.toLowerCase() === ult.split(' ')[0].toLowerCase());
+                let year = parseInt(ult.split(' ')[1]) || 2026;
+                idx++;
+                if (idx > 11) { idx = 0; year++; }
+                const nuevoMes = `${mNombres[idx]} ${year}`;
+                if (this.selected) {
+                    await _supabase.from('ingresos_fijos').insert([{ alumno: `${this.selected.nombre} ${this.selected.apellidos}`, mes: nuevoMes, cuota: 0, pagado: false }]);
+                    await this.cargarDatosSupabase();
+                }
+            },
+            getCuotaValor(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? reg.cuota : '';
+            },
+            updateCuotaLocal(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.cuota = Number(val);
+                } else {
+                    this.ingresosFijosList.push({ alumno, mes, cuota: Number(val), pagado: false });
+                }
+            },
+            async guardarCeldaIngresosFijos(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (!reg) return;
+                if (reg.id) {
+                    await _supabase.from('ingresos_fijos').update({ cuota: reg.cuota }).eq('id', reg.id);
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota, pagado: false }]).select().single();
+                    if (data) reg.id = data.id;
+                }
+            },
+            isPagadoTrue(alumno, mes) {
+                const normA = this.normalizeName(alumno);
+                const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                return reg ? Boolean(reg.pagado) : false;
+            },
+            async togglePagadoIngresosFijos(alumno, mes, val) {
+                const normA = this.normalizeName(alumno);
+                let reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                if (reg) {
+                    reg.pagado = val;
+                    if (reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ pagado: val }).eq('id', reg.id);
+                    } else {
+                        const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: reg.cuota || 0, pagado: val }]).select().single();
+                        if (data) reg.id = data.id;
+                    }
+                } else {
+                    const { data } = await _supabase.from('ingresos_fijos').insert([{ alumno, mes, cuota: 0, pagado: val }]).select().single();
+                    if (data) this.ingresosFijosList.push(data);
+                }
+            },
+            abrirModalEditar(mes) {
+                this.modalTargetMes = mes;
+                this.modalInputVal = mes;
+                this.modalType = 'edit';
+                this.modalTitle = 'Renombrar Mes';
+                this.modalMessage = `Introduce el nuevo nombre para ${mes}:`;
+                this.showCustomModal = true;
+            },
+            abrirModalEliminar(mes) {
+                this.modalTargetMes = mes;
+                this.modalType = 'delete';
+                this.modalTitle = 'Eliminar Mes';
+                this.modalMessage = `¿Seguro que deseas eliminar la cuota del mes ${mes}?`;
+                this.showCustomModal = true;
+            },
+            cerrarCustomModal() {
+                this.showCustomModal = false;
+            },
+            async ejecutarAccionModal() {
+                if (this.modalType === 'edit' && this.modalInputVal && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').update({ mes: this.modalInputVal }).eq('id', reg.id);
+                    }
+                } else if (this.modalType === 'delete' && this.selected) {
+                    const alumno = `${this.selected.nombre} ${this.selected.apellidos}`;
+                    const normA = this.normalizeName(alumno);
+                    const reg = this.ingresosFijosList.find(f => this.normalizeName(f.alumno) === normA && f.mes === this.modalTargetMes);
+                    if (reg && reg.id) {
+                        await _supabase.from('ingresos_fijos').delete().eq('id', reg.id);
+                    }
+                }
+                this.showCustomModal = false;
+                await this.cargarDatosSupabase();
+            },
+            toggleCurso(cursoKey) {
+                this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
+            },
+            logout() { _supabase.auth.signOut(); location.reload(); },
+            createNew() {
+                this.isNew = true;
+                this.activeTab = 'ficha';
+                this.form = {
+                    nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
+                    usuario_aules: '', pass_aules: '',
+                    direccion: '', cp: '', poblacion: '', provincia: '',
+                    colegio: '', curso: '', tlf: '',
+                    fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
+                    fam2_nombre: '', fam2_relacion: '', fam2_tlf: ''
+                };
+                this.selected = { id: 'TEMP', nombre: 'Nuevo', apellidos: 'Alumno', baja: false };
+            },
+            selectStudent(s) { 
+                this.form = JSON.parse(JSON.stringify(s)); 
+                this.isNew = false; 
+                this.activeTab = 'menu'; 
+                this.selected = s; 
+            },
+            cerrarFicha() { this.selected = null; this.activeTab = 'menu'; },
+            
+            abrirEliminarAlumno() {
+                if (!this.selected || this.isNew) return;
+                this.showDeleteStudentModal = true;
+            },
+            
+            async ejecutarEliminarAlumno() {
+                if (!this.selected || !this.selected.id) return;
+                try {
+                    await _supabase.from('listado_alumnos').delete().eq('id', this.selected.id);
+                    this.showDeleteStudentModal = false;
+                    this.selected = null;
+                    this.activeTab = 'menu';
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha del alumno eliminada';
+                    setTimeout(() => { this.showSuccess = false; }, 2000);
+                } catch(e) {
+                    console.error("Error al eliminar alumno:", e);
+                    alert("No se pudo eliminar el alumno.");
+                }
+            },
+
+            async saveData() {
+                if (!this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
+                    return;
+                }
+
+                this.saving = true;
+                try {
+                    const payload = { ...this.form };
+                    delete payload.id;
+                    payload.baja = Boolean(this.form.baja);
+
+                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
+                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
+                    Object.keys(payload).forEach(key => {
+                        if (key === 'nacimiento') {
+                            if (!payload[key]) payload[key] = null;
+                        } else if (typeof payload[key] === 'boolean') {
+                            // conservar booleanos
+                        } else {
+                            if (payload[key] === null || payload[key] === undefined) {
+                                payload[key] = '';
+                            }
+                        }
+                    });
+
+                    const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
+                    const newNombreCompleto = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
+
+                    if (this.isNew) {
+                        const { data, error } = await _supabase
+                            .from('listado_alumnos')
+                            .insert([payload])
+                            .select()
+                            .single();
+
+                        if (error) {
+                            console.error("Error al crear alumno en Supabase:", error);
+                            alert("Error al crear alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (data) {
+                            this.selected = data;
+                            this.form = JSON.parse(JSON.stringify(data));
+                            this.isNew = false;
+                        }
+                    } else {
+                        const { error } = await _supabase
+                            .from('listado_alumnos')
+                            .update(payload)
+                            .eq('id', this.selected.id);
+
+                        if (error) {
+                            console.error("Error al actualizar alumno en Supabase:", error);
+                            alert("Error al actualizar alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
+                            await Promise.all([
+                                _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
+                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
+                            ]);
+                        }
+                    }
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha guardada con éxito';
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                        this.selected = null;
+                        this.saving = false;
+                    }, 1800);
+                } catch (e) {
+                    console.error("Error inesperado en saveData:", e);
+                    alert("Ocurrió un error inesperado al guardar la ficha.");
+                    this.saving = false;
+                }
+            }
+        },
+        async mounted() {
+            try {
+                const { data } = await _supabase.auth.getSession();
+                if (data && data.session) {
+                    this.authenticated = true;
+                    await this.cargarDatosSupabase();
+                }
+            } catch(e) {
+                console.error("Error al verificar sesión inicial:", e);
+            } finally {
+                this.checkingSession = false;
             }
         }
     }).mount('#app');
