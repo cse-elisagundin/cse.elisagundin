@@ -34,7 +34,6 @@
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
         @media print {
-            @page { size: A4 portrait; margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
@@ -46,9 +45,9 @@
             table.tabla-horario-print td {
                 border: 1px solid #000 !important;
                 padding: 1px 2px !important;
-                height: 18px !important;
-                max-height: 18px !important;
-                font-size: 8px !important;
+                height: 20px !important;
+                max-height: 20px !important;
+                font-size: 9px !important;
                 text-align: center !important;
                 overflow: hidden !important;
                 white-space: nowrap !important;
@@ -85,53 +84,59 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
-    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
-        <div class="flex items-end justify-between mb-3">
+    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS (PLANTILLA SENCILLA) -->
+    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-4">
+        <div class="flex items-end justify-between mb-4">
             <div>
                 <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
                 <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
             </div>
-            <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
-                <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
-                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
+        </div>
+
+        <div :class="printOrientation === 'landscape' ? 'flex flex-row gap-6 w-full items-start' : 'flex flex-col gap-6 w-full items-start'">
+            <!-- Tabla Refuerzo General -->
+            <div class="w-full border border-black p-0 bg-white" :class="printOrientation === 'landscape' ? 'flex-1' : ''">
+                <div class="border-b border-black text-black p-1 font-extrabold text-[10px] text-center">
+                    REFUERZO GENERAL
+                </div>
+                <table class="w-full border-collapse text-center tabla-horario-print">
+                    <tbody>
+                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                            <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-10">
+                                {{ hora }}
+                            </td>
+                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle text-[9px] font-bold text-black uppercase truncate">
+                                {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tabla Clases de Inglés -->
+            <div class="w-full border border-black p-0 bg-white" :class="printOrientation === 'landscape' ? 'flex-1' : ''">
+                <div class="border-b border-black text-black p-1 font-extrabold text-[10px] text-center">
+                    CLASES DE INGLÉS
+                </div>
+                <table class="w-full border-collapse text-center tabla-horario-print">
+                    <tbody>
+                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                            <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-10">
+                                {{ hora }}
+                            </td>
+                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle text-[9px] font-bold text-black uppercase truncate">
+                                {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-5 w-full items-start">
-            <div class="col-span-6 flex flex-col gap-2">
-                <div class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="col-span-6 h-[420px]"></div>
+        <!-- Encabezado de notas debajo -->
+        <div class="mt-8 flex items-end justify-between border-b border-black pb-1 w-full">
+            <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
+            <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain opacity-30 grayscale">
         </div>
     </div>
 
@@ -159,6 +164,32 @@
                     <div class="bg-green-100 p-3 rounded-full text-[#25D366]"><i class="fas fa-check text-3xl"></i></div>
                     <h3 class="text-xl font-extrabold text-[#243c7a] uppercase">¡Éxito!</h3>
                     <p class="text-gray-500 font-semibold text-center">{{ successMessage }}</p>
+                </div>
+            </div>
+        </transition>
+
+        <!-- DIÁLOGO DE ORIENTACIÓN PARA IMPRIMIR CUADRANTE -->
+        <transition name="pop">
+            <div v-if="showPrintOrientModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-sm border border-gray-100 flex flex-col gap-5">
+                    <div class="flex items-center gap-3 border-b pb-3">
+                        <div class="bg-blue-100 text-[#243c7a] p-3 rounded-full text-xl"><i class="fas fa-print"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Imprimir Horario</h3>
+                            <p class="text-xs text-gray-500 font-semibold mt-0.5">Orientación del papel</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <button @click="ejecutarImpresion('portrait')" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-[#243c7a] hover:bg-blue-50 font-bold transition flex items-center gap-3 text-[#243c7a]">
+                            <i class="fas fa-file-alt text-lg"></i> Vertical
+                        </button>
+                        <button @click="ejecutarImpresion('landscape')" class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 hover:border-[#243c7a] hover:bg-blue-50 font-bold transition flex items-center gap-3 text-[#243c7a]">
+                            <i class="fas fa-file-invoice text-lg"></i> Horizontal
+                        </button>
+                    </div>
+                    <div class="pt-2 border-t mt-2">
+                        <button @click="showPrintOrientModal = false" class="w-full py-2.5 px-4 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition">Cancelar</button>
+                    </div>
                 </div>
             </div>
         </transition>
@@ -1420,7 +1451,10 @@
                 searchAlumnoPincel: '',
                 alumnoActivoPincel: '',
                 hoverAlumnoPincel: '',
-                savingHorario: false
+                savingHorario: false,
+                
+                showPrintOrientModal: false,
+                printOrientation: 'portrait'
             }
         },
         watch: {
@@ -1625,28 +1659,9 @@
                     primerApellido = parts[1] || "";
                 }
 
-                const nombreParts = nombre.trim().split(/\s+/);
-                let primerNombre = nombreParts[0] || "";
-                let initialSegundoNombre = nombreParts.length > 1 ? ` ${nombreParts[1].charAt(0)}.` : "";
-                let nombreBase = `${primerNombre}${initialSegundoNombre}`;
-
-                let count = 0;
-                const currentGridNames = Object.values(this.gridHorario)
-                    .map(cell => cell ? cell.nombre : '')
-                    .filter(n => !!n);
-
-                currentGridNames.forEach(n => {
-                    const normN = this.normalizeName(n);
-                    const st = this.list.find(s => this.normalizeName(`${s.nombre} ${s.apellidos}`) === normN);
-                    let nFirst = st ? (st.nombre || "") : (n.trim().split(/\s+/)[0] || "");
-                    const nParts = nFirst.trim().split(/\s+/);
-                    const nBase = `${nParts[0]}${nParts.length > 1 ? ` ${nParts[1].charAt(0)}.` : ""}`;
-                    if (this.normalizeName(nBase) === this.normalizeName(nombreBase)) {
-                        count++;
-                    }
-                });
-
-                if (count > 1 && primerApellido) {
+                const nombreBase = nombre.trim().split(/\s+/)[0]; 
+                
+                if (primerApellido) {
                     return `${nombreBase} ${primerApellido.charAt(0)}.`;
                 }
 
@@ -1654,13 +1669,28 @@
             },
 
             imprimirCuadrante() {
+                this.showPrintOrientModal = true;
+            },
+            
+            ejecutarImpresion(orientacion) {
+                this.printOrientation = orientacion;
+                this.showPrintOrientModal = false;
+                
+                let style = document.getElementById('print-page-orientation');
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'print-page-orientation';
+                    document.head.appendChild(style);
+                }
+                style.innerHTML = `@media print { @page { size: A4 ${orientacion}; margin: 5mm; } }`;
+
                 document.body.classList.add('is-printing-horario');
                 setTimeout(() => {
                     window.print();
                     setTimeout(() => {
                         document.body.classList.remove('is-printing-horario');
                     }, 500);
-                }, 100);
+                }, 150);
             },
 
             formatearFecha(f) {
