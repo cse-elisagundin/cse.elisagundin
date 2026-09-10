@@ -34,6 +34,7 @@
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
         @media print {
+            @page { margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
@@ -771,7 +772,7 @@
                         </div>
 
                         <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cargando facturas y cruzando datos con Supabase...
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Actualizando web y sincronizando datos con el servidor...
                         </div>
                         <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
                             No se encontraron archivos en el almacenamiento.
@@ -2347,7 +2348,7 @@
                         setTimeout(() => {
                             document.body.classList.remove('is-printing-ticket');
                         }, 300);
-                    }, 50);
+                    }, 400);
 
                     this.showSuccess = true;
                     this.successMessage = `¡Pago guardado y factura procesada!`;
@@ -2377,15 +2378,16 @@
                 this.successMessage = `¡Pago registrado en la base de datos!`;
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
             },
-            reimprimirPagoHistorico(pago) {
+            async reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
                 document.body.classList.add('is-printing-ticket');
+                if (document.fonts) { await document.fonts.ready; }
                 setTimeout(() => {
                     window.print();
                     setTimeout(() => {
                         document.body.classList.remove('is-printing-ticket');
                     }, 300);
-                }, 100);
+                }, 400);
             },
             reimprimirPagoHistoricoGlobal(pago) {
                 this.reimprimirPagoHistorico(pago);
