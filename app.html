@@ -146,8 +146,8 @@
                         <i class="fas fa-spinner fa-spin text-3xl"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-black text-[#243c7a] uppercase">Procesando...</h3>
-                        <p class="text-xs text-gray-500 font-semibold mt-1">...Procesando información...</p>
+                        <h3 class="text-lg font-black text-[#243c7a] uppercase">Procesando Factura</h3>
+                        <p class="text-xs text-gray-500 font-semibold mt-1">Generando PDF, subiendo a la nube y preparando impresión...</p>
                     </div>
                 </div>
             </div>
@@ -773,7 +773,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
-                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                                        <button @click="imprimirDesdeExplorador(archivo)" title="Ver / Imprimir Factura" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></button>
                                                         <button @click="abrirEliminarArchivoNube(archivo)" title="Eliminar de la nube" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg border border-red-200 shadow-sm transition"><i class="fas fa-trash-alt text-xs"></i></button>
                                                     </div>
                                                 </div>
@@ -2077,7 +2077,7 @@
                         }
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
-                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl };
+                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl, pagoVinculado: pagoEncontrado };
                     });
                 } catch(e) { console.error("Error en nube:", e); }
                 this.loadingArchivos = false;
@@ -2103,6 +2103,14 @@
                 let total = 0;
                 for (const m in mesesObj) total += mesesObj[m].length;
                 return total;
+            },
+
+            imprimirDesdeExplorador(archivo) {
+                if (archivo.pagoVinculado) {
+                    this.reimprimirPagoHistorico(archivo.pagoVinculado);
+                } else {
+                    window.open(archivo.url, '_blank');
+                }
             },
 
             abrirEliminarArchivoNube(archivo) {
