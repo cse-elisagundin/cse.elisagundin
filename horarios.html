@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Horarios - CSE Elisa Gundín</title>
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Schoolbell&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root { --c-primary: #243c7a; --c-secondary: #2b94cc; --c-accent: #fa65c3; --bg-body: #f4f6f9; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-body); margin: 0; padding: 0; }
+        .font-handwriting { font-family: 'Schoolbell', cursive; }
+        
+        /* Animaciones para alertas */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+        .alerta-entrada { border-left: 4px solid #25D366; background: #f0fdf4; color: #166534; animation: pulse-soft 3s infinite; }
+        .alerta-salida { border-left: 4px solid #fa65c3; background: #fff5fa; color: #9d174d; }
+
+        /* Estilos del Cuadrante (heredados) */
+        .cell-slot { height: 42px; font-size: 13px; font-weight: 700; user-select: none; }
+        .cell-extra { background-color: #fff9f0; border-style: dashed !important; }
+        .cell-occupied { background-color: #ffffff; color: var(--c-primary); box-shadow: inset 0 0 0 1px rgba(36, 60, 122, 0.2); }
+        .cell-baja { background-color: #fff3e0 !important; color: #e65100 !important; text-decoration: line-through; opacity: 0.6; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden text-sm flex flex-col">
+
+<div id="app" class="h-full flex flex-col w-full relative">
+    
+    <!-- HEADER INFORMATIVO (Reloj, Día y Alertas) -->
+    <header class="bg-white border-b shadow-sm shrink-0 z-10 flex flex-col">
+        <div class="flex justify-between items-center px-6 py-4 bg-[#243c7a] text-white">
+            <div class="flex items-center gap-4">
+                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-10 w-auto object-contain bg-white p-1 rounded">
+                <div>
+                    <h1 class="text-xl font-black tracking-tight uppercase">Panel Informativo</h1>
+                    <p class="text-[11px] font-bold text-[#2b94cc] uppercase">{{ diaActualDisplay }}</p>
+                </div>
+            </div>
+            
+            <div class="text-right">
+                <div class="text-3xl font-black font-mono tracking-wider text-[#fa65c3] drop-shadow-md">
+                    {{ relojRealTime }}
+                </div>
+                <div class="text-[10px] font-bold text-gray-300 uppercase mt-0.5">Hora Local en Tiempo Real</div>
+            </div>
+        </div>
+
+        <!-- BARRA DE ALERTAS EN TIEMPO REAL -->
+        <div class="bg-gray-50 border-b px-6 py-3 min-h-[60px] flex items-center overflow-x-auto gap-3">
+            <div v-if="alertasMovimiento.length === 0" class="text-gray-400 font-semibold text-xs flex items-center gap-2">
+                <i class="fas fa-clock"></i> No hay entradas ni salidas previstas en los próximos 30 minutos.
+            </div>
+            <div v-else class="flex gap-3 whitespace-nowrap">
+                <div v-for="(alerta, index) in alertasMovimiento" :key="index" 
+                     class="px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm"
+                     :class="alerta.tipo === 'entrada' ? 'alerta-entrada' : 'alerta-salida'">
+                    <i class="fas" :class="alerta.tipo === 'entrada' ? 'fa-sign-in-alt' : 'fa-sign-out-alt'"></i>
+                    {{ alerta.mensaje }}
+                </div>
+            </div>
+        </div>
+
+        <!-- SELECTOR DE DÍAS -->
+        <div class="bg-white px-6 py-3 flex justify-center gap-2 border-b">
+            <button v-for="d in diasSemana" :key="d" @click="seleccionarDia(d)"
+                class="px-5 py-2 rounded-xl text-xs font-extrabold transition shadow-sm border"
+                :class="diaSeleccionado === d ? 'bg-[#2b94cc] text-white border-[#2b94cc]' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'">
+                {{ d }}
+            </button>
+        </div>
+    </header>
+
+    <!-- CUADRANTE DE HORARIOS (Solo Lectura) -->
+    <main class="flex-1 overflow-auto p-4 sm:p-6 bg-[#f4f6f9]">
+        
+        <div v-if="loading" class="flex flex-col items-center justify-center h-full text-gray-400">
+            <i class="fas fa-spinner fa-spin text-4xl text-[#fa65c3] mb-3"></i>
+            <h2 class="font-bold text-lg">Cargando horario de {{ diaSeleccionado }}...</h2>
+        </div>
+
+        <div v-else class="w-full grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-[1600px] mx-auto">
+            
+            <!-- REFUERZO GENERAL -->
+            <div class="bg-white rounded-2xl shadow-lg border overflow-hidden flex flex-col">
+                <div class="bg-[#243c7a] text-white p-3 font-extrabold text-sm flex justify-between items-center">
+                    <span><i class="fas fa-users text-[#2b94cc] mr-2"></i> REFUERZO GENERAL</span>
+                    <span class="bg-white/10 px-3 py-1 rounded text-[11px]">Plazas 1 a 7</span>
+                </div>
+                <div class="overflow-x-auto flex-1 p-2">
+                    <table class="w-full border-collapse text-center">
+                        <thead>
+                            <tr class="bg-blue-50/80 text-[#243c7a] text-[11px] uppercase font-extrabold border-b">
+                                <th class="p-2 border-r w-16">Hora</th>
+                                <th v-for="col in 6" :key="col" class="p-2 border-r">Plaza {{ col }}</th>
+                                <th class="p-2 bg-orange-100/70 text-orange-900 border-l border-orange-200">Extra (7)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b transition hover:bg-gray-50">
+                                <td class="p-2 border-r bg-gray-50/80 font-black text-sm text-[#243c7a] align-middle">
+                                    {{ hora }}
+                                    <div class="text-[10px] font-bold mt-0.5" :class="contarOcupacion('GENERAL', hora) > 6 ? 'text-orange-600' : 'text-gray-400'">
+                                        {{ contarOcupacion('GENERAL', hora) }}/6
+                                    </div>
+                                </td>
+                                <td v-for="col in 7" :key="col" class="p-1 border-r cell-slot align-middle relative"
+                                    :class="[
+                                        col === 7 ? 'cell-extra' : '',
+                                        getCelda('GENERAL', hora, col).nombre ? 'cell-occupied' : '',
+                                        getCelda('GENERAL', hora, col).baja ? 'cell-baja' : ''
+                                    ]">
+                                    <div v-if="getCelda('GENERAL', hora, col).nombre" class="flex flex-col items-center justify-center h-full px-1">
+                                        <span class="font-handwriting text-[#243c7a] leading-tight truncate w-full text-center">
+                                            {{ getCelda('GENERAL', hora, col).nombre }}
+                                        </span>
+                                        <span v-if="getCelda('GENERAL', hora, col).baja" class="text-[9px] font-extrabold text-orange-600 uppercase mt-0.5">[Baja]</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- INGLÉS -->
+            <div class="bg-white rounded-2xl shadow-lg border overflow-hidden flex flex-col">
+                <div class="bg-[#fa65c3] text-white p-3 font-extrabold text-sm flex justify-between items-center">
+                    <span><i class="fas fa-language mr-2"></i> CLASES DE INGLÉS</span>
+                    <span class="bg-white/20 px-3 py-1 rounded text-[11px]">Plazas 1 a 7</span>
+                </div>
+                <div class="overflow-x-auto flex-1 p-2">
+                    <table class="w-full border-collapse text-center">
+                        <thead>
+                            <tr class="bg-pink-50/80 text-[#243c7a] text-[11px] uppercase font-extrabold border-b">
+                                <th class="p-2 border-r w-16">Hora</th>
+                                <th v-for="col in 6" :key="col" class="p-2 border-r">Plaza {{ col }}</th>
+                                <th class="p-2 bg-orange-100/70 text-orange-900 border-l border-orange-200">Extra (7)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b transition hover:bg-gray-50">
+                                <td class="p-2 border-r bg-gray-50/80 font-black text-sm text-[#243c7a] align-middle">
+                                    {{ hora }}
+                                    <div class="text-[10px] font-bold mt-0.5" :class="contarOcupacion('INGLES', hora) > 6 ? 'text-orange-600' : 'text-gray-400'">
+                                        {{ contarOcupacion('INGLES', hora) }}/6
+                                    </div>
+                                </td>
+                                <td v-for="col in 7" :key="col" class="p-1 border-r cell-slot align-middle relative"
+                                    :class="[
+                                        col === 7 ? 'cell-extra' : '',
+                                        getCelda('INGLES', hora, col).nombre ? 'cell-occupied' : '',
+                                        getCelda('INGLES', hora, col).baja ? 'cell-baja' : ''
+                                    ]">
+                                    <div v-if="getCelda('INGLES', hora, col).nombre" class="flex flex-col items-center justify-center h-full px-1">
+                                        <span class="font-handwriting text-[#243c7a] leading-tight truncate w-full text-center">
+                                            {{ getCelda('INGLES', hora, col).nombre }}
+                                        </span>
+                                        <span v-if="getCelda('INGLES', hora, col).baja" class="text-[9px] font-extrabold text-orange-600 uppercase mt-0.5">[Baja]</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    // Conexión con Supabase (La misma que en app.html)
+    const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    createApp({
+        data() {
+            return {
+                loading: true,
+                relojRealTime: '00:00:00',
+                ahora: new Date(),
+                relojInterval: null,
+                
+                diaSeleccionado: 'LUNES',
+                diasSemana: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
+                tramosHorarios: ['15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
+                gridHorario: {}
+            }
+        },
+        computed: {
+            diaActualDisplay() {
+                const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                return this.ahora.toLocaleDateString('es-ES', opciones);
+            },
+            diaDeLaSemanaActual() {
+                const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+                return dias[this.ahora.getDay()];
+            },
+            alertasMovimiento() {
+                // Solo calculamos alertas si el día visualizado es el día ACTUAL
+                if (this.diaSeleccionado !== this.diaDeLaSemanaActual) return [];
+
+                const minActuales = this.ahora.getHours() * 60 + this.ahora.getMinutes();
+                const alumnosTramos = {}; // Mapa para guardar a qué horas asiste cada alumno
+
+                // Recorremos todo el horario extraído para agrupar las horas por estudiante[cite: 2]
+                for (let key in this.gridHorario) {
+                    let celda = this.gridHorario[key];
+                    if (celda && celda.nombre && !celda.baja) {
+                        let horaStr = key.split('_')[1]; // TIPO_HORA_COL -> HORA
+                        let [h, m] = horaStr.split(':').map(Number);
+                        let minInicio = h * 60 + m;
+                        let minFin = minInicio + 30; // Cada bloque son 30 min[cite: 2]
+
+                        let norm = celda.nombre.toUpperCase().trim();
+                        if (!alumnosTramos[norm]) {
+                            alumnosTramos[norm] = { nombre: celda.nombre, intervalos: [] };
+                        }
+                        alumnosTramos[norm].intervalos.push({ inicio: minInicio, fin: minFin });
+                    }
+                }
+
+                let alertas = [];
+
+                // Analizamos el intervalo completo de estancia del alumno en la academia
+                for (let id in alumnosTramos) {
+                    let tramos = alumnosTramos[id].intervalos.sort((a, b) => a.inicio - b.inicio);
+                    let horaLlegada = tramos[0].inicio;
+                    let horaSalida = tramos[tramos.length - 1].fin; // Asumimos que hace horas seguidas o calculamos el final absoluto
+
+                    let difEntrada = horaLlegada - minActuales;
+                    let difSalida = horaSalida - minActuales;
+
+                    // Si entra en los próximos 30 mins
+                    if (difEntrada > 0 && difEntrada <= 30) {
+                        alertas.push({ 
+                            tipo: 'entrada', 
+                            mensaje: `${alumnosTramos[id].nombre} entra en ${difEntrada} min.` 
+                        });
+                    }
+                    
+                    // Si sale en los próximos 30 mins
+                    if (difSalida > 0 && difSalida <= 30) {
+                        alertas.push({ 
+                            tipo: 'salida', 
+                            mensaje: `${alumnosTramos[id].nombre} se va en ${difSalida} min.` 
+                        });
+                    }
+                }
+
+                // Ordenar para que aparezcan primero los que menos tiempo les falta
+                return alertas.sort((a, b) => {
+                    let numA = parseInt(a.mensaje.match(/\d+/)[0]);
+                    let numB = parseInt(b.mensaje.match(/\d+/)[0]);
+                    return numA - numB;
+                });
+            }
+        },
+        methods: {
+            actualizarReloj() {
+                this.ahora = new Date();
+                this.relojRealTime = this.ahora.toLocaleTimeString('es-ES', { 
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+                });
+            },
+            seleccionarDia(dia) {
+                if (this.diaSeleccionado === dia) return;
+                this.diaSeleccionado = dia;
+                this.cargarHorarioBase();
+            },
+            getCeldaKey(tipo, hora, col) { return `${tipo}_${hora}_${col}`; },
+            getCelda(tipo, hora, col) {
+                return this.gridHorario[this.getCeldaKey(tipo, hora, col)] || { nombre: '', baja: false };
+            },
+            contarOcupacion(tipo, hora) {
+                let count = 0;
+                for (let col = 1; col <= 7; col++) {
+                    if (this.getCelda(tipo, hora, col).nombre) count++;
+                }
+                return count;
+            },
+            async cargarHorarioBase() {
+                this.loading = true;
+                this.gridHorario = {};
+                try {
+                    // Al ser de solo visualización pasiva, priorizamos cargar la plantilla general
+                    const { data, error } = await _supabase
+                        .from('horario_plantilla')
+                        .select('*')
+                        .eq('dia_semana', this.diaSeleccionado);
+                    
+                    if (data && !error) {
+                        data.forEach(r => {
+                            const key = this.getCeldaKey(r.tipo, r.hora, r.columna);
+                            const esBaja = String(r.observaciones || '').includes('[B]');
+                            this.gridHorario[key] = { nombre: r.alumno_nombre, baja: esBaja };
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error cargando cuadrante:", e);
+                }
+                this.loading = false;
+            }
+        },
+        mounted() {
+            // Inicializar reloj en tiempo real
+            this.actualizarReloj();
+            this.relojInterval = setInterval(this.actualizarReloj, 1000);
+
+            // Inicializar el día seleccionado al día actual (si es laborable)[cite: 2]
+            if (this.diasSemana.includes(this.diaDeLaSemanaActual)) {
+                this.diaSeleccionado = this.diaDeLaSemanaActual;
+            } else {
+                this.diaSeleccionado = 'LUNES'; // Fallback fin de semana
+            }
+
+            // Cargar datos del servidor
+            this.cargarHorarioBase();
+            
+            // Recargar silenciosamente el backend cada 5 minutos por si hay modificaciones desde app.html
+            setInterval(() => { this.cargarHorarioBase(); }, 300000);
+        },
+        beforeUnmount() {
+            if (this.relojInterval) clearInterval(this.relojInterval);
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
