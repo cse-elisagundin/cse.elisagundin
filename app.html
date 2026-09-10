@@ -484,7 +484,7 @@
                             <button v-if="search" @click="search = ''" class="absolute right-2.5 top-2 text-gray-400 hover:text-red-500 text-xs"><i class="fas fa-times"></i></button>
                         </div>
 
-                        <div class="flex items-center gap-2 text-[11px] text-gray-500 px-1 select-none">
+                        <div class="flex items-center gap-2 text-[11px] text-gray-50 px-1 select-none">
                             <input type="checkbox" v-model="showInactive" id="showInactive" class="rounded text-[#fa65c3] focus:ring-[#fa65c3] cursor-pointer">
                             <label for="showInactive" class="cursor-pointer hover:text-[#243c7a]">Ver alumnos de baja</label>
                         </div>
@@ -818,72 +818,150 @@
                     </div>
                 </div>
 
-                <!-- HISTORIAL GLOBAL DE PAGOS -->
+                <!-- HISTORIAL GLOBAL DE PAGOS Y CUOTAS -->
                 <div v-if="activeTab === 'gestor_pagos' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
-                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
-                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-pink-100 p-2 rounded-lg text-[#fa65c3]"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
-                                <div>
-                                    <h3 class="text-xl font-extrabold text-[#243c7a]">Historial Global de Pagos</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Registro de cobros de todos los alumnos</p>
+                    <div class="max-w-[95%] xl:max-w-7xl mx-auto flex flex-col gap-6">
+                        
+                        <!-- HEADER PRINCIPAL -->
+                        <div class="bg-white rounded-2xl shadow-sm border overflow-hidden p-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-pink-100 p-2 rounded-lg text-[#fa65c3]"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
+                                    <div>
+                                        <h3 class="text-xl font-extrabold text-[#243c7a]">Gestión Global de Pagos y Cuotas</h3>
+                                        <p class="text-xs text-gray-400 font-semibold">Resumen general de cuotas escolares y registro de cobros</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                    <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
+                                    <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                                <button @click="cargarDatosSupabase" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#243c7a] cursor-pointer flex items-center justify-center text-lg hover:bg-gray-50 transition" title="Actualizar">↻</button>
-                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
+                        </div>
+
+                        <!-- CUADRANTE DE CUOTAS GENERALES -->
+                        <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                            <div @click="seccionGlobalCuotasAbierta = !seccionGlobalCuotasAbierta" class="bg-gray-50 p-5 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-100 transition border-b">
+                                <div class="flex items-center gap-3 text-sm sm:text-lg">
+                                    <i class="fas fa-th text-[#fa65c3]"></i> Cuadrante de Cuotas Escolares
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <button @click.stop="generarSiguienteMes" class="bg-pink-50 text-[#fa65c3] border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold text-xs flex items-center gap-2 transition shadow-sm">
+                                        <i class="fas fa-plus"></i> Generar Mes
+                                    </button>
+                                    <i class="fas fa-chevron-down transition-transform duration-300" :class="seccionGlobalCuotasAbierta ? 'rotate-180' : ''"></i>
+                                </div>
+                            </div>
+                            
+                            <div v-if="seccionGlobalCuotasAbierta" class="p-4 sm:p-6 space-y-4 bg-gray-50/30">
+                                <div v-for="(mesesCurso, cursoKey) in mesesAgrupadosPorCursoEscolar" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div @click="toggleCursoGlobal(cursoKey)" class="bg-gray-100 p-3 sm:p-4 font-extrabold text-[#243c7a] text-xs sm:text-sm flex justify-between items-center cursor-pointer hover:bg-gray-200 transition select-none">
+                                        <div class="flex items-center gap-2 sm:gap-3">
+                                            <i class="fas fa-folder-open text-[#fa65c3]" v-if="cursoAbiertoGlobal[cursoKey]"></i>
+                                            <i class="fas fa-folder text-gray-400" v-else></i>
+                                            <span>Curso {{ cursoKey }}</span>
+                                            <span class="text-[10px] sm:text-xs font-semibold bg-white px-2 py-0.5 rounded-full text-gray-500 border">{{ mesesCurso.length }}m</span>
+                                        </div>
+                                        <i class="fas fa-chevron-down transition-transform duration-350" :class="cursoAbiertoGlobal[cursoKey] ? 'rotate-180' : ''"></i>
+                                    </div>
+
+                                    <div v-if="cursoAbiertoGlobal[cursoKey]" class="p-2 sm:p-3 overflow-x-auto">
+                                        <table class="w-full border-collapse text-xs min-w-[800px]">
+                                            <thead>
+                                                <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                    <th class="p-2 border text-left sticky left-0 bg-gray-50 z-10 w-48 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Alumno</th>
+                                                    <th v-for="mes in mesesCurso" :key="mes" class="p-2 border text-center whitespace-nowrap min-w-[90px]">
+                                                        {{ formatMesUnificado(mes) }}
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="a in alumnosActivosGlobal" :key="a.id" class="hover:bg-blue-50/40 transition">
+                                                    <td class="p-2.5 border font-bold text-[#243c7a] sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate max-w-[200px]" :title="a.apellidos + ', ' + a.nombre">
+                                                        {{ a.apellidos }}, {{ a.nombre }}
+                                                    </td>
+                                                    <td v-for="mes in mesesCurso" :key="mes" class="p-1 border text-center" :class="isPagadoTrue(a.nombre + ' ' + a.apellidos, mes) ? 'bg-green-50/30' : 'bg-white'">
+                                                        <div class="flex items-center gap-1.5 justify-center">
+                                                            <input type="checkbox" 
+                                                                :checked="isPagadoTrue(a.nombre + ' ' + a.apellidos, mes)" 
+                                                                @change="togglePagadoIngresosFijos(a.nombre + ' ' + a.apellidos, mes, $event.target.checked)"
+                                                                class="w-4 h-4 accent-green-600 rounded cursor-pointer">
+                                                            <input type="number" step="0.01" 
+                                                                :value="getCuotaValor(a.nombre + ' ' + a.apellidos, mes)" 
+                                                                @input="updateCuotaLocal(a.nombre + ' ' + a.apellidos, mes, $event.target.value)"
+                                                                @change="guardarCeldaIngresosFijos(a.nombre + ' ' + a.apellidos, mes)"
+                                                                class="w-14 text-center font-bold border rounded bg-white text-gray-800 focus:border-[#fa65c3] outline-none py-1">
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
-                            <div class="w-full relative">
-                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchPagosGlobal" type="text" placeholder="Buscar por alumno, mes o ID..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#fa65c3] shadow-sm text-sm bg-white">
-                                <button v-if="searchPagosGlobal" @click="searchPagosGlobal = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                        <!-- REGISTRO DE COBROS INDIVIDUALES (HISTORIAL) -->
+                        <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                            <div @click="seccionGlobalPagosAbierta = !seccionGlobalPagosAbierta" class="bg-gray-50 p-5 font-extrabold text-[#243c7a] flex justify-between items-center cursor-pointer hover:bg-gray-100 transition border-b">
+                                <div class="flex items-center gap-3 text-sm sm:text-lg">
+                                    <i class="fas fa-list text-[#2b94cc]"></i> Historial de Pago Individual
+                                </div>
+                                <i class="fas fa-chevron-down transition-transform duration-300" :class="seccionGlobalPagosAbierta ? 'rotate-180' : ''"></i>
                             </div>
-                        </div>
+                            
+                            <div v-if="seccionGlobalPagosAbierta" class="p-4 sm:p-6 bg-gray-50/30">
+                                <div class="mb-6 bg-white p-4 rounded-xl border shadow-sm">
+                                    <div class="w-full relative">
+                                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                        <input v-model="searchPagosGlobal" type="text" placeholder="Buscar por alumno, mes o ID..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#fa65c3] shadow-sm text-sm bg-gray-50">
+                                        <button v-if="searchPagosGlobal" @click="searchPagosGlobal = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
 
-                        <div v-if="pagosFiltradosGlobal.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron pagos registrados.
-                        </div>
-                        <div v-else class="overflow-x-auto">
-                            <table class="w-full border-collapse text-xs min-w-[600px]">
-                                <thead>
-                                    <tr class="bg-gray-50 text-gray-600 uppercase">
-                                        <th class="p-3 border text-center">ID Recibo</th>
-                                        <th class="p-3 border text-center">Fecha</th>
-                                        <th class="p-3 border text-left">Alumno</th>
-                                        <th class="p-3 border text-left">Mes</th>
-                                        <th class="p-3 border text-left">Concepto</th>
-                                        <th class="p-3 border text-center">Método</th>
-                                        <th class="p-3 border text-center">Importe</th>
-                                        <th class="p-3 border text-center">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="pago in pagosFiltradosGlobal" :key="pago.id" class="hover:bg-blue-50/40 transition">
-                                        <td class="p-3 border text-center font-bold text-gray-500">{{ pago.factura_id || 'S/N' }}</td>
-                                        <td class="p-3 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
-                                        <td class="p-3 border font-extrabold text-[#243c7a]">{{ pago.alumno }}</td>
-                                        <td class="p-3 border font-bold text-[#fa65c3]">{{ formatMesUnificado(pago.mes) }}</td>
-                                        <td class="p-3 border text-gray-600">
-                                            <span class="font-bold">{{ pago.tarifa }}</span>
-                                            <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
-                                        </td>
-                                        <td class="p-3 border text-center">
-                                            <span :class="String(pago.metodo_pago).toUpperCase() === 'BIZUM' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'" class="px-2 py-1 rounded font-bold text-[10px] uppercase">
-                                                {{ String(pago.metodo_pago || 'EFECTIVO').toUpperCase() }}
-                                            </span>
-                                        </td>
-                                        <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
-                                        <td class="p-3 border text-center space-x-1">
-                                            <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
-                                            <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
-                                            <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                <div v-if="pagosFiltradosGlobal.length === 0" class="text-center py-12 text-gray-400 font-semibold bg-white rounded-xl border">
+                                    No se encontraron pagos registrados.
+                                </div>
+                                <div v-else class="overflow-x-auto bg-white rounded-xl border shadow-sm">
+                                    <table class="w-full border-collapse text-xs min-w-[600px]">
+                                        <thead>
+                                            <tr class="bg-gray-50 text-gray-600 uppercase">
+                                                <th class="p-3 border text-center">ID Recibo</th>
+                                                <th class="p-3 border text-center">Fecha</th>
+                                                <th class="p-3 border text-left">Alumno</th>
+                                                <th class="p-3 border text-left">Mes</th>
+                                                <th class="p-3 border text-left">Concepto</th>
+                                                <th class="p-3 border text-center">Método</th>
+                                                <th class="p-3 border text-center">Importe</th>
+                                                <th class="p-3 border text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="pago in pagosFiltradosGlobal" :key="pago.id" class="hover:bg-blue-50/40 transition">
+                                                <td class="p-3 border text-center font-bold text-gray-500">{{ pago.factura_id || 'S/N' }}</td>
+                                                <td class="p-3 border text-center font-semibold text-gray-700">{{ formatearFecha(pago.fecha_pago) }}</td>
+                                                <td class="p-3 border font-extrabold text-[#243c7a]">{{ pago.alumno }}</td>
+                                                <td class="p-3 border font-bold text-[#fa65c3]">{{ formatMesUnificado(pago.mes) }}</td>
+                                                <td class="p-3 border text-gray-600">
+                                                    <span class="font-bold">{{ pago.tarifa }}</span>
+                                                    <span v-if="pago.extras" class="block text-[10px] text-gray-400">{{ pago.extras }}</span>
+                                                </td>
+                                                <td class="p-3 border text-center">
+                                                    <span :class="String(pago.metodo_pago).toUpperCase() === 'BIZUM' ? 'bg-pink-100 text-[#fa65c3]' : 'bg-blue-100 text-[#243c7a]'" class="px-2 py-1 rounded font-bold text-[10px] uppercase">
+                                                        {{ String(pago.metodo_pago || 'EFECTIVO').toUpperCase() }}
+                                                    </span>
+                                                </td>
+                                                <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
+                                                <td class="p-3 border text-center space-x-1">
+                                                    <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
+                                                    <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
+                                                    <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1412,6 +1490,11 @@
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
                 cursoAbierto: {},
+                
+                seccionGlobalPagosAbierta: false,
+                seccionGlobalCuotasAbierta: true,
+                cursoAbiertoGlobal: {},
+
                 showCustomModal: false,
                 modalType: 'edit',
                 modalTitle: '',
@@ -1472,6 +1555,9 @@
                     const nombreCompleto = this.normalizeName(`${s.nombre || ""} ${s.apellidos || ""}`);
                     return nombreCompleto.includes(t) || (s.dni || "").toLowerCase().includes(t);
                 });
+            },
+            alumnosActivosGlobal() {
+                return this.list.filter(a => !a.baja).sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || ""));
             },
             alumnosFiltradosGestor() {
                 const t = this.normalizeName(this.searchGestor);
@@ -2542,10 +2628,22 @@
                 idx++;
                 if (idx > 11) { idx = 0; year++; }
                 const nuevoMes = `${mNombres[idx]} ${year}`;
+                
                 if (this.selected) {
                     await _supabase.from('ingresos_fijos').insert([{ alumno: `${this.selected.nombre} ${this.selected.apellidos}`, mes: nuevoMes, cuota: 0, pagado: false }]);
-                    await this.cargarDatosSupabase();
+                } else if (this.activeTab === 'gestor_pagos') {
+                    const activos = this.alumnosActivosGlobal;
+                    if (activos.length > 0) {
+                        const payload = activos.map(a => ({
+                            alumno: `${a.nombre} ${a.apellidos}`,
+                            mes: nuevoMes,
+                            cuota: 0,
+                            pagado: false
+                        }));
+                        await _supabase.from('ingresos_fijos').insert(payload);
+                    }
                 }
+                await this.cargarDatosSupabase();
             },
             getCuotaValor(alumno, mes) {
                 const normA = this.normalizeName(alumno);
@@ -2632,6 +2730,9 @@
             },
             toggleCurso(cursoKey) {
                 this.cursoAbierto[cursoKey] = !this.cursoAbierto[cursoKey];
+            },
+            toggleCursoGlobal(cursoKey) {
+                this.cursoAbiertoGlobal[cursoKey] = !this.cursoAbiertoGlobal[cursoKey];
             },
             logout() { _supabase.auth.signOut(); location.reload(); },
             createNew() {
