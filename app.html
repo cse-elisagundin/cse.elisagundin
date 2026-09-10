@@ -40,10 +40,22 @@
             .no-print { display: none !important; }
 
             body.is-printing-ticket #zona-impresion { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm; height: 296mm; overflow: hidden; z-index: 99999 !important; }
-            body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 5mm; }
+            
+            body.is-printing-horario #zona-impresion-horario { 
+                display: flex !important; 
+                flex-direction: column !important; 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 100% !important; 
+                height: 98vh !important; 
+                padding: 10mm !important; 
+                box-sizing: border-box !important; 
+                z-index: 99999 !important; 
+            }
 
             table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-            table.tabla-horario-print td {
+            table.tabla-horario-print td, table.tabla-horario-print th {
                 border: 1px solid #000 !important;
                 padding: 1px 2px !important;
                 height: 18px !important;
@@ -85,70 +97,64 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
-    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
-        <div class="flex items-end justify-between mb-3">
+<!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
+    <div id="zona-impresion-horario" class="hidden bg-white font-sans">
+        <div class="flex items-center justify-between mb-4 shrink-0">
             <div>
-                <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
-                <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
+                <h1 class="text-3xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
+                <p class="text-[10px] font-bold text-black uppercase tracking-wider mt-1">CSE ELISA GUNDÍN</p>
             </div>
-            <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
-                <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
-                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
+            <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-10 w-auto object-contain">
+        </div>
+
+        <div class="flex flex-col gap-4 w-full shrink-0">
+            <div class="border border-black overflow-hidden">
+                <div class="bg-gray-100 text-center text-[10px] font-black border-b border-black py-0.5 uppercase tracking-widest text-black">Refuerzo General</div>
+                <table class="w-full border-collapse text-center tabla-horario-print">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-black text-black">
+                            <th class="w-10 border-r border-black font-bold">HORA</th>
+                            <th v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 font-bold">P{{ col }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                            <td class="border-r border-black font-black text-[9px] text-black align-middle bg-gray-50">
+                                {{ hora }}
+                            </td>
+                            <td v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 align-middle text-[8px] font-extrabold text-black uppercase truncate">
+                                {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border border-black overflow-hidden">
+                <div class="bg-gray-100 text-center text-[10px] font-black border-b border-black py-0.5 uppercase tracking-widest text-black">Clases de Inglés</div>
+                <table class="w-full border-collapse text-center tabla-horario-print">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-black text-black">
+                            <th class="w-10 border-r border-black font-bold">HORA</th>
+                            <th v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 font-bold">P{{ col }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                            <td class="border-r border-black font-black text-[9px] text-black align-middle bg-gray-50">
+                                {{ hora }}
+                            </td>
+                            <td v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 align-middle text-[8px] font-extrabold text-black uppercase truncate">
+                                {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="flex gap-5 w-full items-start">
-            <div class="flex-1 flex flex-col gap-2 min-w-0">
-                <div class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div v-if="!isLandscapePrint" class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="flex-1 flex flex-col min-w-0">
-                <div v-if="isLandscapePrint" class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div v-else class="h-[420px]"></div>
-            </div>
+        <div class="flex-1 w-full mt-4 border-t border-black pt-2 flex flex-col min-h-[100px]">
+            <span class="text-[10px] font-black text-black uppercase tracking-wider">NOTAS</span>
         </div>
     </div>
 
