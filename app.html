@@ -34,7 +34,7 @@
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
         @media print {
-            @page { margin: 0; }
+            @page { size: A4 portrait; margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
@@ -98,8 +98,8 @@
             </div>
         </div>
 
-        <div class="flex gap-5 w-full items-start">
-            <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <div class="grid grid-cols-12 gap-5 w-full items-start">
+            <div class="col-span-6 flex flex-col gap-2">
                 <div class="border border-black overflow-hidden">
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
@@ -115,7 +115,7 @@
                     </table>
                 </div>
 
-                <div v-if="!isLandscapePrint" class="border border-black overflow-hidden">
+                <div class="border border-black overflow-hidden">
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
                             <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
@@ -131,24 +131,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 flex flex-col min-w-0">
-                <div v-if="isLandscapePrint" class="border border-black overflow-hidden">
-                    <table class="w-full border-collapse text-center tabla-horario-print">
-                        <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div v-else class="h-[420px]"></div>
-            </div>
+            <div class="col-span-6 h-[420px]"></div>
         </div>
     </div>
 
@@ -573,17 +556,9 @@
                                 <i class="fas" :class="savingHorario ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                                 {{ savingHorario ? 'Guardando...' : 'Guardar Horario' }}
                             </button>
-                            
-                            <!-- BOTONES DE IMPRESIÓN DINÁMICA -->
-                            <div class="flex items-center bg-[#243c7a] rounded-xl shadow text-white">
-                                <button @click="imprimirCuadrante('vertical')" class="px-3 py-2 text-xs font-bold hover:bg-[#1a2e5e] rounded-l-xl transition flex items-center gap-1.5 border-r border-white/20" title="Imprimir A4 Vertical">
-                                    <i class="fas fa-print"></i> Vertical
-                                </button>
-                                <button @click="imprimirCuadrante('horizontal')" class="px-3 py-2 text-xs font-bold hover:bg-[#1a2e5e] rounded-r-xl transition flex items-center gap-1.5" title="Imprimir A4 Horizontal">
-                                    <i class="fas fa-expand-arrows-alt"></i> Horizontal
-                                </button>
-                            </div>
-
+                            <button @click="imprimirCuadrante" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                                <i class="fas fa-print"></i> Imprimir A4
+                            </button>
                             <button @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
                         </div>
                     </div>
@@ -1445,9 +1420,7 @@
                 searchAlumnoPincel: '',
                 alumnoActivoPincel: '',
                 hoverAlumnoPincel: '',
-                savingHorario: false,
-                
-                isLandscapePrint: false // NUEVO: Control de orientación
+                savingHorario: false
             }
         },
         watch: {
@@ -1501,7 +1474,15 @@
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
                 return this.pagosList.filter(p => this.normalizeName(p.alumno) === nombreLimpio)
-                    .sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+                    .sort((a, b) => {
+                        const timeA = new Date(a.fecha_pago || 0).getTime();
+                        const timeB = new Date(b.fecha_pago || 0).getTime();
+                        if (timeB !== timeA) return timeB - timeA;
+                        
+                        const idA = parseInt(String(a.factura_id || '0').split('-')[0]) || 0;
+                        const idB = parseInt(String(b.factura_id || '0').split('-')[0]) || 0;
+                        return idB - idA;
+                    });
             },
             pagosFiltradosGlobal() {
                 const t = this.normalizeName(this.searchPagosGlobal);
@@ -1510,7 +1491,15 @@
                     const mesNorm = this.normalizeName(p.mes || '');
                     const facturaNorm = this.normalizeName(p.factura_id || '');
                     return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
-                }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
+                }).sort((a, b) => {
+                    const timeA = new Date(a.fecha_pago || 0).getTime();
+                    const timeB = new Date(b.fecha_pago || 0).getTime();
+                    if (timeB !== timeA) return timeB - timeA;
+                    
+                    const idA = parseInt(String(a.factura_id || '0').split('-')[0]) || 0;
+                    const idB = parseInt(String(b.factura_id || '0').split('-')[0]) || 0;
+                    return idB - idA;
+                });
             },
             archivosNubeFiltrados() {
                 const t = this.normalizeName(this.searchExplorador);
@@ -1664,34 +1653,14 @@
                 return nombreBase;
             },
 
-            // NUEVO: Método imprimir cuadrante que inyecta la orientación según lo que pulsemos
-            imprimirCuadrante(orientacion) {
-                this.isLandscapePrint = (orientacion === 'horizontal');
-                
-                // Usamos nextTick para esperar a que Vue reestructure las tablas en el HTML (Vertical vs Horizontal)
-                this.$nextTick(() => {
-                    document.body.classList.add('is-printing-horario');
-                    
-                    let style = document.getElementById('print-page-style');
-                    if (!style) {
-                        style = document.createElement('style');
-                        style.id = 'print-page-style';
-                        document.head.appendChild(style);
-                    }
-                    
-                    if (this.isLandscapePrint) {
-                        style.innerHTML = '@media print { @page { size: A4 landscape !important; margin: 5mm !important; } }';
-                    } else {
-                        style.innerHTML = '@media print { @page { size: A4 portrait !important; margin: 5mm !important; } }';
-                    }
-
+            imprimirCuadrante() {
+                document.body.classList.add('is-printing-horario');
+                setTimeout(() => {
+                    window.print();
                     setTimeout(() => {
-                        window.print();
-                        setTimeout(() => {
-                            document.body.classList.remove('is-printing-horario');
-                        }, 500);
-                    }, 150);
-                });
+                        document.body.classList.remove('is-printing-horario');
+                    }, 500);
+                }, 100);
             },
 
             formatearFecha(f) {
@@ -2256,11 +2225,6 @@
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    // NUEVO: Aseguramos que la factura manual subida obligue el formato Portrait
-                    let style = document.getElementById('print-page-style');
-                    if (!style) { style = document.createElement('style'); style.id = 'print-page-style'; document.head.appendChild(style); }
-                    style.innerHTML = '@media print { @page { size: A4 portrait !important; margin: 0 !important; } }';
-
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
@@ -2298,11 +2262,6 @@
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
             },
             reimprimirPagoHistorico(pago) {
-                // NUEVO: Aseguramos Portrait para recibos
-                let style = document.getElementById('print-page-style');
-                if (!style) { style = document.createElement('style'); style.id = 'print-page-style'; document.head.appendChild(style); }
-                style.innerHTML = '@media print { @page { size: A4 portrait !important; margin: 0 !important; } }';
-
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
                 document.body.classList.add('is-printing-ticket');
                 setTimeout(() => {
