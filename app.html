@@ -34,6 +34,7 @@
         .loading-progress { height: 100%; width: 40%; background: var(--c-accent); animation: loading-bar 1.2s infinite linear; }
         
         @media print {
+            @page { size: A4 portrait; margin: 0; }
             body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             #app-main-content { display: none !important; }
             .no-print { display: none !important; }
@@ -84,57 +85,54 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS REDISEÑADA -->
-    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2 w-full">
-        <!-- Cabecera Limpia -->
-        <div class="mb-4">
-            <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
-            <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
-        </div>
-
-        <!-- Tablas de horarios expandibles al 100% -->
-        <div class="flex flex-col gap-4 w-full">
-            <div class="border border-black overflow-hidden w-full">
-                <table class="w-full border-collapse text-center tabla-horario-print">
-                    <tbody>
-                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                            <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                {{ hora }}
-                            </td>
-                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
+    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
+        <div class="flex items-end justify-between mb-3">
+            <div>
+                <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
+                <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
             </div>
-
-            <div class="border border-black overflow-hidden w-full">
-                <table class="w-full border-collapse text-center tabla-horario-print">
-                    <tbody>
-                        <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                            <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                {{ hora }}
-                            </td>
-                            <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
-                                {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Línea separadora y Notas abajo -->
-        <div class="mt-8 border-t-4 border-black pt-2 flex justify-between items-start">
-            <div class="flex-1">
+            <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
                 <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
-            </div>
-            <div class="w-24 flex justify-end">
-                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-10 w-auto object-contain grayscale opacity-60">
+                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
             </div>
         </div>
-        <div class="h-24"></div>
+
+        <div class="grid grid-cols-12 gap-5 w-full items-start">
+            <div class="col-span-6 flex flex-col gap-2">
+                <div class="border border-black overflow-hidden">
+                    <table class="w-full border-collapse text-center tabla-horario-print">
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
+                                    {{ hora }}
+                                </td>
+                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
+                                    {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="border border-black overflow-hidden">
+                    <table class="w-full border-collapse text-center tabla-horario-print">
+                        <tbody>
+                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
+                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
+                                    {{ hora }}
+                                </td>
+                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
+                                    {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-span-6 h-[420px]"></div>
+        </div>
     </div>
 
     <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
@@ -558,15 +556,9 @@
                                 <i class="fas" :class="savingHorario ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                                 {{ savingHorario ? 'Guardando...' : 'Guardar Horario' }}
                             </button>
-                            
-                            <!-- Botones Independientes de Impresión -->
-                            <button @click="imprimirCuadrante('portrait')" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
-                                <i class="fas fa-file-invoice"></i> Vertical
+                            <button @click="imprimirCuadrante" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                                <i class="fas fa-print"></i> Imprimir A4
                             </button>
-                            <button @click="imprimirCuadrante('landscape')" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
-                                <i class="fas fa-image"></i> Horizontal
-                            </button>
-
                             <button @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
                         </div>
                     </div>
@@ -1596,67 +1588,61 @@
                 return 'https://wa.me/' + num;
             },
 
-            formatNombrePrint(nombreOriginal) {
-                if (!nombreOriginal) return '';
+            formatNombrePrint(nombreCompleto) {
+                if (!nombreCompleto) return '';
                 
-                const normInput = this.normalizeName(nombreOriginal);
-                
-                // 1. Buscar al alumno real en la base de datos
+                const normInput = this.normalizeName(nombreCompleto);
                 const student = this.list.find(s => 
                     this.normalizeName(`${s.nombre} ${s.apellidos}`) === normInput || 
                     this.normalizeName(`${s.apellidos}, ${s.nombre}`) === normInput
                 );
 
-                let nombreStr = "";
-                let apellidoStr = "";
+                let nombre = "";
+                let primerApellido = "";
 
                 if (student) {
-                    nombreStr = (student.nombre || "").trim();
-                    apellidoStr = (student.apellidos || "").trim();
+                    nombre = student.nombre || "";
+                    primerApellido = (student.apellidos || "").trim().split(/\s+/)[0] || "";
                 } else {
-                    // Plan B de respaldo por si es un texto manual de pincel sin registrar
-                    const parts = nombreOriginal.trim().split(/\s+/);
-                    nombreStr = parts[0] || "";
-                    apellidoStr = parts.slice(1).join(" ") || "";
+                    const parts = nombreCompleto.trim().split(/\s+/);
+                    nombre = parts[0] || "";
+                    primerApellido = parts[1] || "";
                 }
 
-                // 2. Procesar el Nombre (Palabra 1 completa, inicial de la Palabra 2)
-                const partesNombre = nombreStr.split(/\s+/).filter(w => w.length > 0);
-                let nombreFormateado = partesNombre[0] || "";
-                if (partesNombre.length > 1) {
-                    nombreFormateado += ` ${partesNombre[1].charAt(0)}.`;
+                const nombreParts = nombre.trim().split(/\s+/);
+                let primerNombre = nombreParts[0] || "";
+                let initialSegundoNombre = nombreParts.length > 1 ? ` ${nombreParts[1].charAt(0)}.` : "";
+                let nombreBase = `${primerNombre}${initialSegundoNombre}`;
+
+                let count = 0;
+                const currentGridNames = Object.values(this.gridHorario)
+                    .map(cell => cell ? cell.nombre : '')
+                    .filter(n => !!n);
+
+                currentGridNames.forEach(n => {
+                    const normN = this.normalizeName(n);
+                    const st = this.list.find(s => this.normalizeName(`${s.nombre} ${s.apellidos}`) === normN);
+                    let nFirst = st ? (st.nombre || "") : (n.trim().split(/\s+/)[0] || "");
+                    const nParts = nFirst.trim().split(/\s+/);
+                    const nBase = `${nParts[0]}${nParts.length > 1 ? ` ${nParts[1].charAt(0)}.` : ""}`;
+                    if (this.normalizeName(nBase) === this.normalizeName(nombreBase)) {
+                        count++;
+                    }
+                });
+
+                if (count > 1 && primerApellido) {
+                    return `${nombreBase} ${primerApellido.charAt(0)}.`;
                 }
 
-                // 3. Procesar los Apellidos (Inicial del 1º, inicial del 2º)
-                const partesApellido = apellidoStr.split(/\s+/).filter(w => w.length > 0);
-                let apellidoFormateado = "";
-                if (partesApellido.length > 0) {
-                    apellidoFormateado += ` ${partesApellido[0].charAt(0)}.`;
-                }
-                if (partesApellido.length > 1) {
-                    apellidoFormateado += ` ${partesApellido[1].charAt(0)}.`;
-                }
-
-                // 4. Retorno concatenado (Ej: "Juan P. G. L.")
-                return (nombreFormateado + apellidoFormateado).trim();
+                return nombreBase;
             },
 
-            imprimirCuadrante(orientacion) {
-                // Inyectamos el CSS dinámico según el botón
-                const style = document.createElement('style');
-                style.id = 'print-orientation-style';
-                style.innerHTML = `@page { size: A4 ${orientacion}; }`;
-                document.head.appendChild(style);
-
+            imprimirCuadrante() {
                 document.body.classList.add('is-printing-horario');
-                
                 setTimeout(() => {
                     window.print();
                     setTimeout(() => {
                         document.body.classList.remove('is-printing-horario');
-                        // Limpiamos el estilo para no afectar otras impresiones (ej: facturas)
-                        const styleElement = document.getElementById('print-orientation-style');
-                        if (styleElement) styleElement.remove();
                     }, 500);
                 }, 100);
             },
