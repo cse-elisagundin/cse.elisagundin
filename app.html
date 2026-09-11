@@ -191,32 +191,6 @@
             </div>
         </transition>
 
-        <!-- MODAL DE ADVERTENCIA: FALTA DNI -->
-        <transition name="pop">
-            <div v-if="showDniWarningModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-amber-100 text-amber-600 p-3 rounded-full text-2xl"><i class="fas fa-id-card"></i></div>
-                        <div>
-                            <h3 class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Falta el DNI/NIE</h3>
-                            <p class="text-xs text-amber-700 font-semibold mt-0.5">El campo de identificación está vacío</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 text-sm font-medium leading-relaxed">
-                        Estás a punto de guardar la ficha de este alumno sin indicar su <strong>DNI o NIE</strong>. ¿Qué deseas hacer?
-                    </p>
-                    <div class="flex flex-col gap-2.5 pt-2 border-t">
-                        <button @click="confirmarGuardadoSinDni" class="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#1faa50] text-white font-bold shadow transition flex items-center justify-center gap-2">
-                            <i class="fas fa-save"></i> Guardar y Continuar
-                        </button>
-                        <button @click="showDniWarningModal = false" class="w-full py-2 px-4 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-100 font-bold transition">
-                            Volver a Editar (Cancelar)
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </transition>
-
         <transition name="pop">
             <div v-if="showDeleteStudentModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -1423,7 +1397,6 @@
                 examenAEliminar: null,
                 showDeleteStudentModal: false,
                 showDeleteArchivoModal: false,
-                showDniWarningModal: false,
                 archivoAEliminarNube: null,
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
@@ -2176,7 +2149,6 @@
                 this.showDeleteExamenModal = false;
                 this.showDeleteStudentModal = false;
                 this.showDeleteArchivoModal = false;
-                this.showDniWarningModal = false;
 
                 this.savingPago = true;
                 this.preparingPrint = true;
@@ -2651,112 +2623,106 @@
                 }
             },
 
-async saveData() {
-    // 1. Validación estricta y limpieza inicial
-    const nom = String(this.form.nombre || '').trim();
-    const ape = String(this.form.apellidos || '').trim();
+            async saveData() {
+                if (!this.form.nombre || !this.form.apellidos) {
+                    alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
+                    return;
+                }
 
-    if (!nom || !ape) {
-        alert("Por favor, introduce al menos el Nombre y los Apellidos del alumno.");
-        return;
-    }
+                this.saving = true;
+                try {
+                    const payload = { ...this.form };
+                    delete payload.id;
+                    payload.baja = Boolean(this.form.baja);
 
-    this.saving = true;
+                    // Asegurar que los campos opcionales sin rellenar se envíen como "" en lugar de null
+                    // para evitar errores de restricción NOT NULL en Supabase (fam2_relacion, tlf, aules, etc.)
+                    Object.keys(payload).forEach(key => {
+                        if (key === 'nacimiento') {
+                            if (!payload[key]) payload[key] = null;
+                        } else if (typeof payload[key] === 'boolean') {
+                            // conservar booleanos
+                        } else {
+                            if (payload[key] === null || payload[key] === undefined) {
+                                payload[key] = '';
+                            }
+                        }
+                    });
 
-    try {
-        // 2. Construcción Quirúrgica del Payload
-        // En lugar de arrastrar metadatos (como 'created_at') que provocan rechazos en Supabase,
-        // extraemos SOLO las columnas legítimas del formulario.
-        const camposEditables = [
-            'nombre', 'apellidos', 'dni', 'nacimiento', 'baja',
-            'usuario_aules', 'pass_aules', 'direccion', 'cp', 'poblacion', 'provincia',
-            'colegio', 'curso', 'tlf',
-            'fam1_nombre', 'fam1_relacion', 'fam1_tlf',
-            'fam2_nombre', 'fam2_relacion', 'fam2_tlf'
-        ];
+                    const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
+                    const newNombreCompleto = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
 
-        const payload = {};
+                    if (this.isNew) {
+                        const { data, error } = await _supabase
+                            .from('listado_alumnos')
+                            .insert([payload])
+                            .select()
+                            .single();
 
-        camposEditables.forEach(key => {
-            let value = this.form[key];
+                        if (error) {
+                            console.error("Error al crear alumno en Supabase:", error);
+                            alert("Error al crear alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
 
-            if (key === 'baja') {
-                payload[key] = Boolean(value);
-            } else if (key === 'nacimiento') {
-                // Supabase rechaza "" en columnas tipo date. Debe ser null obligatoriamente si está vacío.
-                payload[key] = value ? value : null;
-            } else {
-                // Tratamiento para evitar el error NOT NULL en campos de texto,
-                // asegurando al mismo tiempo que limpiamos espacios accidentales.
-                payload[key] = (value === null || value === undefined) ? '' : String(value).trim();
+                        if (data) {
+                            this.selected = data;
+                            this.form = JSON.parse(JSON.stringify(data));
+                            this.isNew = false;
+                        }
+                    } else {
+                        const { error } = await _supabase
+                            .from('listado_alumnos')
+                            .update(payload)
+                            .eq('id', this.selected.id);
+
+                        if (error) {
+                            console.error("Error al actualizar alumno en Supabase:", error);
+                            alert("Error al actualizar alumno: " + error.message);
+                            this.saving = false;
+                            return;
+                        }
+
+                        if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
+                            await Promise.all([
+                                _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
+                                _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
+                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
+                            ]);
+                        }
+                    }
+
+                    await this.cargarDatosSupabase();
+                    this.showSuccess = true;
+                    this.successMessage = 'Ficha guardada con éxito';
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                        this.selected = null;
+                        this.saving = false;
+                    }, 1800);
+                } catch (e) {
+                    console.error("Error inesperado en saveData:", e);
+                    alert("Ocurrió un error inesperado al guardar la ficha.");
+                    this.saving = false;
+                }
             }
-        });
-
-        // 3. Variables preparadas para la actualización en cascada (si cambia el nombre)
-        const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
-        const newNombreCompleto = `${payload.nombre} ${payload.apellidos}`;
-
-        // 4. Inserción o Actualización en Supabase
-        if (this.isNew) {
-            const { data, error } = await _supabase
-                .from('listado_alumnos')
-                .insert([payload])
-                .select()
-                .single();
-
-            if (error) throw error; // Lanza el error al bloque catch para un manejo unificado
-
-            if (data) {
-                this.selected = data;
-                this.form = JSON.parse(JSON.stringify(data));
-                this.isNew = false;
-            }
-        } else {
-            const { error } = await _supabase
-                .from('listado_alumnos')
-                .update(payload)
-                .eq('id', this.selected.id);
-
-            if (error) throw error; // Lanza el error al bloque catch
-
-            // 5. Propagación de cambios en otras tablas (Cascada Manual)
-            if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
-                const promesasCascada = [
-                    _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                    _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                    _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
-                    _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
-                    _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
-                ];
-                
-                // Usamos Promise.allSettled para evitar que si una tabla falla, se congele la aplicación
-                await Promise.allSettled(promesasCascada);
+        },
+        async mounted() {
+            try {
+                const { data } = await _supabase.auth.getSession();
+                if (data && data.session) {
+                    this.authenticated = true;
+                    await this.cargarDatosSupabase();
+                }
+            } catch(e) {
+                console.error("Error al verificar sesión inicial:", e);
+            } finally {
+                this.checkingSession = false;
             }
         }
-
-        // 6. Éxito y recarga de datos
-        await this.cargarDatosSupabase();
-        this.showSuccess = true;
-        this.successMessage = 'Ficha guardada con éxito';
-        
-        setTimeout(() => {
-            this.showSuccess = false;
-            this.selected = null;
-            this.saving = false;
-        }, 1800);
-
-    } catch (error) {
-        // 7. Diagnóstico detallado expuesto al usuario
-        console.error("Fallo crítico en operación Supabase:", error);
-        
-        // Extraemos la información del error que nos da la base de datos
-        const errorText = error.message || 'Verifica los datos introducidos y los tipos de columna en la base de datos.';
-        const errorDetails = error.details || error.hint || 'Sin detalles extra.';
-        
-        alert(`Error al guardar la ficha:\n${errorText}\n\nDetalle técnico:\n${errorDetails}`);
-        this.saving = false;
-    }
-}
     }).mount('#app');
 </script>
 </body>
