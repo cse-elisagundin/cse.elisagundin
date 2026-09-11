@@ -40,19 +40,52 @@
             .no-print { display: none !important; }
 
             body.is-printing-ticket #zona-impresion { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm; height: 296mm; overflow: hidden; z-index: 99999 !important; }
-            body.is-printing-horario #zona-impresion-horario { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 5mm; }
+            
+            /* ZONA IMPRESION HORARIO FLEX Y DINAMICA */
+            body.is-printing-horario #zona-impresion-horario { 
+                display: flex !important; 
+                flex-direction: column;
+                position: absolute; left: 0; top: 0; 
+                width: 100vw; 
+                height: 100vh;
+                padding: 10mm; 
+                box-sizing: border-box;
+                background: white;
+                z-index: 99999;
+            }
 
-            table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            table.tabla-horario-print { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; height: 100%; }
             table.tabla-horario-print td {
                 border: 1px solid #000 !important;
-                padding: 1px 2px !important;
-                height: 18px !important;
-                max-height: 18px !important;
-                font-size: 8px !important;
+                padding: 2px !important;
+                font-size: 9px !important;
                 text-align: center !important;
                 overflow: hidden !important;
                 white-space: nowrap !important;
-                text-overflow: ellipsis !important;
+            }
+
+            /* LAYOUT VERTICAL (PORTRAIT) */
+            body.print-portrait #zona-impresion-horario .print-body {
+                display: flex; flex-direction: row; flex: 1; gap: 6mm;
+            }
+            body.print-portrait .print-schedules {
+                width: 75%; display: flex; flex-direction: column; gap: 6mm;
+            }
+            body.print-portrait .schedule-table { flex: 1; display: flex; flex-direction: column; }
+            body.print-portrait .print-notes {
+                width: 25%; border-left: 2px solid #000; padding-left: 6mm; display: flex; flex-direction: column;
+            }
+
+            /* LAYOUT HORIZONTAL (LANDSCAPE) */
+            body.print-landscape #zona-impresion-horario .print-body {
+                display: flex; flex-direction: column; flex: 1; gap: 6mm;
+            }
+            body.print-landscape .print-schedules {
+                height: 50%; display: flex; flex-direction: row; gap: 6mm;
+            }
+            body.print-landscape .schedule-table { flex: 1; display: flex; flex-direction: column; width: 50%; }
+            body.print-landscape .print-notes {
+                height: 50%; border-top: 2px solid #000; padding-top: 6mm; display: flex; flex-direction: column;
             }
         }
 
@@ -85,44 +118,39 @@
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS -->
-    <div id="zona-impresion-horario" class="hidden bg-white font-sans p-2">
-        <div class="flex items-end justify-between mb-3">
+    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS (DINÁMICA V/H) -->
+    <div id="zona-impresion-horario" class="hidden bg-white font-sans text-black">
+        <div class="flex justify-between items-start mb-4 shrink-0">
             <div>
-                <h1 class="text-2xl font-black text-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
-                <p class="text-[9px] font-bold text-black uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
+                <h1 class="text-2xl font-black uppercase leading-none tracking-tight">{{ diaSeleccionado }}</h1>
+                <p class="text-[10px] font-bold uppercase tracking-wider mt-0.5">CSE ELISA GUNDÍN</p>
             </div>
-            <div class="flex-1 ml-10 flex items-center justify-between border-b-2 border-black pb-0.5">
-                <span class="text-sm font-black text-black uppercase tracking-wider">NOTAS</span>
-                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-6 w-auto object-contain">
-            </div>
+            <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-10 w-auto object-contain grayscale opacity-80">
         </div>
 
-        <div class="grid grid-cols-12 gap-5 w-full items-start">
-            <div class="col-span-6 flex flex-col gap-2">
-                <div class="border border-black overflow-hidden">
+        <div class="print-body">
+            <!-- Horarios -->
+            <div class="print-schedules">
+                <div class="schedule-table">
+                    <div class="text-[11px] font-black uppercase mb-1 border-b border-black text-center tracking-wider">Refuerzo General</div>
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
+                            <tr v-for="hora in tramosHorarios" :key="hora">
+                                <td class="border-r border-black font-black text-[9px] w-10 bg-gray-100">{{ hora }}</td>
+                                <td v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 font-extrabold text-[8px] uppercase truncate">
                                     {{ formatNombrePrint(getCelda('GENERAL', hora, col).nombre) }}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-
-                <div class="border border-black overflow-hidden">
+                <div class="schedule-table">
+                    <div class="text-[11px] font-black uppercase mb-1 border-b border-black text-center tracking-wider">Inglés</div>
                     <table class="w-full border-collapse text-center tabla-horario-print">
                         <tbody>
-                            <tr v-for="hora in tramosHorarios" :key="hora" class="border-b border-black last:border-b-0">
-                                <td class="p-0.5 border-r border-black font-black text-[9px] text-black align-middle w-8 bg-gray-100">
-                                    {{ hora }}
-                                </td>
-                                <td v-for="col in 7" :key="col" class="p-0.5 border-r border-black last:border-r-0 align-middle h-[18px] text-[8px] font-extrabold text-black uppercase truncate">
+                            <tr v-for="hora in tramosHorarios" :key="hora">
+                                <td class="border-r border-black font-black text-[9px] w-10 bg-gray-100">{{ hora }}</td>
+                                <td v-for="col in 7" :key="col" class="border-r border-black last:border-r-0 font-extrabold text-[8px] uppercase truncate">
                                     {{ formatNombrePrint(getCelda('INGLES', hora, col).nombre) }}
                                 </td>
                             </tr>
@@ -131,7 +159,11 @@
                 </div>
             </div>
 
-            <div class="col-span-6 h-[420px]"></div>
+            <!-- Notas -->
+            <div class="print-notes">
+                <h3 class="text-sm font-black uppercase tracking-wider mb-2">NOTAS</h3>
+                <div class="flex-1 w-full" style="background: repeating-linear-gradient(transparent, transparent 19px, #e5e7eb 19px, #e5e7eb 20px);"></div>
+            </div>
         </div>
     </div>
 
@@ -556,8 +588,11 @@
                                 <i class="fas" :class="savingHorario ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                                 {{ savingHorario ? 'Guardando...' : 'Guardar Horario' }}
                             </button>
-                            <button @click="imprimirCuadrante" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
-                                <i class="fas fa-print"></i> Imprimir A4
+                            <button @click="imprimirCuadrante('portrait')" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                                <i class="fas fa-file-alt"></i> Vertical
+                            </button>
+                            <button @click="imprimirCuadrante('landscape')" class="bg-[#243c7a] text-white hover:bg-[#1a2e5e] px-3 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                                <i class="fas fa-image"></i> Horizontal
                             </button>
                             <button @click="ejecutarNavegacionConGuarda(() => { activeTab = 'menu'; })" class="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl border">Cerrar</button>
                         </div>
@@ -1637,12 +1672,22 @@
                 return nombreBase;
             },
 
-            imprimirCuadrante() {
+            imprimirCuadrante(orientacion) {
+                const style = document.createElement('style');
+                style.id = 'print-orientation-style';
+                style.innerHTML = `@page { size: A4 ${orientacion} !important; margin: 0 !important; }`;
+                document.head.appendChild(style);
+
                 document.body.classList.add('is-printing-horario');
+                document.body.classList.add(`print-${orientacion}`);
+                
                 setTimeout(() => {
                     window.print();
                     setTimeout(() => {
                         document.body.classList.remove('is-printing-horario');
+                        document.body.classList.remove(`print-${orientacion}`);
+                        const styleElement = document.getElementById('print-orientation-style');
+                        if (styleElement) styleElement.remove();
                     }, 500);
                 }, 100);
             },
@@ -2624,7 +2669,6 @@
             },
 
             async saveData() {
-                // 1. Validación estricta y limpieza inicial
                 const nom = String(this.form.nombre || '').trim();
                 const ape = String(this.form.apellidos || '').trim();
 
@@ -2636,9 +2680,6 @@
                 this.saving = true;
 
                 try {
-                    // 2. Construcción Quirúrgica del Payload
-                    // En lugar de arrastrar metadatos (como 'created_at') que provocan rechazos en Supabase,
-                    // extraemos SOLO las columnas legítimas del formulario.
                     const camposEditables = [
                         'nombre', 'apellidos', 'dni', 'nacimiento', 'baja',
                         'usuario_aules', 'pass_aules', 'direccion', 'cp', 'poblacion', 'provincia',
@@ -2651,24 +2692,18 @@
 
                     camposEditables.forEach(key => {
                         let value = this.form[key];
-
                         if (key === 'baja') {
                             payload[key] = Boolean(value);
                         } else if (key === 'nacimiento') {
-                            // Supabase rechaza "" en columnas tipo date. Debe ser null obligatoriamente si está vacío.
                             payload[key] = value ? value : null;
                         } else {
-                            // Tratamiento para evitar el error NOT NULL en campos de texto,
-                            // asegurando al mismo tiempo que limpiamos espacios accidentales.
                             payload[key] = (value === null || value === undefined) ? '' : String(value).trim();
                         }
                     });
 
-                    // 3. Variables preparadas para la actualización en cascada (si cambia el nombre)
                     const oldNombreCompleto = !this.isNew && this.selected ? `${this.selected.nombre || ''} ${this.selected.apellidos || ''}`.trim() : '';
                     const newNombreCompleto = `${payload.nombre} ${payload.apellidos}`;
 
-                    // 4. Inserción o Actualización en Supabase
                     if (this.isNew) {
                         const { data, error } = await _supabase
                             .from('listado_alumnos')
@@ -2676,7 +2711,7 @@
                             .select()
                             .single();
 
-                        if (error) throw error; // Lanza el error al bloque catch para un manejo unificado
+                        if (error) throw error; 
 
                         if (data) {
                             this.selected = data;
@@ -2689,9 +2724,8 @@
                             .update(payload)
                             .eq('id', this.selected.id);
 
-                        if (error) throw error; // Lanza el error al bloque catch
+                        if (error) throw error;
 
-                        // 5. Propagación de cambios en otras tablas (Cascada Manual)
                         if (oldNombreCompleto && newNombreCompleto && this.normalizeName(oldNombreCompleto) !== this.normalizeName(newNombreCompleto)) {
                             const promesasCascada = [
                                 _supabase.from('examenes').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
@@ -2701,12 +2735,10 @@
                                 _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
                             ];
                             
-                            // Usamos Promise.allSettled para evitar que si una tabla falla, se congele la aplicación
                             await Promise.allSettled(promesasCascada);
                         }
                     }
 
-                    // 6. Éxito y recarga de datos
                     await this.cargarDatosSupabase();
                     this.showSuccess = true;
                     this.successMessage = 'Ficha guardada con éxito';
@@ -2718,13 +2750,9 @@
                     }, 1800);
 
                 } catch (error) {
-                    // 7. Diagnóstico detallado expuesto al usuario
                     console.error("Fallo crítico en operación Supabase:", error);
-                    
-                    // Extraemos la información del error que nos da la base de datos
                     const errorText = error.message || 'Verifica los datos introducidos y los tipos de columna en la base de datos.';
                     const errorDetails = error.details || error.hint || 'Sin detalles extra.';
-                    
                     alert(`Error al guardar la ficha:\n${errorText}\n\nDetalle técnico:\n${errorDetails}`);
                     this.saving = false;
                 }
