@@ -2239,7 +2239,7 @@
                             alumnoAsociado: alumnoAsociado, 
                             curso: cursoVal, 
                             mes: mesVal, 
-                            url: urlData.publicUrl,
+                            url: urlData.publicUrl + '?t=' + new Date().getTime(),
                             pagoOriginal: pagoEncontrado // <-- ENLACE CON EL PAGO PARA PODER IMPRIMIRLO
                         };
                     });
@@ -2346,7 +2346,7 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+                    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
                     element.classList.add('hidden');
                     
                     const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
@@ -2630,7 +2630,7 @@
                 this.loadingArchivos = true;
                 for (const file of files) {
                     const path = `subidas_manuales/${file.name}`;
-                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
+                    await _supabase.storage.from('facturas').upload(path, file, { contentType: 'application/pdf', upsert: true });
                 }
                 await this.cargarArchivosNube();
                 this.loadingArchivos = false;
