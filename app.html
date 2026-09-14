@@ -886,8 +886,11 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            <tr v-for="alumno in list.filter(a => !a.baja)" :key="alumno.id" class="hover:bg-blue-50/40 transition border-b last:border-b-0">
-                                                                <td class="p-2.5 border-r pl-4 font-bold text-[#243c7a]">{{ alumno.apellidos }}, {{ alumno.nombre }}</td>
+                                                            <tr v-for="alumno in obtenerAlumnosParaMesGlobal(mes)" :key="alumno.id" class="hover:bg-blue-50/40 transition border-b last:border-b-0">
+                                                                <td class="p-2.5 border-r pl-4 font-bold text-[#243c7a] flex items-center gap-2">
+                                                                    <span :class="alumno.baja ? 'text-gray-400 line-through' : ''">{{ alumno.apellidos }}, {{ alumno.nombre }}</span>
+                                                                    <span v-if="alumno.baja" class="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">Baja</span>
+                                                                </td>
                                                                 <td class="p-2 border-r text-center">
                                                                     <input type="number" step="0.01"
                                                                         :value="getCuotaValor(alumno.nombre + ' ' + alumno.apellidos, mes)"
@@ -1705,6 +1708,15 @@
         methods: {
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
+            },
+
+            obtenerAlumnosParaMesGlobal(mes) {
+                return this.list.filter(a => {
+                    if (!a.baja) return true;
+                    
+                    const normA = this.normalizeName(a.nombre + ' ' + a.apellidos);
+                    return this.ingresosFijosList.some(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
+                });
             },
 
             formatWhatsAppUrl(tlf) {
