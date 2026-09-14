@@ -808,7 +808,8 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex items-center gap-1 shrink-0">
-                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                                        <button v-if="archivo.pagoOriginal" @click="reimprimirPagoHistoricoGlobal(archivo.pagoOriginal)" title="Imprimir / Previsualizar" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-print text-xs"></i></button>
+                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar archivo en nube" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
                                                         <button @click="abrirEliminarArchivoNube(archivo)" title="Eliminar de la nube" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg border border-red-200 shadow-sm transition"><i class="fas fa-trash-alt text-xs"></i></button>
                                                     </div>
                                                 </div>
@@ -2232,7 +2233,15 @@
                         }
 
                         const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
-                        return { path: item.path, displayName: displayName, alumnoAsociado: alumnoAsociado, curso: cursoVal, mes: mesVal, url: urlData.publicUrl };
+                        return { 
+                            path: item.path, 
+                            displayName: displayName, 
+                            alumnoAsociado: alumnoAsociado, 
+                            curso: cursoVal, 
+                            mes: mesVal, 
+                            url: urlData.publicUrl,
+                            pagoOriginal: pagoEncontrado // <-- ENLACE CON EL PAGO PARA PODER IMPRIMIRLO
+                        };
                     });
                 } catch(e) { console.error("Error en nube:", e); }
                 this.loadingArchivos = false;
@@ -2333,7 +2342,7 @@
                         margin: 0, 
                         filename: `${idSafeForStorage}.pdf`, 
                         image: { type: 'jpeg', quality: 0.98 }, 
-                        html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 }, 
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
