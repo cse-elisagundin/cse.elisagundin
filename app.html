@@ -113,8 +113,8 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA FUERA DE LA PANTALLA) -->
-    <div id="zona-impresion" class="hidden bg-white font-sans" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999;">
+    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA DENTRO DEL VIEWPORT PERO EN EL FONDO) -->
+    <div id="zona-impresion" class="hidden bg-white font-sans" style="position: absolute; left: 0; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
 
@@ -1710,40 +1710,6 @@
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
 
-            imprimirVentanaRecibo() {
-                const contenido = document.getElementById('ticket-data').innerHTML;
-                const ventana = window.open('', '_blank');
-                if (!ventana) {
-                    alert("Por favor, permite las ventanas emergentes (pop-ups) para imprimir el recibo.");
-                    return;
-                }
-                ventana.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                        <head>
-                            <title>Imprimir Recibo</title>
-                            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-                            <style>
-                                @page { size: A4 portrait; margin: 0; }
-                                body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                            </style>
-                        </head>
-                        <body>
-                            ${contenido}
-                            <script>
-                                window.onload = function() {
-                                    setTimeout(function() {
-                                        window.print();
-                                        window.close();
-                                    }, 300);
-                                };
-                            <\/script>
-                        </body>
-                    </html>
-                `);
-                ventana.document.close();
-            },
-
             obtenerAlumnosParaMesGlobal(mes) {
                 return this.list.filter(a => {
                     if (!a.baja) return true;
@@ -1879,8 +1845,7 @@
                 this.nuevoPago.importe = total > 0 ? total : '';
             },
             parseMonthOrder(m_str) {
-                if (!m_str) return { cursoKey: '2025/2026', monthIdx: 1 };
-                const parts = String(m_str).replace(/'/g, "").trim().split(' ');
+                const parts = m_str.replace(/'/g, "").trim().split(' ');
                 if (parts.length >= 2) {
                     const m_name = parts[0].toUpperCase();
                     const y_raw = parts[1];
@@ -2391,7 +2356,13 @@
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    this.imprimirVentanaRecibo();
+                    document.body.classList.add('is-printing-ticket');
+                    setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                            document.body.classList.remove('is-printing-ticket');
+                        }, 300);
+                    }, 50);
 
                     this.showSuccess = true;
                     this.successMessage = `¡Pago guardado y factura procesada!`;
@@ -2423,7 +2394,13 @@
             },
             reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
-                this.imprimirVentanaRecibo();
+                document.body.classList.add('is-printing-ticket');
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        document.body.classList.remove('is-printing-ticket');
+                    }, 300);
+                }, 100);
             },
             reimprimirPagoHistoricoGlobal(pago) {
                 this.reimprimirPagoHistorico(pago);
