@@ -1713,7 +1713,6 @@
             obtenerAlumnosParaMesGlobal(mes) {
                 return this.list.filter(a => {
                     if (!a.baja) return true;
-                    
                     const normA = this.normalizeName(a.nombre + ' ' + a.apellidos);
                     return this.ingresosFijosList.some(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
                 });
