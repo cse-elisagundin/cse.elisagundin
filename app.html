@@ -2332,11 +2332,13 @@
                     
                     const element = document.getElementById('zona-impresion');
                     element.classList.remove('hidden');
-                    
-                    // -- CORRECCIÓN 1: Forzar refresco del DOM (Paint Cycle) antes de capturar --
-                    await new Promise(r => setTimeout(r, 150));
+                    element.style.zIndex = '150'; // Colocar por encima del fondo, pero debajo del modal de carga (z-index: 200)
+                    element.style.opacity = '1';
                     
                     if (document.fonts) { await document.fonts.ready; }
+                    
+                    // Pausa obligatoria para que el navegador renderice el DOM visible y html2canvas no capture en blanco
+                    await new Promise(r => setTimeout(r, 400)); 
 
                     const idSafeForStorage = idFinal.replace(/\//g, '.');
                     const nombreArchivoStorage = idSafeForStorage + '.pdf';
@@ -2349,9 +2351,12 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    // -- CORRECCIÓN 2: Usar .output('blob') en lugar de .outputPdf('blob') --
-                    const pdfBlob = await html2pdf().from(element).set(opt).output('blob');
+                    // Instrucción API correcta para generar el Blob físico: .output('blob')
+                    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+                    
+                    // Restaurar estado oculto
                     element.classList.add('hidden');
+                    element.style.zIndex = '-9999';
                     
                     const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
                     const cursoPath = parsedMonth.cursoKey.replace('/', '-');
