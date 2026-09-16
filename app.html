@@ -1945,6 +1945,9 @@
                     
                     if (document.fonts) { await document.fonts.ready; }
 
+                    // AÑADIDO RETRASO PARA GARANTIZAR RENDERIZADO ANTES DE CAPTURAR
+                    await new Promise(resolve => setTimeout(resolve, 150));
+
                     const idSafeForStorage = idFinal.replace(/\//g, '.');
                     const opt = { 
                         margin: 0, 
@@ -2003,9 +2006,14 @@
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
                 const element = document.getElementById('zona-impresion');
                 element.classList.remove('hidden');
+                
                 const idSafe = pago.factura_id ? String(pago.factura_id).replace(/\//g, '.') : 'recibo';
                 const opt = { margin: 0, filename: `${idSafe}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-                html2pdf().from(element).set(opt).save().then(() => { element.classList.add('hidden'); });
+                
+                // AÑADIDO RETRASO PARA GARANTIZAR RENDERIZADO ANTES DE CAPTURAR
+                setTimeout(() => {
+                    html2pdf().from(element).set(opt).save().then(() => { element.classList.add('hidden'); });
+                }, 150);
             },
             descargarPagoHistoricoGlobal(pago) {
                 this.descargarPagoHistorico(pago);
