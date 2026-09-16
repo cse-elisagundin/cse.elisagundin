@@ -13,7 +13,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -179,7 +178,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-black text-[#243c7a] uppercase">Procesando...</h3>
-                        <p class="text-xs text-gray-500 font-semibold mt-1">Generando documento y registrando en sistema...</p>
+                        <p class="text-xs text-gray-500 font-semibold mt-1">Registrando documento en el sistema...</p>
                     </div>
                 </div>
             </div>
@@ -780,7 +779,6 @@
                                                 <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                                 <td class="p-3 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
-                                                    <button @click="descargarPagoHistoricoGlobal(pago)" title="Descargar PDF" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-download"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
                                                     <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
                                                 </td>
@@ -1161,7 +1159,6 @@
                                                 <td class="p-2 border text-center font-black text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                                 <td class="p-2 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
-                                                    <button @click="descargarPagoHistorico(pago)" title="Descargar PDF" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-download"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
                                                     <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
                                                 </td>
@@ -1235,7 +1232,7 @@
                                             <i class="fas fa-save"></i> REGISTRAR (SOLO DATOS)
                                         </button>
                                         <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-file-pdf"></i> REGISTRAR, DESCARGAR E IMPRIMIR
+                                            <i class="fas fa-print"></i> REGISTRAR E IMPRIMIR
                                         </button>
                                     </div>
                                 </div>
@@ -1937,7 +1934,7 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]);
 
-                    // 2. Generar el HTML del PDF
+                    // 2. Generar el HTML del PDF para impresión
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -1945,26 +1942,11 @@
                     
                     if (document.fonts) { await document.fonts.ready; }
 
-                    // AÑADIDO RETRASO PARA GARANTIZAR RENDERIZADO ANTES DE CAPTURAR
-                    await new Promise(resolve => setTimeout(resolve, 150));
-
-                    const idSafeForStorage = idFinal.replace(/\//g, '.');
-                    const opt = { 
-                        margin: 0, 
-                        filename: `${idSafeForStorage}.pdf`, 
-                        image: { type: 'jpeg', quality: 0.98 }, 
-                        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 }, 
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-                    };
-                    
-                    // 3. Descargar el archivo localmente
-                    await html2pdf().from(element).set(opt).save();
-
                     await this.cargarDatosSupabase();
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    // 4. Iniciar impresión
+                    // 3. Iniciar impresión directamente
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
@@ -1975,11 +1957,11 @@
                     }, 100);
 
                     this.showSuccess = true;
-                    this.successMessage = `Pago registrado. Descarga e impresión iniciadas.`;
+                    this.successMessage = `Pago registrado e impresión iniciada.`;
                     setTimeout(() => { this.showSuccess = false; }, 2500);
 
                 } catch(e) {
-                    console.error("Error al registrar, imprimir y descargar:", e);
+                    console.error("Error al registrar e imprimir:", e);
                     this.savingPago = false;
                     this.preparingPrint = false;
                     alert("Error al procesar el pago.");
@@ -2001,22 +1983,6 @@
                 this.showSuccess = true;
                 this.successMessage = `¡Pago registrado en la base de datos!`;
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
-            },
-            descargarPagoHistorico(pago) {
-                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
-                const element = document.getElementById('zona-impresion');
-                element.classList.remove('hidden');
-                
-                const idSafe = pago.factura_id ? String(pago.factura_id).replace(/\//g, '.') : 'recibo';
-                const opt = { margin: 0, filename: `${idSafe}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-                
-                // AÑADIDO RETRASO PARA GARANTIZAR RENDERIZADO ANTES DE CAPTURAR
-                setTimeout(() => {
-                    html2pdf().from(element).set(opt).save().then(() => { element.classList.add('hidden'); });
-                }, 150);
-            },
-            descargarPagoHistoricoGlobal(pago) {
-                this.descargarPagoHistorico(pago);
             },
             reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
