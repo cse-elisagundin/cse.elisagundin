@@ -179,7 +179,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-black text-[#243c7a] uppercase">Procesando...</h3>
-                        <p class="text-xs text-gray-500 font-semibold mt-1">...Procesando información...</p>
+                        <p class="text-xs text-gray-500 font-semibold mt-1">Generando documento y registrando en sistema...</p>
                     </div>
                 </div>
             </div>
@@ -237,27 +237,6 @@
                     <div class="flex gap-3 pt-3 border-t">
                         <button @click="showDeleteStudentModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
                         <button @click="ejecutarEliminarAlumno" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
-                    </div>
-                </div>
-            </div>
-        </transition>
-
-        <transition name="pop">
-            <div v-if="showDeleteArchivoModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-red-100 text-red-500 p-3 rounded-full text-xl"><i class="fas fa-exclamation-triangle"></i></div>
-                        <div>
-                            <h3 class="text-lg font-extrabold text-[#243c7a]">Eliminar Factura de la Nube</h3>
-                            <p class="text-xs text-gray-400 font-semibold">Esta acción borrará el archivo de Supabase Storage</p>
-                        </div>
-                    </div>
-                    <p class="text-[#243c7a] text-sm font-medium">
-                        ¿Estás seguro de eliminar el archivo <strong class="text-red-600">{{ archivoAEliminarNube?.displayName }}</strong>?
-                    </p>
-                    <div class="flex gap-3 pt-3 border-t">
-                        <button @click="showDeleteArchivoModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
-                        <button @click="ejecutarEliminarArchivoNube" class="flex-1 py-3 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition">Sí, eliminar</button>
                     </div>
                 </div>
             </div>
@@ -454,7 +433,7 @@
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
-                     {'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'}
+                     {'hidden md:flex': selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'cuadrante_horarios'}
                  ]"
                  @mouseenter="isSidebarHovered = true"
                  @mouseleave="isSidebarHovered = false">
@@ -505,10 +484,6 @@
                         <button @click="ejecutarNavegacionConGuarda(() => abrirGestorPagos())" class="w-full bg-pink-50 text-[#fa65c3] border border-pink-200 py-2 rounded-lg hover:bg-pink-100 font-bold flex items-center justify-center gap-2 text-xs transition">
                             <i class="fas fa-file-invoice-dollar text-[#fa65c3]"></i> <span class="truncate">Historial Global Pagos</span>
                         </button>
-
-                        <button @click="ejecutarNavegacionConGuarda(() => abrirExploradorFacturas())" class="w-full bg-blue-50 text-[#2b94cc] border border-blue-200 py-2 rounded-lg hover:bg-blue-100 font-bold flex items-center justify-center gap-2 text-xs transition">
-                            <i class="fas fa-folder-open text-[#2b94cc]"></i> <span class="truncate">Explorador de Facturas</span>
-                        </button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto overflow-x-hidden">
@@ -540,14 +515,14 @@
             </div>
 
             <!-- ÁREA PRINCIPAL DERECHA -->
-            <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'}">
+            <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'cuadrante_horarios'}">
 
-                <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'explorador_facturas' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
+                <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
                     <button @click="ejecutarNavegacionConGuarda(() => cerrarFicha())" class="text-xs font-bold bg-white/10 px-3 py-2 rounded-lg flex items-center gap-2">
                         <i class="fas fa-arrow-left"></i> Volver al listado
                     </button>
                     <span class="text-xs font-semibold truncate max-w-[200px]">
-                        {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'cuadrante_horarios' ? 'Cuadrante Horarios' : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : (activeTab === 'gestor_pagos' ? 'Historial Pagos' : 'Explorador de Facturas')))) }}
+                        {{ isNew ? 'Nuevo Alumno' : (selected ? form.nombre + ' ' + form.apellidos : (activeTab === 'cuadrante_horarios' ? 'Cuadrante Horarios' : (activeTab === 'gestor_examenes' ? 'Gestor Exámenes' : 'Historial Pagos'))) }}
                     </span>
                 </div>
 
@@ -735,94 +710,6 @@
                     </div>
                 </div>
 
-                <!-- EXPLORADOR DE FACTURAS EN LA NUBE -->
-                <div v-if="activeTab === 'explorador_facturas' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
-                    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden p-6 sm:p-8">
-                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-blue-100 p-2 rounded-lg text-[#2b94cc]"><i class="fas fa-folder-open text-xl"></i></div>
-                                <div>
-                                    <h3 class="text-xl font-extrabold text-[#243c7a]">Explorador de Facturas en la Nube</h3>
-                                    <p class="text-xs text-gray-400 font-semibold">Facturas originales sincronizadas con Supabase Storage</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                                <button @click="cargarArchivosNube" class="px-4 py-2 text-xs font-bold text-white bg-[#2b94cc] hover:bg-[#207bb0] rounded-lg shadow transition flex items-center gap-2">
-                                    <i class="fas fa-sync-alt"></i> Actualizar
-                                </button>
-                                <button @click="activeTab = 'menu'" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg border">Cerrar</button>
-                            </div>
-                        </div>
-
-                        <div class="mb-6 border-2 border-dashed border-indigo-200 hover:border-[#2b94cc] bg-indigo-50/30 p-6 rounded-2xl text-center transition flex flex-col items-center justify-center gap-3 relative">
-                            <div class="bg-blue-100 text-[#2b94cc] p-3 rounded-full text-2xl shadow-sm"><i class="fas fa-cloud-upload-alt"></i></div>
-                            <div>
-                                <h4 class="font-extrabold text-[#243c7a] text-sm sm:text-base">Arrastra tus facturas PDF aquí</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Se asociarán automáticamente con su base de datos.</p>
-                            </div>
-                            <label class="bg-[#25D366] hover:bg-[#1faa50] text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow transition mt-1">
-                                <i class="fas fa-file-pdf"></i> Seleccionar archivos PDF
-                                <input type="file" accept="application/pdf" multiple @change="subirArchivosSeleccionados" class="hidden">
-                            </label>
-                        </div>
-
-                        <div class="mb-6 bg-gray-50 p-4 rounded-xl border">
-                            <div class="w-full relative">
-                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input v-model="searchExplorador" type="text" placeholder="Buscar factura por número, alumno, mes..." class="w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none focus:border-[#2b94cc] shadow-sm text-sm bg-white">
-                                <button v-if="searchExplorador" @click="searchExplorador = ''" class="absolute right-3 top-3 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                            </div>
-                        </div>
-
-                        <div v-if="loadingArchivos" class="text-center py-12 text-gray-400 font-semibold">
-                            <i class="fas fa-spinner fa-spin text-2xl mb-2 text-[#2b94cc]"></i><br>Cargando facturas y cruzando datos con Supabase...
-                        </div>
-                        <div v-else-if="archivosNubeFiltrados.length === 0" class="text-center py-12 text-gray-400 font-semibold">
-                            No se encontraron archivos en el almacenamiento.
-                        </div>
-                        <div v-else class="space-y-4">
-                            <div v-for="(mesesObj, cursoKey) in cursosArchivosAgrupados" :key="cursoKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div @click="toggleCursoFacturas(cursoKey)" class="bg-[#243c7a] text-white p-4 font-extrabold text-xs sm:text-sm flex justify-between items-center cursor-pointer select-none hover:bg-[#1a2e5e] transition">
-                                    <div class="flex items-center gap-3">
-                                        <i class="fas fa-graduation-cap text-[#fa65c3]"></i>
-                                        <span>Curso Escolar {{ cursoKey }}</span>
-                                        <span class="text-xs font-semibold bg-white/20 px-2.5 py-0.5 rounded-full text-white">{{ contarArchivosCurso(mesesObj) }} archivos</span>
-                                    </div>
-                                    <i class="fas fa-chevron-down transition-transform duration-350" :class="cursoFacturasAbierto[cursoKey] ? 'rotate-180' : ''"></i>
-                                </div>
-
-                                <div v-if="cursoFacturasAbierto[cursoKey]" class="p-3 sm:p-4 space-y-3 bg-gray-50/50">
-                                    <div v-for="(archivosLista, mesKey) in mesesObj" :key="mesKey" class="border rounded-xl overflow-hidden bg-white shadow-sm">
-                                        <div class="bg-gray-100 p-3 font-bold text-[#2b94cc] text-xs flex justify-between items-center">
-                                            <span><i class="fas fa-folder-open mr-2"></i> {{ formatMesUnificado(mesKey) }}</span>
-                                            <span class="bg-white px-2 py-0.5 rounded text-gray-500 border text-[10px]">{{ archivosLista.length }} archivos</span>
-                                        </div>
-                                        <div class="p-3">
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                <div v-for="archivo in archivosLista" :key="archivo.path" class="p-3 border rounded-xl bg-gray-50 hover:bg-blue-50/50 transition flex items-center justify-between gap-2">
-                                                    <div class="flex items-center gap-2.5 truncate">
-                                                        <div class="bg-red-100 text-red-500 p-2 rounded-lg shrink-0"><i class="fas fa-file-pdf"></i></div>
-                                                        <div class="truncate">
-                                                            <div class="font-bold text-xs text-[#243c7a] truncate" :title="archivo.displayName">{{ archivo.displayName }}</div>
-                                                            <div class="text-[10px] text-gray-500 font-semibold truncate">{{ archivo.alumnoAsociado || 'Sin alumno vinculado' }}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center gap-1 shrink-0">
-                                                        <button v-if="archivo.pagoOriginal" @click="reimprimirPagoHistoricoGlobal(archivo.pagoOriginal)" title="Imprimir / Previsualizar" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-print text-xs"></i></button>
-                                                        <a :href="archivo.url" target="_blank" title="Ver / Descargar archivo en nube" class="bg-white hover:bg-gray-200 text-gray-700 p-2 rounded-lg border shadow-sm transition"><i class="fas fa-external-link-alt text-xs"></i></a>
-                                                        <button @click="abrirEliminarArchivoNube(archivo)" title="Eliminar de la nube" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg border border-red-200 shadow-sm transition"><i class="fas fa-trash-alt text-xs"></i></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
                 <!-- GESTOR GLOBAL DE PAGOS Y CUOTAS -->
                 <div v-if="activeTab === 'gestor_pagos' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto space-y-6">
@@ -970,6 +857,7 @@
                                                 <td class="p-3 border text-center font-black text-base text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                                 <td class="p-3 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistoricoGlobal(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-print"></i></button>
+                                                    <button @click="descargarPagoHistoricoGlobal(pago)" title="Descargar PDF" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded transition"><i class="fas fa-download"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded transition"><i class="fas fa-edit"></i></button>
                                                     <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded transition"><i class="fas fa-trash-alt"></i></button>
                                                 </td>
@@ -1350,6 +1238,7 @@
                                                 <td class="p-2 border text-center font-black text-[#243c7a] whitespace-nowrap">{{ formatImporte(pago.importe) }} €</td>
                                                 <td class="p-2 border text-center space-x-1">
                                                     <button @click="reimprimirPagoHistorico(pago)" title="Imprimir recibo" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-print"></i></button>
+                                                    <button @click="descargarPagoHistorico(pago)" title="Descargar PDF" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded transition"><i class="fas fa-download"></i></button>
                                                     <button @click="abrirEditarPago(pago)" title="Modificar pago" class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded transition"><i class="fas fa-edit"></i></button>
                                                     <button @click="abrirEliminarPago(pago)" title="Eliminar pago" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
                                                 </td>
@@ -1420,10 +1309,10 @@
                                     </div>
                                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                                         <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-save"></i> REGISTRAR PAGO (SOLO DATOS)
+                                            <i class="fas fa-save"></i> REGISTRAR (SOLO DATOS)
                                         </button>
-                                        <button @click="registrarPagoYSubirNube" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-cloud-upload-alt"></i> GUARDAR Y SUBIR A LA NUBE
+                                        <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                            <i class="fas fa-file-pdf"></i> REGISTRAR, DESCARGAR E IMPRIMIR
                                         </button>
                                     </div>
                                 </div>
@@ -1461,7 +1350,7 @@
                     </div>
                 </div>
                 
-                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'explorador_facturas' && activeTab !== 'cuadrante_horarios'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center no-print">
+                <div v-else-if="activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'cuadrante_horarios'" class="h-full hidden md:flex flex-col items-center justify-center text-gray-400 select-none p-6 text-center no-print">
                     <div class="bg-white p-8 rounded-full shadow-lg mb-6 animate-pulse">
                         <i class="fas fa-folder-open text-5xl sm:text-6xl text-[#2b94cc] opacity-50"></i>
                     </div>
@@ -1521,15 +1410,9 @@
                 editExamenForm: {},
                 examenAEliminar: null,
                 showDeleteStudentModal: false,
-                showDeleteArchivoModal: false,
-                archivoAEliminarNube: null,
                 mesVisualizadoCalendario: new Date(),
                 filtroAlumnoCalendario: 'todos',
                 searchPagosGlobal: '',
-                archivosNube: [],
-                loadingArchivos: false,
-                searchExplorador: '',
-                cursoFacturasAbierto: {},
 
                 modoVistaHorario: 'diario',
                 diaSeleccionado: 'LUNES',
@@ -1614,48 +1497,6 @@
                     const facturaNorm = this.normalizeName(p.factura_id || '');
                     return alumnoNorm.includes(t) || mesNorm.includes(t) || facturaNorm.includes(t);
                 }).sort((a, b) => new Date(b.fecha_pago || 0) - new Date(a.fecha_pago || 0));
-            },
-            archivosNubeFiltrados() {
-                const t = this.normalizeName(this.searchExplorador);
-                return this.archivosNube.filter(a => 
-                    this.normalizeName(a.displayName).includes(t) || 
-                    this.normalizeName(a.alumnoAsociado).includes(t) || 
-                    this.normalizeName(a.curso).includes(t) || 
-                    this.normalizeName(a.mes).includes(t)
-                );
-            },
-            cursosArchivosAgrupados() {
-                const arbol = {};
-                this.archivosNubeFiltrados.forEach(a => {
-                    const curso = a.curso || '2025/2026';
-                    const mes = a.mes || 'OCTUBRE';
-                    if (!arbol[curso]) arbol[curso] = {};
-                    if (!arbol[curso][mes]) arbol[curso][mes] = [];
-                    arbol[curso][mes].push(a);
-                });
-
-                for (const cursoKey in arbol) {
-                    const mesesOrdenados = {};
-                    const clavesMeses = Object.keys(arbol[cursoKey]).sort((m1, m2) => {
-                        const idx1 = monthOrder[m1.toUpperCase()] || 99;
-                        const idx2 = monthOrder[m2.toUpperCase()] || 99;
-                        return idx1 - idx2;
-                    });
-                    clavesMeses.forEach(m => {
-                        mesesOrdenados[m] = arbol[cursoKey][m];
-                    });
-                    arbol[cursoKey] = mesesOrdenados;
-                }
-
-                const cursosOrdenados = Object.keys(arbol).sort().reverse();
-                const resultadoFinal = {};
-                cursosOrdenados.forEach(c => {
-                    resultadoFinal[c] = arbol[c];
-                    if (this.cursoFacturasAbierto[c] === undefined) {
-                        this.cursoFacturasAbierto[c] = true;
-                    }
-                });
-                return resultadoFinal;
             },
             listaMesesDinamicos() {
                 const mesesBD = this.ingresosFijosList.map(f => f.mes);
@@ -1937,7 +1778,6 @@
             },
             abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
-            abrirExploradorFacturas() { this.selected = null; this.activeTab = 'explorador_facturas'; this.searchExplorador = ''; this.cargarArchivosNube(); },
             
             toggleGlobalCurso(cursoKey) {
                 this.globalCuotasCursoAbierto[cursoKey] = !this.globalCuotasCursoAbierto[cursoKey];
@@ -2160,174 +2000,25 @@
                 this.savingHorario = false;
             },
 
-            async cargarArchivosNube() {
-                this.loadingArchivos = true;
-                try {
-                    let allFiles = [];
-                    const { data: rootItems, error: rootError } = await _supabase.storage.from('facturas').list('', { limit: 1000 });
-                    if (rootError) throw rootError;
-
-                    if (rootItems) {
-                        for (const rootItem of rootItems) {
-                            const rootName = rootItem.name;
-                            if (!rootName || rootName === '.emptyFolderPlaceholder') continue;
-
-                            if (rootName.toLowerCase().endsWith('.pdf')) {
-                                allFiles.push({ name: rootName, path: rootName });
-                            } else {
-                                const cursoFolder = rootName;
-                                const { data: monthItems } = await _supabase.storage.from('facturas').list(cursoFolder, { limit: 1000 });
-                                
-                                if (monthItems) {
-                                    for (const monthItem of monthItems) {
-                                        const mName = monthItem.name;
-                                        if (!mName || mName === '.emptyFolderPlaceholder') continue;
-
-                                        if (mName.toLowerCase().endsWith('.pdf')) {
-                                            allFiles.push({ name: mName, path: `${cursoFolder}/${mName}` });
-                                        } else {
-                                            const folderPath = `${cursoFolder}/${mName}`;
-                                            const { data: pdfItems } = await _supabase.storage.from('facturas').list(folderPath, { limit: 1000 });
-                                            if (pdfItems) {
-                                                for (const pdfItem of pdfItems) {
-                                                    if (pdfItem.name && pdfItem.name.toLowerCase().endsWith('.pdf')) {
-                                                        allFiles.push({ name: pdfItem.name, path: `${folderPath}/${pdfItem.name}` });
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    this.archivosNube = allFiles.map(item => {
-                        let fileNameDecoded = "";
-                        try { fileNameDecoded = decodeURIComponent(item.name).replace('.pdf', ''); } catch(e) { fileNameDecoded = item.name.replace('.pdf', ''); }
-
-                        let pagoEncontrado = this.pagosList.find(p => {
-                            if (p.archivo_url && p.archivo_url.includes(item.path)) return true;
-                            if (p.factura_id) {
-                                let facturaIdDb = String(p.factura_id).trim();
-                                let facturaIdSafe = facturaIdDb.replace(/\//g, '.');
-                                if (facturaIdDb.toUpperCase() === fileNameDecoded.toUpperCase() || facturaIdSafe.toUpperCase() === fileNameDecoded.toUpperCase()) return true;
-                            }
-                            return false;
-                        });
-
-                        let displayName = pagoEncontrado && pagoEncontrado.factura_id ? `${pagoEncontrado.factura_id}.pdf` : `${fileNameDecoded.replace(/\./g, '/')}.pdf`;
-                        let alumnoAsociado = pagoEncontrado && pagoEncontrado.alumno ? pagoEncontrado.alumno : 'Desconocido';
-
-                        let cursoVal = "2025/2026";
-                        let mesVal = "OCTUBRE";
-
-                        if (pagoEncontrado && pagoEncontrado.mes) {
-                            const parsedM = this.parseMonthOrder(pagoEncontrado.mes);
-                            cursoVal = parsedM.cursoKey;
-                            mesVal = pagoEncontrado.mes.split(' ')[0].toUpperCase();
-                        } else {
-                            const analisis = this.analizarTextoParaCursoYMes(item.path);
-                            cursoVal = analisis.curso;
-                            mesVal = analisis.mes;
-                        }
-
-                        const { data: urlData } = _supabase.storage.from('facturas').getPublicUrl(item.path);
-                        return { 
-                            path: item.path, 
-                            displayName: displayName, 
-                            alumnoAsociado: alumnoAsociado, 
-                            curso: cursoVal, 
-                            mes: mesVal, 
-                            url: urlData.publicUrl,
-                            pagoOriginal: pagoEncontrado // <-- ENLACE CON EL PAGO PARA PODER IMPRIMIRLO
-                        };
-                    });
-                } catch(e) { console.error("Error en nube:", e); }
-                this.loadingArchivos = false;
-            },
-            analizarTextoParaCursoYMes(pathCompleto) {
-                let decodedPath = pathCompleto;
-                try { decodedPath = decodeURIComponent(pathCompleto); } catch(e) { }
-                const pathUp = String(decodedPath).toUpperCase();
-                let cursoKey = "2025/2026";
-                let mesDetectado = "OCTUBRE";
-
-                if (pathUp.includes("26-27") || pathUp.includes("2026-2027") || pathUp.includes("2026/2027") || pathUp.includes("26.27")) cursoKey = "2026/2027";
-                else if (pathUp.includes("25-26") || pathUp.includes("2025-2026") || pathUp.includes("2025/2026") || pathUp.includes("25.26")) cursoKey = "2025/2026";
-
-                const mesesMap = { 'SEPTIEMBRE': 'SEPTIEMBRE', 'OCTUBRE': 'OCTUBRE', 'NOVIEMBRE': 'NOVIEMBRE', 'DICIEMBRE': 'DICIEMBRE', 'ENERO': 'ENERO', 'FEBRERO': 'FEBRERO', 'MARZO': 'MARZO', 'ABRIL': 'ABRIL', 'MAYO': 'MAYO', 'JUNIO': 'JUNIO', 'JULIO': 'JULIO', 'AGOSTO': 'AGOSTO' };
-                for (const [abbr, fullName] of Object.entries(mesesMap)) {
-                    if (pathUp.includes(abbr)) { mesDetectado = fullName; break; }
-                }
-                return { curso: cursoKey, mes: mesDetectado };
-            },
-            toggleCursoFacturas(cursoKey) { this.cursoFacturasAbierto[cursoKey] = !this.cursoFacturasAbierto[cursoKey]; },
-            contarArchivosCurso(mesesObj) {
-                let total = 0;
-                for (const m in mesesObj) total += mesesObj[m].length;
-                return total;
-            },
-
-            abrirEliminarArchivoNube(archivo) {
-                this.archivoAEliminarNube = archivo;
-                this.showDeleteArchivoModal = true;
-            },
-
-            async ejecutarEliminarArchivoNube() {
-                if (!this.archivoAEliminarNube) return;
-                try {
-                    const pathBuscado = this.archivoAEliminarNube.path;
-
-                    const { error } = await _supabase.storage.from('facturas').remove([pathBuscado]);
-                    if (error) throw error;
-
-                    const pagoVinculado = this.pagosList.find(p => p.archivo_url === pathBuscado);
-                    if (pagoVinculado) {
-                        await _supabase.from('pagos').update({ archivo_url: null }).eq('id', pagoVinculado.id);
-                    }
-
-                    this.showDeleteArchivoModal = false;
-                    this.archivoAEliminarNube = null;
-
-                    await this.cargarArchivosNube();
-                    await this.cargarDatosSupabase();
-
-                    this.showSuccess = true;
-                    this.successMessage = 'Factura eliminada de la nube';
-                    setTimeout(() => { this.showSuccess = false; }, 2000);
-                } catch(e) {
-                    console.error("Error al eliminar archivo de la nube:", e);
-                    alert("No se pudo eliminar el archivo de la nube.");
-                }
-            },
-
-            async registrarPagoYSubirNube() {
+            async registrarPagoCompleto() {
                 if (!this.form || !this.form.nombre) return;
-
-                this.showUnsavedHorarioModal = false;
-                this.showCustomModal = false;
-                this.showEditPagoModal = false;
-                this.showDeletePagoModal = false;
-                this.showEditExamenModal = false;
-                this.showDeleteExamenModal = false;
-                this.showDeleteStudentModal = false;
-                this.showDeleteArchivoModal = false;
 
                 this.savingPago = true;
                 this.preparingPrint = true;
 
                 try {
+                    // 1. Guardar en Base de Datos
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                     const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
                     
-                    const { data: insertedPago } = await _supabase.from('pagos').insert([{
+                    await _supabase.from('pagos').insert([{
                         factura_id: idFinal, alumno: alumnoNombre,
                         tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado,
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
-                    }]).select().single();
+                    }]);
 
+                    // 2. Generar el HTML del PDF
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -2336,8 +2027,6 @@
                     if (document.fonts) { await document.fonts.ready; }
 
                     const idSafeForStorage = idFinal.replace(/\//g, '.');
-                    const nombreArchivoStorage = idSafeForStorage + '.pdf';
-                    
                     const opt = { 
                         margin: 0, 
                         filename: `${idSafeForStorage}.pdf`, 
@@ -2346,42 +2035,32 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     };
                     
-                    const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
-                    element.classList.add('hidden');
-                    
-                    const parsedMonth = this.parseMonthOrder(this.nuevoPago.mes);
-                    const cursoPath = parsedMonth.cursoKey.replace('/', '-');
-                    const mesNombreStr = this.nuevoPago.mes.split(' ')[0].toUpperCase();
-
-                    const rutaStorage = `${cursoPath}/${mesNombreStr}/${nombreArchivoStorage}`;
-
-                    await _supabase.storage.from('facturas').upload(rutaStorage, pdfBlob, { contentType: 'application/pdf', upsert: true });
-                    if (insertedPago) await _supabase.from('pagos').update({ archivo_url: rutaStorage }).eq('id', insertedPago.id);
+                    // 3. Descargar el archivo localmente
+                    await html2pdf().from(element).set(opt).save();
 
                     await this.cargarDatosSupabase();
-
-                    await new Promise(resolve => setTimeout(resolve, 250));
-
                     this.preparingPrint = false;
                     this.savingPago = false;
 
+                    // 4. Iniciar impresión
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
                         setTimeout(() => {
                             document.body.classList.remove('is-printing-ticket');
+                            element.classList.add('hidden');
                         }, 300);
-                    }, 50);
+                    }, 100);
 
                     this.showSuccess = true;
-                    this.successMessage = `¡Pago guardado y factura procesada!`;
+                    this.successMessage = `Pago registrado. Descarga e impresión iniciadas.`;
                     setTimeout(() => { this.showSuccess = false; }, 2500);
 
                 } catch(e) {
-                    console.error("Error al registrar pago y subir a la nube:", e);
+                    console.error("Error al registrar, imprimir y descargar:", e);
                     this.savingPago = false;
                     this.preparingPrint = false;
-                    alert("Error al procesar el pago y el PDF.");
+                    alert("Error al procesar el pago.");
                 }
             },
             async registrarPagoSolo() {
@@ -2400,6 +2079,17 @@
                 this.showSuccess = true;
                 this.successMessage = `¡Pago registrado en la base de datos!`;
                 setTimeout(() => { this.showSuccess = false; this.savingPago = false; }, 2000);
+            },
+            descargarPagoHistorico(pago) {
+                this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
+                const element = document.getElementById('zona-impresion');
+                element.classList.remove('hidden');
+                const idSafe = pago.factura_id ? String(pago.factura_id).replace(/\//g, '.') : 'recibo';
+                const opt = { margin: 0, filename: `${idSafe}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                html2pdf().from(element).set(opt).save().then(() => { element.classList.add('hidden'); });
+            },
+            descargarPagoHistoricoGlobal(pago) {
+                this.descargarPagoHistorico(pago);
             },
             reimprimirPagoHistorico(pago) {
                 this.generarReciboHTML({ fecha: pago.fecha_pago, metodo: String(pago.metodo_pago || 'EFECTIVO').toUpperCase(), tarifa: pago.tarifa, extras: pago.extras, importe: pago.importe, id: pago.factura_id, mes: pago.mes }, pago.alumno);
@@ -2623,20 +2313,6 @@
                 const d = new Date(this.mesVisualizadoCalendario);
                 d.setMonth(d.getMonth() + dir);
                 this.mesVisualizadoCalendario = d;
-            },
-            async subirArchivosSeleccionados(event) {
-                const files = event.target.files;
-                if (!files || files.length === 0) return;
-                this.loadingArchivos = true;
-                for (const file of files) {
-                    const path = `subidas_manuales/${file.name}`;
-                    await _supabase.storage.from('facturas').upload(path, file, { upsert: true });
-                }
-                await this.cargarArchivosNube();
-                this.loadingArchivos = false;
-                this.showSuccess = true;
-                this.successMessage = 'Archivos subidos correctamente';
-                setTimeout(() => { this.showSuccess = false; }, 2000);
             },
             abrirSeccionPagos() {
                 this.activeTab = 'pagos';
