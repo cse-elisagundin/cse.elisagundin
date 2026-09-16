@@ -40,7 +40,6 @@
 
             body.is-printing-ticket #zona-impresion { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm; height: 296mm; overflow: hidden; z-index: 99999 !important; }
             
-            /* ZONA IMPRESION HORARIO FLEX Y DINAMICA */
             body.is-printing-horario #zona-impresion-horario { 
                 display: flex !important; 
                 flex-direction: column;
@@ -63,29 +62,15 @@
                 white-space: nowrap !important;
             }
 
-            /* LAYOUT VERTICAL (PORTRAIT) */
-            body.print-portrait #zona-impresion-horario .print-body {
-                display: flex; flex-direction: row; flex: 1; gap: 6mm;
-            }
-            body.print-portrait .print-schedules {
-                width: 75%; display: flex; flex-direction: column; gap: 6mm;
-            }
+            body.print-portrait #zona-impresion-horario .print-body { display: flex; flex-direction: row; flex: 1; gap: 6mm; }
+            body.print-portrait .print-schedules { width: 75%; display: flex; flex-direction: column; gap: 6mm; }
             body.print-portrait .schedule-table { flex: 1; display: flex; flex-direction: column; }
-            body.print-portrait .print-notes {
-                width: 25%; border-left: 2px solid #000; padding-left: 6mm; display: flex; flex-direction: column;
-            }
+            body.print-portrait .print-notes { width: 25%; border-left: 2px solid #000; padding-left: 6mm; display: flex; flex-direction: column; }
 
-            /* LAYOUT HORIZONTAL (LANDSCAPE) */
-            body.print-landscape #zona-impresion-horario .print-body {
-                display: flex; flex-direction: column; flex: 1; gap: 6mm;
-            }
-            body.print-landscape .print-schedules {
-                height: 50%; display: flex; flex-direction: row; gap: 6mm;
-            }
+            body.print-landscape #zona-impresion-horario .print-body { display: flex; flex-direction: column; flex: 1; gap: 6mm; }
+            body.print-landscape .print-schedules { height: 50%; display: flex; flex-direction: row; gap: 6mm; }
             body.print-landscape .schedule-table { flex: 1; display: flex; flex-direction: column; width: 50%; }
-            body.print-landscape .print-notes {
-                height: 50%; border-top: 2px solid #000; padding-top: 6mm; display: flex; flex-direction: column;
-            }
+            body.print-landscape .print-notes { height: 50%; border-top: 2px solid #000; padding-top: 6mm; display: flex; flex-direction: column; }
         }
 
         .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 12px 0; transition: background 0.2s; }
@@ -112,12 +97,10 @@
 
 <div id="app" class="h-full flex flex-col relative">
 
-    <!-- ZONA DE IMPRESIÓN UNIFICADA (POSICIONADA DENTRO DEL VIEWPORT PERO EN EL FONDO) -->
     <div id="zona-impresion" class="hidden bg-white font-sans" style="position: absolute; left: 0; top: 0; width: 210mm; z-index: -9999;">
         <div id="ticket-data"></div>
     </div>
 
-    <!-- ZONA DE IMPRESIÓN PARA CUADRANTE DE HORARIOS (DINÁMICA V/H) -->
     <div id="zona-impresion-horario" class="hidden bg-white font-sans text-black">
         <div class="flex justify-between items-start mb-4 shrink-0">
             <div>
@@ -128,7 +111,6 @@
         </div>
 
         <div class="print-body">
-            <!-- Horarios -->
             <div class="print-schedules">
                 <div class="schedule-table">
                     <div class="text-[11px] font-black uppercase mb-1 border-b border-black text-center tracking-wider">Refuerzo General</div>
@@ -157,8 +139,6 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Notas -->
             <div class="print-notes">
                 <h3 class="text-sm font-black uppercase tracking-wider mb-2">NOTAS</h3>
                 <div class="flex-1 w-full" style="background: repeating-linear-gradient(transparent, transparent 19px, #e5e7eb 19px, #e5e7eb 20px);"></div>
@@ -166,10 +146,8 @@
         </div>
     </div>
 
-    <!-- ESTRUCTURA PRINCIPAL DE LA APLICACIÓN -->
     <div id="app-main-content" class="h-full flex flex-col relative w-full">
 
-        <!-- OVERLAY DE CARGA PARA PREPARACIÓN DE IMPRESIÓN Y PROCESAMIENTO -->
         <transition name="pop">
             <div v-if="preparingPrint" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 no-print">
                 <div class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-gray-100 max-w-sm text-center">
@@ -401,7 +379,6 @@
             </div>
         </transition>
 
-        <!-- PANTALLA DE LOGIN -->
         <transition name="fade">
             <div v-if="!authenticated && !checkingSession" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f6f9] p-4 no-print">
                 <div class="login-container p-8 sm:p-10 w-full max-w-md text-center relative overflow-hidden">
@@ -428,7 +405,6 @@
 
         <div v-if="authenticated" class="flex h-full relative overflow-hidden">
             
-            <!-- BARRA LATERAL -->
             <div class="no-print h-full flex flex-col bg-white border-r shadow-xl z-30 shrink-0 transition-all duration-300 relative overflow-hidden"
                  :class="[
                      isSidebarPinned || isSidebarHovered ? 'w-72 sm:w-80' : 'w-3 bg-[#243c7a]/80 hover:bg-[#243c7a] cursor-pointer',
@@ -513,7 +489,6 @@
                 </div>
             </div>
 
-            <!-- ÁREA PRINCIPAL DERECHA -->
             <div class="flex-1 bg-[#f4f6f9] h-full flex flex-col relative overflow-hidden" :class="{'hidden md:flex': !selected && activeTab !== 'gestor_examenes' && activeTab !== 'gestor_pagos' && activeTab !== 'cuadrante_horarios'}">
 
                 <div v-if="selected || activeTab === 'gestor_examenes' || activeTab === 'gestor_pagos' || activeTab === 'cuadrante_horarios'" class="md:hidden bg-[#243c7a] text-white p-3 flex items-center justify-between shrink-0 no-print">
@@ -525,7 +500,6 @@
                     </span>
                 </div>
 
-                <!-- CUADRANTE DE HORARIOS -->
                 <div v-if="activeTab === 'cuadrante_horarios' && !selected" class="flex-1 flex flex-col overflow-hidden animate-fade">
                     <div class="no-print bg-white p-3 sm:p-4 border-b flex flex-wrap justify-between items-center gap-3 shadow-sm shrink-0">
                         <div class="flex items-center gap-3">
@@ -709,11 +683,9 @@
                     </div>
                 </div>
 
-                <!-- GESTOR GLOBAL DE PAGOS Y CUOTAS (AHORA SOLO HISTORIAL) -->
                 <div v-if="activeTab === 'gestor_pagos' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-5xl mx-auto space-y-6">
 
-                        <!-- CABECERA PRINCIPAL -->
                         <div class="bg-white rounded-2xl shadow-sm border p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div class="flex items-center gap-3">
                                 <div class="bg-pink-100 p-2 rounded-lg text-[#fa65c3]"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
@@ -728,7 +700,6 @@
                             </div>
                         </div>
 
-                        <!-- HISTORIAL GLOBAL DE PAGOS (Bloque Único) -->
                         <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
                             <div class="p-4 sm:p-6 bg-gray-50 flex items-center gap-3 border-b">
                                 <div class="bg-blue-100 text-[#2b94cc] p-2 rounded-lg"><i class="fas fa-history"></i></div>
@@ -791,7 +762,6 @@
                     </div>
                 </div>
 
-                <!-- GESTOR MASIVO DE EXÁMENES -->
                 <div v-if="activeTab === 'gestor_examenes' && !selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 animate-fade no-print">
                     <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col mb-8">
                         <div class="p-4 sm:p-6 border-b flex justify-between items-center bg-white/95 backdrop-blur">
@@ -891,7 +861,6 @@
                     </div>
                 </div>
 
-                <!-- VISTA DE ALUMNO SELECCIONADO -->
                 <div v-if="selected" class="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 no-print">
                     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border overflow-hidden min-h-[600px] flex flex-col">
                         
@@ -1198,8 +1167,8 @@
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                                    <div>
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                                    <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option value="" disabled>Selecciona tarifa...</option>
@@ -1212,26 +1181,26 @@
                                             <option value="5h/semana 135€">5h/semana 135€</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Extra (Opcional)</label>
-                                        <input v-model="nuevoPago.extras" placeholder="Ej: Material (10€)" class="w-full p-2.5 rounded-lg border outline-none">
+                                    <div class="sm:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Texto Extra</label>
+                                        <input v-model="nuevoPago.extras" placeholder="Ej: Material" class="w-full p-2.5 rounded-lg border outline-none">
                                     </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Importe Total (€)</label>
-                                        <input type="number" step="0.01" v-model="nuevoPago.importe" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
+                                    <div class="sm:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Valor Extra (€)</label>
+                                        <input type="number" step="0.01" v-model="nuevoPago.importe_extra" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold">
                                     </div>
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
                                     <div class="flex flex-col text-center sm:text-left">
-                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total Calculado</span>
                                         <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
                                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                        <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-save"></i> REGISTRAR (SOLO DATOS)
+                                        <button @click="registrarPagoSolo" :disabled="savingPago || !importeCalculado" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                            <i class="fas fa-save"></i> REGISTRAR (SOLO)
                                         </button>
-                                        <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                        <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !importeCalculado" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-print"></i> REGISTRAR E IMPRIMIR
                                         </button>
                                     </div>
@@ -1313,7 +1282,7 @@
                 pagosList: [],
                 savingExamenes: false,
                 searchGestor: '',
-                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
+                gestorExamenes: { fecha: this.getLocalISODate(), asignatura: '', alumnosSeleccionados: [] },
                 cursoAbierto: {},
                 showCustomModal: false,
                 modalType: 'edit',
@@ -1336,9 +1305,9 @@
 
                 modoVistaHorario: 'diario',
                 diaSeleccionado: 'LUNES',
-                fechaSeleccionada: new Date().toISOString().split('T')[0],
+                fechaSeleccionada: this.getLocalISODate(),
                 previousDiaSeleccionado: 'LUNES',
-                previousFechaSeleccionada: new Date().toISOString().split('T')[0],
+                previousFechaSeleccionada: this.getLocalISODate(),
                 diasSemana: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
                 tramosHorarios: ['15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
                 gridHorario: {},
@@ -1353,7 +1322,7 @@
         },
         watch: {
             'nuevoPago.tarifa'() { this.calcularImporteTotalPago(); },
-            'nuevoPago.extras'() { this.calcularImporteTotalPago(); }
+            'nuevoPago.importe_extra'() { this.calcularImporteTotalPago(); }
         },
         computed: {
             isHorarioDirty() {
@@ -1383,7 +1352,15 @@
                     return nombreCompleto.includes(t);
                 }).slice(0, 8);
             },
-            importeCalculado() { return Number(this.nuevoPago.importe) || 0; },
+            importeCalculado() { 
+                let base = 0;
+                if (this.nuevoPago.tarifa) {
+                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
+                    if (matchT) base = Number(matchT[1]);
+                }
+                let extra = Number(this.nuevoPago.importe_extra) || 0;
+                return base + extra;
+            },
             examenesAlumno() {
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
@@ -1449,7 +1426,7 @@
                 const year = this.mesVisualizadoCalendario.getFullYear();
                 const month = this.mesVisualizadoCalendario.getMonth();
                 const diasTotales = new Date(year, month + 1, 0).getDate();
-                const hoyStr = new Date().toISOString().split('T')[0];
+                const hoyStr = this.getLocalISODate();
                 const arrayDias = [];
 
                 for (let d = 1; d <= diasTotales; d++) {
@@ -1471,6 +1448,12 @@
             }
         },
         methods: {
+            getLocalISODate() {
+                const d = new Date();
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().split('T')[0];
+            },
+
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
@@ -1478,7 +1461,6 @@
             obtenerAlumnosParaMesGlobal(mes) {
                 return this.list.filter(a => {
                     if (!a.baja) return true;
-                    
                     const normA = this.normalizeName(a.nombre + ' ' + a.apellidos);
                     return this.ingresosFijosList.some(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
                 });
@@ -1591,23 +1573,7 @@
                 return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
             },
             calcularImporteTotalPago() {
-                let base = 0;
-                if (this.nuevoPago.tarifa) {
-                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
-                    if (matchT) base = Number(matchT[1]);
-                }
-                let extra = 0;
-                if (this.nuevoPago.extras) {
-                    const matchE = this.nuevoPago.extras.match(/(\d+(?:[\.,]\d)?)€/);
-                    if (matchE) {
-                        extra = Number(matchE[1].replace(',', '.'));
-                    } else {
-                        const cleanNum = parseFloat(this.nuevoPago.extras.replace(/[^\d,\.]/g, '').replace(',', '.'));
-                        if (!isNaN(cleanNum)) extra = cleanNum;
-                    }
-                }
-                const total = base + extra;
-                this.nuevoPago.importe = total > 0 ? total : '';
+                this.nuevoPago.importe = this.importeCalculado > 0 ? this.importeCalculado : '';
             },
             parseMonthOrder(m_str) {
                 const parts = m_str.replace(/'/g, "").trim().split(' ');
@@ -1623,7 +1589,7 @@
                 return { cursoKey: '2025/2026', monthIdx: 1 };
             },
             pagoVacio() {
-                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'EFECTIVO' };
+                return { fecha: this.getLocalISODate(), mes: '', tarifa: '', extras: '', importe_extra: '', importe: '', metodo: 'EFECTIVO' };
             },
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 106;
@@ -1660,7 +1626,8 @@
                 const [anioInicioStr, anioFinStr] = parsedMonth.cursoKey.split('/');
                 const cursoEscolar = `${anioInicioStr.slice(-2)}/${anioFinStr.slice(-2)}`;
                 
-                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
+                const hash = Math.random().toString(36).substring(2, 6).toUpperCase();
+                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}-${hash}`;
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -1699,7 +1666,7 @@
                     this.pagosList = resPagos.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
-            abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
+            abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = this.getLocalISODate(); this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             
             getHorarioSnapshot() {
@@ -1806,6 +1773,13 @@
                     if (this.normalizeName(celdaActual.nombre) === this.normalizeName(this.alumnoActivoPincel)) {
                         delete this.gridHorario[key];
                     } else {
+                        const nombrePincelNorm = this.normalizeName(this.alumnoActivoPincel);
+                        Object.keys(this.gridHorario).forEach(k => {
+                            const [kTipo, kHora, kCol] = k.split('_');
+                            if (kHora === hora && this.normalizeName(this.gridHorario[k].nombre) === nombrePincelNorm) {
+                                delete this.gridHorario[k];
+                            }
+                        });
                         this.gridHorario[key] = { nombre: this.alumnoActivoPincel, baja: false };
                     }
                 } else {
@@ -1917,13 +1891,12 @@
             },
 
             async registrarPagoCompleto() {
-                if (!this.form || !this.form.nombre) return;
+                if (!this.form || !this.form.nombre || !this.importeCalculado) return;
 
                 this.savingPago = true;
                 this.preparingPrint = true;
 
                 try {
-                    // 1. Guardar en Base de Datos
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                     const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
@@ -1934,7 +1907,6 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]);
 
-                    // 2. Generar el HTML del PDF para impresión
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -1946,15 +1918,17 @@
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    // 3. Iniciar impresión directamente
                     document.body.classList.add('is-printing-ticket');
+                    
+                    await this.$nextTick();
+
                     setTimeout(() => {
                         window.print();
                         setTimeout(() => {
                             document.body.classList.remove('is-printing-ticket');
                             element.classList.add('hidden');
                         }, 300);
-                    }, 100);
+                    }, 50);
 
                     this.showSuccess = true;
                     this.successMessage = `Pago registrado e impresión iniciada.`;
@@ -1968,7 +1942,7 @@
                 }
             },
             async registrarPagoSolo() {
-                if (!this.form || !this.form.nombre) return;
+                if (!this.form || !this.form.nombre || !this.importeCalculado) return;
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                 const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
@@ -2437,7 +2411,7 @@
                                 _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
                             ];
                             
-                            await Promise.allSettled(promesasCascada);
+                            await Promise.all(promesasCascada);
                         }
                     }
 
@@ -2460,18 +2434,29 @@
                 }
             }
         },
-        async mounted() {
-            try {
-                const { data } = await _supabase.auth.getSession();
+        mounted() {
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.showUnsavedHorarioModal = false;
+                    this.showDeleteStudentModal = false;
+                    this.showEditExamenModal = false;
+                    this.showDeleteExamenModal = false;
+                    this.showCustomModal = false;
+                    this.showEditPagoModal = false;
+                    this.showDeletePagoModal = false;
+                }
+            });
+            
+            _supabase.auth.getSession().then(({ data }) => {
                 if (data && data.session) {
                     this.authenticated = true;
-                    await this.cargarDatosSupabase();
+                    this.cargarDatosSupabase();
                 }
-            } catch(e) {
-                console.error("Error al verificar sesión inicial:", e);
-            } finally {
                 this.checkingSession = false;
-            }
+            }).catch(e => {
+                console.error("Error al verificar sesión inicial:", e);
+                this.checkingSession = false;
+            });
         }
     }).mount('#app');
 </script>
