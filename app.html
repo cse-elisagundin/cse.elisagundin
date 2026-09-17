@@ -340,6 +340,7 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1">Tarifa</label>
                             <select v-model="editPagoForm.tarifa" class="w-full p-2.5 rounded-lg border outline-none bg-white font-bold text-[#243c7a]">
+                                <option value="">-- Ninguna (Solo Extra) --</option>
                                 <option value="1h/semana 40€">1h/semana 40€</option>
                                 <option value="1,5h/semana 50€ (antiguos alumnos)">1,5h/semana 50€ (antiguos alumnos)</option>
                                 <option value="1,5h/semana 60€ (nuevos alumnos)">1,5h/semana 60€ (nuevos alumnos)</option>
@@ -1163,7 +1164,7 @@
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Mes a cobrar (Smart / Automático)</label>
                                         <select v-model="nuevoPago.mes" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
-                                            <option v-for="m in listaMesesDinamicos" :key="m" :value="m">{{ formatMesUnificado(m) }}</option>
+                                            <option v-for="m in mesesCobroInteligente" :key="m.valor" :value="m.valor">{{ m.etiqueta }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1184,7 +1185,7 @@
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
-                                            <option value="" disabled>Selecciona tarifa...</option>
+                                            <option value="">-- Ninguna (Solo Extra) --</option>
                                             <option value="1h/semana 40€">1h/semana 40€</option>
                                             <option value="1,5h/semana 50€ (antiguos alumnos)">1,5h/semana 50€ (antiguos alumnos)</option>
                                             <option value="1,5h/semana 60€ (nuevos alumnos)">1,5h/semana 60€ (nuevos alumnos)</option>
@@ -1366,6 +1367,26 @@
                 }).slice(0, 8);
             },
             importeCalculado() { return Number(this.nuevoPago.importe) || 0; },
+            mesesCobroInteligente() {
+                const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                const hoy = new Date();
+                const meses = [];
+                
+                for (let i = -1; i <= 1; i++) {
+                    const fechaCalc = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+                    const nombreMes = mesesNombres[fechaCalc.getMonth()];
+                    const año = fechaCalc.getFullYear();
+                    const valorStr = `${nombreMes} ${año}`;
+                    
+                    let etiqueta = valorStr;
+                    if (i === -1) etiqueta = `${valorStr} (Mes Anterior)`;
+                    if (i === 0) etiqueta = `${valorStr} (Mes Actual)`;
+                    if (i === 1) etiqueta = `${valorStr} (Mes Siguiente)`;
+                    
+                    meses.push({ valor: valorStr, etiqueta: etiqueta });
+                }
+                return meses;
+            },
             examenesAlumno() {
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
@@ -2191,8 +2212,8 @@
             },
             abrirSeccionPagos() {
                 this.activeTab = 'pagos';
-                if (this.listaMesesDinamicos.length > 0) {
-                    this.nuevoPago.mes = this.listaMesesDinamicos[this.listaMesesDinamicos.length - 1];
+                if (this.mesesCobroInteligente && this.mesesCobroInteligente.length > 1) {
+                    this.nuevoPago.mes = this.mesesCobroInteligente[1].valor;
                 }
             },
             async generarSiguienteMes() {
