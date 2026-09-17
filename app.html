@@ -1003,6 +1003,28 @@
                                 </div>
                             </section>
 
+                            <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-purple-50 p-4 sm:p-6 rounded-2xl border border-purple-100 mt-4">
+                                <div class="col-span-1 sm:col-span-2 flex justify-between items-center border-b border-purple-200 pb-2">
+                                    <div class="font-bold text-purple-800"><i class="fas fa-globe"></i> ACCESO PORTAL ALUMNO</div>
+                                    <label class="flex items-center cursor-pointer relative">
+                                        <input type="checkbox" v-model="form.acceso_web" class="sr-only">
+                                        <div class="w-10 h-6 bg-gray-300 rounded-full shadow-inner transition-colors" :class="{'bg-green-500': form.acceso_web}"></div>
+                                        <div class="absolute w-4 h-4 bg-white rounded-full shadow left-1 top-1 transition-transform" :class="{'translate-x-4': form.acceso_web}"></div>
+                                        <span class="ml-2 text-xs font-extrabold uppercase" :class="form.acceso_web ? 'text-green-600' : 'text-gray-500'">
+                                            {{ form.acceso_web ? 'Activo' : 'Inactivo' }}
+                                        </span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-purple-800 mb-1">Usuario Web</label>
+                                    <input v-model="form.usuario_web" placeholder="Ej: rbelda" class="w-full p-3 rounded-lg border bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-purple-800 mb-1">Contraseña Web</label>
+                                    <input v-model="form.pass_web" placeholder="Ej: Bel170926" class="w-full p-3 rounded-lg border bg-white outline-none">
+                                </div>
+                            </section>
+
                             <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
                                 <div class="col-span-1 sm:col-span-2 md:col-span-6 font-bold text-[#243c7a] border-b pb-2">DIRECCIÓN</div>
                                 <input v-model="form.direccion" placeholder="Domicilio" class="col-span-1 sm:col-span-2 md:col-span-3 p-3 rounded-lg border bg-gray-50">
@@ -2336,6 +2358,7 @@
                 this.form = {
                     nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
                     usuario_aules: '', pass_aules: '',
+                    usuario_web: '', pass_web: '', acceso_web: false, 
                     direccion: '', cp: '', poblacion: '', provincia: '',
                     colegio: '', curso: '', tlf: '',
                     fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
@@ -2387,7 +2410,9 @@
                 try {
                     const camposEditables = [
                         'nombre', 'apellidos', 'dni', 'nacimiento', 'baja',
-                        'usuario_aules', 'pass_aules', 'direccion', 'cp', 'poblacion', 'provincia',
+                        'usuario_aules', 'pass_aules', 
+                        'usuario_web', 'pass_web', 'acceso_web', 
+                        'direccion', 'cp', 'poblacion', 'provincia',
                         'colegio', 'curso', 'tlf',
                         'fam1_nombre', 'fam1_relacion', 'fam1_tlf',
                         'fam2_nombre', 'fam2_relacion', 'fam2_tlf'
@@ -2397,7 +2422,7 @@
 
                     camposEditables.forEach(key => {
                         let value = this.form[key];
-                        if (key === 'baja') {
+                        if (key === 'baja' || key === 'acceso_web') { 
                             payload[key] = Boolean(value);
                         } else if (key === 'nacimiento') {
                             payload[key] = value ? value : null;
