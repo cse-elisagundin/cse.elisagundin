@@ -62,15 +62,27 @@
                 white-space: nowrap !important;
             }
 
-            body.print-portrait #zona-impresion-horario .print-body { display: flex; flex-direction: row; flex: 1; gap: 6mm; }
-            body.print-portrait .print-schedules { width: 75%; display: flex; flex-direction: column; gap: 6mm; }
+            body.print-portrait #zona-impresion-horario .print-body {
+                display: flex; flex-direction: row; flex: 1; gap: 6mm;
+            }
+            body.print-portrait .print-schedules {
+                width: 75%; display: flex; flex-direction: column; gap: 6mm;
+            }
             body.print-portrait .schedule-table { flex: 1; display: flex; flex-direction: column; }
-            body.print-portrait .print-notes { width: 25%; border-left: 2px solid #000; padding-left: 6mm; display: flex; flex-direction: column; }
+            body.print-portrait .print-notes {
+                width: 25%; border-left: 2px solid #000; padding-left: 6mm; display: flex; flex-direction: column;
+            }
 
-            body.print-landscape #zona-impresion-horario .print-body { display: flex; flex-direction: column; flex: 1; gap: 6mm; }
-            body.print-landscape .print-schedules { height: 50%; display: flex; flex-direction: row; gap: 6mm; }
+            body.print-landscape #zona-impresion-horario .print-body {
+                display: flex; flex-direction: column; flex: 1; gap: 6mm;
+            }
+            body.print-landscape .print-schedules {
+                height: 50%; display: flex; flex-direction: row; gap: 6mm;
+            }
             body.print-landscape .schedule-table { flex: 1; display: flex; flex-direction: column; width: 50%; }
-            body.print-landscape .print-notes { height: 50%; border-top: 2px solid #000; padding-top: 6mm; display: flex; flex-direction: column; }
+            body.print-landscape .print-notes {
+                height: 50%; border-top: 2px solid #000; padding-top: 6mm; display: flex; flex-direction: column;
+            }
         }
 
         .timeline-row { display: flex; border-bottom: 1px solid #f0f0f0; padding: 12px 0; transition: background 0.2s; }
@@ -139,6 +151,7 @@
                     </table>
                 </div>
             </div>
+
             <div class="print-notes">
                 <h3 class="text-sm font-black uppercase tracking-wider mb-2">NOTAS</h3>
                 <div class="flex-1 w-full" style="background: repeating-linear-gradient(transparent, transparent 19px, #e5e7eb 19px, #e5e7eb 20px);"></div>
@@ -807,7 +820,7 @@
                         </div>
                         
                         <div class="p-4 sm:p-6 border-t bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <span class="text-sm font-bold text-gray-500">{{ gestorExamenes.alumnosSeleccionados.length }} alumnos seleccionados</span>
+                            <span class="text-sm font-bold text-gray-500">{{ gestorExamenes.alumnosSeleccionados.length }} alumnos selected</span>
                             <button @click="guardarExamenesMasivos" :disabled="savingExamenes || !gestorExamenes.fecha || !gestorExamenes.asignatura || gestorExamenes.alumnosSeleccionados.length === 0" class="w-full sm:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 font-bold shadow-lg flex items-center justify-center gap-2 transition disabled:opacity-50">
                                 <i v-if="savingExamenes" class="fas fa-spinner fa-spin"></i><i v-else class="fas fa-save"></i>
                                 {{ savingExamenes ? 'Creando...' : 'CREAR EXÁMENES' }}
@@ -1167,8 +1180,8 @@
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
-                                    <div class="sm:col-span-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                    <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Tarifa</label>
                                         <select v-model="nuevoPago.tarifa" class="w-full p-2.5 rounded-lg border outline-none focus:border-[#fa65c3] bg-white text-[#243c7a] font-bold">
                                             <option value="" disabled>Selecciona tarifa...</option>
@@ -1181,26 +1194,26 @@
                                             <option value="5h/semana 135€">5h/semana 135€</option>
                                         </select>
                                     </div>
-                                    <div class="sm:col-span-1">
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Texto Extra</label>
-                                        <input v-model="nuevoPago.extras" placeholder="Ej: Material" class="w-full p-2.5 rounded-lg border outline-none">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Concepto Extra (Opcional)</label>
+                                        <input v-model="nuevoPago.extras" placeholder="Ej: Material (10€)" class="w-full p-2.5 rounded-lg border outline-none">
                                     </div>
-                                    <div class="sm:col-span-1">
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Valor Extra (€)</label>
-                                        <input type="number" step="0.01" v-model="nuevoPago.importe_extra" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Importe Total (€)</label>
+                                        <input type="number" step="0.01" v-model="nuevoPago.importe" placeholder="0.00" class="w-full p-2.5 rounded-lg border outline-none font-bold text-lg">
                                     </div>
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row items-center justify-between border-t pt-4 mt-2 bg-gray-50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 rounded-b-xl gap-4">
                                     <div class="flex flex-col text-center sm:text-left">
-                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total Calculado</span>
+                                        <span class="text-xs font-bold text-gray-400 uppercase">Importe Total</span>
                                         <span class="text-2xl sm:text-3xl font-black text-[#243c7a]">{{ importeCalculado }} €</span>
                                     </div>
                                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                        <button @click="registrarPagoSolo" :disabled="savingPago || !importeCalculado" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
-                                            <i class="fas fa-save"></i> REGISTRAR (SOLO)
+                                        <button @click="registrarPagoSolo" :disabled="savingPago || !nuevoPago.importe" class="w-full sm:w-auto bg-[#243c7a] text-white px-5 py-3.5 rounded-xl hover:bg-[#1a2e5e] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                            <i class="fas fa-save"></i> REGISTRAR (SOLO DATOS)
                                         </button>
-                                        <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !importeCalculado" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
+                                        <button @click="registrarPagoCompleto" :disabled="savingPago || preparingPrint || !nuevoPago.importe" class="w-full sm:w-auto bg-[#fa65c3] text-white px-6 py-3.5 rounded-xl hover:bg-[#e052ad] font-bold shadow-lg flex justify-center items-center gap-2 disabled:opacity-50 transition text-xs">
                                             <i class="fas fa-print"></i> REGISTRAR E IMPRIMIR
                                         </button>
                                     </div>
@@ -1282,7 +1295,7 @@
                 pagosList: [],
                 savingExamenes: false,
                 searchGestor: '',
-                gestorExamenes: { fecha: this.getLocalISODate(), asignatura: '', alumnosSeleccionados: [] },
+                gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
                 cursoAbierto: {},
                 showCustomModal: false,
                 modalType: 'edit',
@@ -1305,9 +1318,9 @@
 
                 modoVistaHorario: 'diario',
                 diaSeleccionado: 'LUNES',
-                fechaSeleccionada: this.getLocalISODate(),
+                fechaSeleccionada: new Date().toISOString().split('T')[0],
                 previousDiaSeleccionado: 'LUNES',
-                previousFechaSeleccionada: this.getLocalISODate(),
+                previousFechaSeleccionada: new Date().toISOString().split('T')[0],
                 diasSemana: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
                 tramosHorarios: ['15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
                 gridHorario: {},
@@ -1322,7 +1335,7 @@
         },
         watch: {
             'nuevoPago.tarifa'() { this.calcularImporteTotalPago(); },
-            'nuevoPago.importe_extra'() { this.calcularImporteTotalPago(); }
+            'nuevoPago.extras'() { this.calcularImporteTotalPago(); }
         },
         computed: {
             isHorarioDirty() {
@@ -1352,15 +1365,7 @@
                     return nombreCompleto.includes(t);
                 }).slice(0, 8);
             },
-            importeCalculado() { 
-                let base = 0;
-                if (this.nuevoPago.tarifa) {
-                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
-                    if (matchT) base = Number(matchT[1]);
-                }
-                let extra = Number(this.nuevoPago.importe_extra) || 0;
-                return base + extra;
-            },
+            importeCalculado() { return Number(this.nuevoPago.importe) || 0; },
             examenesAlumno() {
                 if (!this.selected) return [];
                 const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
@@ -1426,7 +1431,7 @@
                 const year = this.mesVisualizadoCalendario.getFullYear();
                 const month = this.mesVisualizadoCalendario.getMonth();
                 const diasTotales = new Date(year, month + 1, 0).getDate();
-                const hoyStr = this.getLocalISODate();
+                const hoyStr = new Date().toISOString().split('T')[0];
                 const arrayDias = [];
 
                 for (let d = 1; d <= diasTotales; d++) {
@@ -1448,12 +1453,6 @@
             }
         },
         methods: {
-            getLocalISODate() {
-                const d = new Date();
-                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                return d.toISOString().split('T')[0];
-            },
-
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
             },
@@ -1461,6 +1460,7 @@
             obtenerAlumnosParaMesGlobal(mes) {
                 return this.list.filter(a => {
                     if (!a.baja) return true;
+                    
                     const normA = this.normalizeName(a.nombre + ' ' + a.apellidos);
                     return this.ingresosFijosList.some(f => this.normalizeName(f.alumno) === normA && f.mes === mes);
                 });
@@ -1573,7 +1573,23 @@
                 return isNaN(d) ? '' : d.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
             },
             calcularImporteTotalPago() {
-                this.nuevoPago.importe = this.importeCalculado > 0 ? this.importeCalculado : '';
+                let base = 0;
+                if (this.nuevoPago.tarifa) {
+                    const matchT = this.nuevoPago.tarifa.match(/(\d+)€/);
+                    if (matchT) base = Number(matchT[1]);
+                }
+                let extra = 0;
+                if (this.nuevoPago.extras) {
+                    const matchE = this.nuevoPago.extras.match(/(\d+(?:[\.,]\d)?)€/);
+                    if (matchE) {
+                        extra = Number(matchE[1].replace(',', '.'));
+                    } else {
+                        const cleanNum = parseFloat(this.nuevoPago.extras.replace(/[^\d,\.]/g, '').replace(',', '.'));
+                        if (!isNaN(cleanNum)) extra = cleanNum;
+                    }
+                }
+                const total = base + extra;
+                this.nuevoPago.importe = total > 0 ? total : '';
             },
             parseMonthOrder(m_str) {
                 const parts = m_str.replace(/'/g, "").trim().split(' ');
@@ -1589,7 +1605,7 @@
                 return { cursoKey: '2025/2026', monthIdx: 1 };
             },
             pagoVacio() {
-                return { fecha: this.getLocalISODate(), mes: '', tarifa: '', extras: '', importe_extra: '', importe: '', metodo: 'EFECTIVO' };
+                return { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'EFECTIVO' };
             },
             generarIdFactura(nombre, apellidos, fecha, mesStr) {
                 let maxNum = 106;
@@ -1626,8 +1642,7 @@
                 const [anioInicioStr, anioFinStr] = parsedMonth.cursoKey.split('/');
                 const cursoEscolar = `${anioInicioStr.slice(-2)}/${anioFinStr.slice(-2)}`;
                 
-                const hash = Math.random().toString(36).substring(2, 6).toUpperCase();
-                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}-${hash}`;
+                return `${siguienteNum}-${codigoAlumno}-${mesLetras}-${cursoEscolar}`;
             },
             async login() {
                 if (!this.loginEmail || !this.loginPassword) return;
@@ -1666,7 +1681,7 @@
                     this.pagosList = resPagos.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
-            abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = this.getLocalISODate(); this.searchGestor = ''; },
+            abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
             abrirGestorPagos() { this.selected = null; this.activeTab = 'gestor_pagos'; this.searchPagosGlobal = ''; },
             
             getHorarioSnapshot() {
@@ -1773,13 +1788,6 @@
                     if (this.normalizeName(celdaActual.nombre) === this.normalizeName(this.alumnoActivoPincel)) {
                         delete this.gridHorario[key];
                     } else {
-                        const nombrePincelNorm = this.normalizeName(this.alumnoActivoPincel);
-                        Object.keys(this.gridHorario).forEach(k => {
-                            const [kTipo, kHora, kCol] = k.split('_');
-                            if (kHora === hora && this.normalizeName(this.gridHorario[k].nombre) === nombrePincelNorm) {
-                                delete this.gridHorario[k];
-                            }
-                        });
                         this.gridHorario[key] = { nombre: this.alumnoActivoPincel, baja: false };
                     }
                 } else {
@@ -1891,12 +1899,13 @@
             },
 
             async registrarPagoCompleto() {
-                if (!this.form || !this.form.nombre || !this.importeCalculado) return;
+                if (!this.form || !this.form.nombre) return;
 
                 this.savingPago = true;
                 this.preparingPrint = true;
 
                 try {
+                    // 1. Guardar en Base de Datos
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                     const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
@@ -1907,6 +1916,7 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]);
 
+                    // 2. Generar el HTML del PDF para impresión
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -1918,17 +1928,15 @@
                     this.preparingPrint = false;
                     this.savingPago = false;
 
+                    // 3. Iniciar impresión directamente
                     document.body.classList.add('is-printing-ticket');
-                    
-                    await this.$nextTick();
-
                     setTimeout(() => {
                         window.print();
                         setTimeout(() => {
                             document.body.classList.remove('is-printing-ticket');
                             element.classList.add('hidden');
                         }, 300);
-                    }, 50);
+                    }, 100);
 
                     this.showSuccess = true;
                     this.successMessage = `Pago registrado e impresión iniciada.`;
@@ -1942,7 +1950,7 @@
                 }
             },
             async registrarPagoSolo() {
-                if (!this.form || !this.form.nombre || !this.importeCalculado) return;
+                if (!this.form || !this.form.nombre) return;
                 this.savingPago = true;
                 const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                 const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
@@ -2411,7 +2419,7 @@
                                 _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
                             ];
                             
-                            await Promise.all(promesasCascada);
+                            await Promise.allSettled(promesasCascada);
                         }
                     }
 
@@ -2434,29 +2442,18 @@
                 }
             }
         },
-        mounted() {
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    this.showUnsavedHorarioModal = false;
-                    this.showDeleteStudentModal = false;
-                    this.showEditExamenModal = false;
-                    this.showDeleteExamenModal = false;
-                    this.showCustomModal = false;
-                    this.showEditPagoModal = false;
-                    this.showDeletePagoModal = false;
-                }
-            });
-            
-            _supabase.auth.getSession().then(({ data }) => {
+        async mounted() {
+            try {
+                const { data } = await _supabase.auth.getSession();
                 if (data && data.session) {
                     this.authenticated = true;
-                    this.cargarDatosSupabase();
+                    await this.cargarDatosSupabase();
                 }
-                this.checkingSession = false;
-            }).catch(e => {
+            } catch(e) {
                 console.error("Error al verificar sesión inicial:", e);
+            } finally {
                 this.checkingSession = false;
-            });
+            }
         }
     }).mount('#app');
 </script>
