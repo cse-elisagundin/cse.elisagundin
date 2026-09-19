@@ -894,6 +894,7 @@
                                 <span v-if="activeTab === 'ficha' && !isNew" class="text-xs font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded">Ficha</span>
                                 <span v-if="activeTab === 'pagos' && !isNew" class="text-xs font-bold text-[#fa65c3] uppercase bg-pink-50 px-2 py-1 rounded">Pagos</span>
                                 <span v-if="activeTab === 'examenes' && !isNew" class="text-xs font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Exámenes</span>
+                                <span v-if="activeTab === 'asistencia' && !isNew" class="text-xs font-bold text-teal-600 uppercase bg-teal-50 px-2 py-1 rounded">Asistencia</span>
                             </div>
 
                             <div class="flex items-center gap-3">
@@ -939,7 +940,7 @@
                             <h3 class="text-2xl sm:text-3xl font-black text-[#243c7a] mb-2 text-center">Panel del Alumno</h3>
                             <p class="text-gray-500 mb-8 font-medium text-center text-xs sm:text-sm">¿Qué deseas gestionar para {{ form.nombre }}?</p>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
                                 <button @click="activeTab = 'ficha'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-[#2b94cc] hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
                                     <div class="bg-blue-50 p-4 rounded-full text-[#2b94cc] group-hover:bg-[#2b94cc] group-hover:text-white transition-colors">
                                         <i class="fas fa-id-card text-3xl"></i>
@@ -962,6 +963,14 @@
                                     </div>
                                     <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Exámenes</span>
                                     <span class="text-xs text-gray-500 text-center">Consultar calendario y notas.</span>
+                                </button>
+
+                                <button @click="activeTab = 'asistencia'" class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border-2 border-transparent hover:border-teal-500 hover:shadow-xl transition-all flex flex-col items-center gap-3 group">
+                                    <div class="bg-teal-50 p-4 rounded-full text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                        <i class="fas fa-clipboard-list text-3xl"></i>
+                                    </div>
+                                    <span class="text-lg sm:text-xl font-extrabold text-[#243c7a]">Asistencia</span>
+                                    <span class="text-xs text-gray-500 text-center">Control de bonos y horas.</span>
                                 </button>
                             </div>
                         </div>
@@ -1250,6 +1259,68 @@
                             </div>
                         </div>
 
+                        <div v-if="activeTab === 'asistencia'" class="p-4 sm:p-8 flex-1 bg-white">
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 border-b pb-4">
+                                <h3 class="font-extrabold text-teal-800 uppercase text-base sm:text-lg flex items-center gap-2">
+                                    <i class="fas fa-clipboard-check"></i> Control de Asistencia ({{ form.nombre }})
+                                </h3>
+                                <button @click="cargarDatosSupabase" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+                    
+                            <div class="bg-teal-50 border border-teal-200 rounded-2xl p-6 mb-6 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+                                <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                                    <div class="bg-white p-4 rounded-full text-teal-600 shadow-sm">
+                                        <i class="fas fa-stopwatch text-3xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-teal-900 font-extrabold text-lg">Saldo de Horas</h4>
+                                        <p class="text-teal-700 text-xs font-bold">Bloques pendientes: {{ saldoBloquesAlumno }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-center sm:text-right">
+                                    <span class="text-3xl sm:text-4xl font-black" :class="saldoBloquesAlumno < 0 ? 'text-red-500' : 'text-teal-700'">
+                                        {{ saldoHorasFormateado }}
+                                    </span>
+                                    <p class="text-xs font-bold uppercase mt-1 text-teal-600">Tiempo Disponible</p>
+                                </div>
+                            </div>
+                    
+                            <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                                <div class="p-4 bg-gray-50 border-b">
+                                    <h4 class="font-extrabold text-[#243c7a] text-sm uppercase"><i class="fas fa-history mr-2"></i> Desglose Histórico</h4>
+                                </div>
+                                <div v-if="asistenciaAlumno.length === 0" class="text-center py-10 text-gray-400 font-semibold">
+                                    No hay registros de asistencia para este alumno.
+                                </div>
+                                <div v-else class="overflow-x-auto">
+                                    <table class="w-full border-collapse text-xs min-w-[500px]">
+                                        <thead>
+                                            <tr class="bg-white text-gray-500 uppercase border-b">
+                                                <th class="p-3 text-left">Fecha</th>
+                                                <th class="p-3 text-left">Concepto</th>
+                                                <th class="p-3 text-center">Bloques (30m)</th>
+                                                <th class="p-3 text-center">Tiempo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(reg, i) in asistenciaAlumno" :key="reg.id || i" class="border-b last:border-0 hover:bg-teal-50/30 transition">
+                                                <td class="p-3 font-semibold text-gray-700">{{ formatearFecha(reg.fecha) }}</td>
+                                                <td class="p-3 text-gray-600 font-medium">{{ reg.concepto || 'Registro de asistencia' }}</td>
+                                                <td class="p-3 text-center font-bold" :class="reg.bloques_30m > 0 ? 'text-green-600' : (reg.bloques_30m < 0 ? 'text-red-500' : 'text-gray-500')">
+                                                    {{ reg.bloques_30m > 0 ? '+' : '' }}{{ reg.bloques_30m }}
+                                                </td>
+                                                <td class="p-3 text-center font-bold text-gray-600">
+                                                    {{ formatearMinutos(reg.bloques_30m * 30) }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 
@@ -1294,6 +1365,7 @@
                 examenesList: [],
                 ingresosFijosList: [],
                 pagosList: [],
+                asistenciaList: [], 
                 savingExamenes: false,
                 searchGestor: '',
                 gestorExamenes: { fecha: '', asignatura: '', alumnosSeleccionados: [] },
@@ -1411,6 +1483,24 @@
                         return idB - idA;
                     });
             },
+            asistenciaAlumno() {
+                if (!this.selected) return [];
+                const nombreLimpio = this.normalizeName(this.selected.nombre + " " + this.selected.apellidos);
+                return this.asistenciaList
+                    .filter(a => this.normalizeName(a.alumno) === nombreLimpio)
+                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            },
+            saldoBloquesAlumno() {
+                return this.asistenciaAlumno.reduce((acc, curr) => acc + (Number(curr.bloques_30m) || 0), 0);
+            },
+            saldoHorasFormateado() {
+                const totalMinutos = this.saldoBloquesAlumno * 30;
+                if (totalMinutos === 0) return '0h 0m';
+                const h = Math.floor(Math.abs(totalMinutos) / 60);
+                const m = Math.abs(totalMinutos) % 60;
+                const sign = totalMinutos < 0 ? '-' : '';
+                return `${sign}${h}h ${m}m`;
+            },
             pagosFiltradosGlobal() {
                 const t = this.normalizeName(this.searchPagosGlobal);
                 return this.pagosList.filter(p => {
@@ -1476,6 +1566,17 @@
         methods: {
             normalizeName(str) { 
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " "); 
+            },
+
+            formatearMinutos(totalMinutos) {
+                if (!totalMinutos) return '0m';
+                const h = Math.floor(Math.abs(totalMinutos) / 60);
+                const m = Math.abs(totalMinutos) % 60;
+                const sign = totalMinutos < 0 ? '-' : '+';
+                let res = '';
+                if (h > 0) res += `${h}h `;
+                if (m > 0 || h === 0) res += `${m}m`;
+                return `${sign}${res.trim()}`;
             },
 
             obtenerAlumnosParaMesGlobal(mes) {
@@ -1700,6 +1801,9 @@
                     
                     const resPagos = await _supabase.from('pagos').select('*');
                     this.pagosList = resPagos.data || [];
+
+                    const resAsistencia = await _supabase.from('asistencia').select('*');
+                    this.asistenciaList = resAsistencia.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
             abrirGestorExamenes() { this.selected = null; this.activeTab = 'gestor_examenes'; this.gestorExamenes.fecha = new Date().toISOString().split('T')[0]; this.searchGestor = ''; },
@@ -2437,7 +2541,8 @@
                                 _supabase.from('pagos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
                                 _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
                                 _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
-                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto)
+                                _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
+                                _supabase.from('asistencia').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto)
                             ];
                             
                             await Promise.allSettled(promesasCascada);
