@@ -213,6 +213,60 @@
             </div>
         </transition>
 
+        <!-- MODAL REGISTRO FALTAS -->
+        <transition name="pop">
+            <div v-if="showFaltaModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
+                    <div class="flex items-center gap-3 border-b pb-3">
+                        <div class="bg-orange-100 text-orange-600 p-3 rounded-full text-xl"><i class="fas fa-user-clock"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Registrar Ausencia</h3>
+                            <p class="text-xs text-gray-400 font-semibold">{{ faltaForm.alumno }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                            <input type="date" v-model="faltaForm.fecha" disabled class="w-full p-2.5 rounded-lg border bg-gray-50 text-gray-600 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Hora Inicio</label>
+                            <input type="text" v-model="faltaForm.hora_inicio" disabled class="w-full p-2.5 rounded-lg border bg-gray-50 text-gray-600 font-bold">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Bloques afectados (30 min c/u)</label>
+                        <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
+                            <span class="text-xl font-black text-[#243c7a] px-3">{{ faltaForm.bloques_30m }}</span>
+                            <span class="text-xs text-gray-500 font-semibold leading-tight">Calculado automáticamente según ocupación contigua.</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-2">Tipo de Falta</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button @click="faltaForm.tipo_falta = 'recuperable'" class="py-2.5 rounded-xl border-2 font-bold text-xs transition" :class="faltaForm.tipo_falta === 'recuperable' ? 'border-[#25D366] bg-green-50 text-[#166534]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
+                                Recuperable
+                            </button>
+                            <button @click="faltaForm.tipo_falta = 'injustificada'" class="py-2.5 rounded-xl border-2 font-bold text-xs transition" :class="faltaForm.tipo_falta === 'injustificada' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
+                                No Recuperable
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-4 border-t mt-2">
+                        <button @click="showFaltaModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="guardarFalta" :disabled="savingFalta" class="flex-1 py-3 px-4 rounded-xl bg-[#243c7a] hover:bg-[#1a2e5e] text-white font-bold shadow-lg transition flex justify-center items-center gap-2">
+                            <i v-if="savingFalta" class="fas fa-spinner fa-spin"></i>
+                            {{ savingFalta ? 'Guardando...' : 'Registrar Falta' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="pop">
             <div v-if="showDeleteStudentModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -621,7 +675,7 @@
                                                 </td>
                                                 <td v-for="col in 7" :key="col"
                                                     @click="clickCelda('GENERAL', hora, col)"
-                                                    @contextmenu.prevent="toggleBajaCelda('GENERAL', hora, col)"
+                                                    @contextmenu.prevent="abrirModalFalta('GENERAL', hora, col)"
                                                     @mouseenter="hoverAlumnoPincel = getCelda('GENERAL', hora, col).nombre"
                                                     @mouseleave="hoverAlumnoPincel = ''"
                                                     class="p-0.5 border-r cell-slot align-middle relative cursor-pointer"
@@ -670,7 +724,7 @@
                                                 </td>
                                                 <td v-for="col in 7" :key="col"
                                                     @click="clickCelda('INGLES', hora, col)"
-                                                    @contextmenu.prevent="toggleBajaCelda('INGLES', hora, col)"
+                                                    @contextmenu.prevent="abrirModalFalta('INGLES', hora, col)"
                                                     @mouseenter="hoverAlumnoPincel = getCelda('INGLES', hora, col).nombre"
                                                     @mouseleave="hoverAlumnoPincel = ''"
                                                     class="p-0.5 border-r cell-slot align-middle relative cursor-pointer"
@@ -995,33 +1049,11 @@
                                 <div class="col-span-1 sm:col-span-2 font-bold text-[#2b94cc] border-b border-blue-200 pb-2"><i class="fas fa-laptop-code"></i> ACCESO AULES</div>
                                 <div>
                                     <label class="block text-xs font-bold text-blue-800 mb-1">Usuario</label>
-                                    <input v-model="form.usuario_aules" placeholder="Ej: garcia_paco" class="w-full p-3 rounded-lg border bg-white outline-none">
+                                    <input v-model="form.usuario_aules" placeholder="Ej: lozano_leo" class="w-full p-3 rounded-lg border bg-white outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-blue-800 mb-1">Contraseña</label>
                                     <input v-model="form.pass_aules" placeholder="Contraseña" class="w-full p-3 rounded-lg border bg-white outline-none">
-                                </div>
-                            </section>
-
-                            <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-purple-50 p-4 sm:p-6 rounded-2xl border border-purple-100 mt-4">
-                                <div class="col-span-1 sm:col-span-2 flex justify-between items-center border-b border-purple-200 pb-2">
-                                    <div class="font-bold text-purple-800"><i class="fas fa-globe"></i> ACCESO PORTAL ALUMNO</div>
-                                    <label class="flex items-center cursor-pointer relative">
-                                        <input type="checkbox" v-model="form.acceso_web" class="sr-only">
-                                        <div class="w-10 h-6 bg-gray-300 rounded-full shadow-inner transition-colors" :class="{'bg-green-500': form.acceso_web}"></div>
-                                        <div class="absolute w-4 h-4 bg-white rounded-full shadow left-1 top-1 transition-transform" :class="{'translate-x-4': form.acceso_web}"></div>
-                                        <span class="ml-2 text-xs font-extrabold uppercase" :class="form.acceso_web ? 'text-green-600' : 'text-gray-500'">
-                                            {{ form.acceso_web ? 'Activo' : 'Inactivo' }}
-                                        </span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-purple-800 mb-1">Usuario Web</label>
-                                    <input v-model="form.usuario_web" placeholder="Ej: pgarcia" class="w-full p-3 rounded-lg border bg-white outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-purple-800 mb-1">Contraseña Web</label>
-                                    <input v-model="form.pass_web" placeholder="Ej: Gar170926" class="w-full p-3 rounded-lg border bg-white outline-none">
                                 </div>
                             </section>
 
@@ -1353,7 +1385,21 @@
                 searchAlumnoPincel: '',
                 alumnoActivoPincel: '',
                 hoverAlumnoPincel: '',
-                savingHorario: false
+                savingHorario: false,
+
+                // FASE 2: FALTAS
+                showFaltaModal: false,
+                faltaForm: {
+                    tipo_cuadrante: '',
+                    col: null,
+                    alumno: '',
+                    fecha: '',
+                    hora_inicio: '',
+                    bloques_30m: 1,
+                    tipo_falta: 'recuperable',
+                    estado_recuperacion: 'pendiente'
+                },
+                savingFalta: false
             }
         },
         watch: {
@@ -1839,12 +1885,118 @@
                     }
                 }
             },
-            toggleBajaCelda(tipo, hora, col) {
+            // FUNCIÓN FASE 2: Abrir modal e interpretar la ocupación contigua
+            abrirModalFalta(tipo, hora, col) {
                 const key = this.getCeldaKey(tipo, hora, col);
                 const celdaActual = this.getCelda(tipo, hora, col);
-                if (celdaActual.nombre) {
-                    this.gridHorario[key].baja = !this.gridHorario[key].baja;
+                
+                if (!celdaActual.nombre) return;
+
+                // Si ya está marcada como baja en el cuadrante, click derecho simplemente la desmarca visualmente (comportamiento previo de deshacer)
+                if (celdaActual.baja) {
+                    this.gridHorario[key].baja = false;
+                    return;
                 }
+
+                const normNombre = this.normalizeName(celdaActual.nombre);
+                let bloques = 1;
+                
+                // Inspeccionar tramos hacia abajo para ver si el alumno empalma clases
+                let startIndex = this.tramosHorarios.indexOf(hora);
+                for (let i = startIndex + 1; i < this.tramosHorarios.length; i++) {
+                    let nextHora = this.tramosHorarios[i];
+                    let nextCelda = this.getCelda(tipo, nextHora, col);
+                    if (nextCelda.nombre && this.normalizeName(nextCelda.nombre) === normNombre && !nextCelda.baja) {
+                        bloques++;
+                    } else {
+                        break;
+                    }
+                }
+
+                let fechaUso = this.modoVistaHorario === 'diario' ? this.fechaSeleccionada : new Date().toISOString().split('T')[0];
+
+                this.faltaForm = {
+                    tipo_cuadrante: tipo,
+                    col: col,
+                    alumno: celdaActual.nombre,
+                    fecha: fechaUso,
+                    hora_inicio: hora,
+                    bloques_30m: bloques,
+                    tipo_falta: 'recuperable',
+                    estado_recuperacion: 'pendiente'
+                };
+
+                this.showFaltaModal = true;
+            },
+            async guardarFalta() {
+                this.savingFalta = true;
+                try {
+                    const estadoRec = this.faltaForm.tipo_falta === 'recuperable' ? 'pendiente' : 'no_aplica';
+                    
+                    // 1. Guardar en tabla registro_asistencia (Supabase)
+                    await _supabase.from('registro_asistencia').insert([{
+                        alumno: this.faltaForm.alumno,
+                        fecha: this.faltaForm.fecha,
+                        hora_inicio: this.faltaForm.hora_inicio,
+                        bloques_30m: this.faltaForm.bloques_30m,
+                        tipo_falta: this.faltaForm.tipo_falta,
+                        estado_recuperacion: estadoRec
+                    }]);
+
+                    // 2. Marcar localmente como baja (tachado) todos los bloques involucrados
+                    let startIndex = this.tramosHorarios.indexOf(this.faltaForm.hora_inicio);
+                    for (let i = 0; i < this.faltaForm.bloques_30m; i++) {
+                        let h = this.tramosHorarios[startIndex + i];
+                        let key = this.getCeldaKey(this.faltaForm.tipo_cuadrante, h, this.faltaForm.col);
+                        if (this.gridHorario[key]) {
+                            this.gridHorario[key].baja = true;
+                        }
+                    }
+
+                    // 3. Forzar un autoguardado silencioso del cuadrante si estamos en Diario para preservar el cambio visual [B]
+                    if (this.modoVistaHorario === 'diario') {
+                        await this.guardarHorarioEnSupabaseSilencioso();
+                    }
+
+                    this.showSuccess = true;
+                    this.successMessage = 'Ausencia registrada en el sistema de faltas';
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
+
+                } catch (e) {
+                    console.error("Error al registrar falta:", e);
+                    alert("No se pudo conectar con la base de datos de faltas.");
+                } finally {
+                    this.savingFalta = false;
+                    this.showFaltaModal = false;
+                }
+            },
+            async guardarHorarioEnSupabaseSilencioso() {
+                try {
+                    const rowsToInsert = [];
+                    for (const key in this.gridHorario) {
+                        const item = this.gridHorario[key];
+                        if (!item || !item.nombre) continue;
+
+                        const [tipo, hora, colStr] = key.split('_');
+                        const columna = parseInt(colStr);
+                        const obs = item.baja ? '[B]' : '';
+
+                        if (this.modoVistaHorario === 'plantilla') {
+                            rowsToInsert.push({ dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
+                        } else {
+                            rowsToInsert.push({ fecha: this.fechaSeleccionada, dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
+                        }
+                    }
+
+                    if (this.modoVistaHorario === 'plantilla') {
+                        await _supabase.from('horario_plantilla').delete().eq('dia_semana', this.diaSeleccionado);
+                        if (rowsToInsert.length > 0) await _supabase.from('horario_plantilla').insert(rowsToInsert);
+                    } else {
+                        await _supabase.from('horario_diario').delete().eq('fecha', this.fechaSeleccionada);
+                        if (rowsToInsert.length > 0) await _supabase.from('horario_diario').insert(rowsToInsert);
+                    }
+                    this.markHorarioClean();
+                } catch(e) { console.error("Error en guardado silencioso:", e); }
             },
             contarOcupacion(tipo, hora) {
                 let count = 0;
@@ -1908,36 +2060,10 @@
             },
             async guardarHorarioEnSupabase() {
                 this.savingHorario = true;
-                try {
-                    const rowsToInsert = [];
-                    for (const key in this.gridHorario) {
-                        const item = this.gridHorario[key];
-                        if (!item || !item.nombre) continue;
-
-                        const [tipo, hora, colStr] = key.split('_');
-                        const columna = parseInt(colStr);
-                        const obs = item.baja ? '[B]' : '';
-
-                        if (this.modoVistaHorario === 'plantilla') {
-                            rowsToInsert.push({ dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
-                        } else {
-                            rowsToInsert.push({ fecha: this.fechaSeleccionada, dia_semana: this.diaSeleccionado, tipo, hora, columna, alumno_nombre: item.nombre, observaciones: obs });
-                        }
-                    }
-
-                    if (this.modoVistaHorario === 'plantilla') {
-                        await _supabase.from('horario_plantilla').delete().eq('dia_semana', this.diaSeleccionado);
-                        if (rowsToInsert.length > 0) await _supabase.from('horario_plantilla').insert(rowsToInsert);
-                    } else {
-                        await _supabase.from('horario_diario').delete().eq('fecha', this.fechaSeleccionada);
-                        if (rowsToInsert.length > 0) await _supabase.from('horario_diario').insert(rowsToInsert);
-                    }
-
-                    this.markHorarioClean();
-                    this.showSuccess = true;
-                    this.successMessage = '¡Cuadrante de Horario guardado en Supabase!';
-                    setTimeout(() => { this.showSuccess = false; }, 2500);
-                } catch(e) { console.error("Error guardando horario:", e); }
+                await this.guardarHorarioEnSupabaseSilencioso();
+                this.showSuccess = true;
+                this.successMessage = '¡Cuadrante de Horario guardado en Supabase!';
+                setTimeout(() => { this.showSuccess = false; }, 2500);
                 this.savingHorario = false;
             },
 
@@ -2358,7 +2484,6 @@
                 this.form = {
                     nombre: '', apellidos: '', dni: '', nacimiento: null, baja: false,
                     usuario_aules: '', pass_aules: '',
-                    usuario_web: '', pass_web: '', acceso_web: false, 
                     direccion: '', cp: '', poblacion: '', provincia: '',
                     colegio: '', curso: '', tlf: '',
                     fam1_nombre: '', fam1_relacion: '', fam1_tlf: '',
@@ -2410,9 +2535,7 @@
                 try {
                     const camposEditables = [
                         'nombre', 'apellidos', 'dni', 'nacimiento', 'baja',
-                        'usuario_aules', 'pass_aules', 
-                        'usuario_web', 'pass_web', 'acceso_web', 
-                        'direccion', 'cp', 'poblacion', 'provincia',
+                        'usuario_aules', 'pass_aules', 'direccion', 'cp', 'poblacion', 'provincia',
                         'colegio', 'curso', 'tlf',
                         'fam1_nombre', 'fam1_relacion', 'fam1_tlf',
                         'fam2_nombre', 'fam2_relacion', 'fam2_tlf'
@@ -2422,7 +2545,7 @@
 
                     camposEditables.forEach(key => {
                         let value = this.form[key];
-                        if (key === 'baja' || key === 'acceso_web') { 
+                        if (key === 'baja') {
                             payload[key] = Boolean(value);
                         } else if (key === 'nacimiento') {
                             payload[key] = value ? value : null;
