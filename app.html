@@ -193,12 +193,12 @@
                         <div class="bg-teal-100 text-teal-600 p-3 rounded-full text-xl"><i class="fas fa-clipboard-user"></i></div>
                         <div>
                             <h3 class="text-lg font-extrabold text-[#243c7a]">Registrar Falta / Asistencia</h3>
-                            <p class="text-xs text-gray-400 font-semibold">{{ celdaPendienteBaja?.alumno }}</p>
+                            <p class="text-xs text-gray-400 font-semibold">{{ celdaPendienteBaja?.alumno }} a las {{ celdaPendienteBaja?.hora }}</p>
                         </div>
                     </div>
                     
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Motivo / Concepto</label>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Motivo / Tipo de Falta</label>
                         <select v-model="asistenciaForm.concepto" class="w-full p-2.5 rounded-lg border bg-white outline-none font-bold text-gray-700">
                             <option value="Falta (Sin avisar)">Falta (Sin avisar) - Pierde clase</option>
                             <option value="Falta (Avisada)">Falta (Avisada) - Recupera</option>
@@ -337,7 +337,7 @@
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
                     <div class="flex items-center gap-3">
                         <div :class="modalType === 'delete' ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-[#2b94cc]'" class="p-3 rounded-full text-xl">
-                            <i :class="modalType === 'delete' ? 'fas fa-exclamation-triangle' : 'fas fa-edit'"></i>
+                            <i :class="modalType === 'delete' ? 'fas fa-exclamation-triangle' : 'fas fa-exclamation-triangle' : 'fas fa-edit'"></i>
                         </div>
                         <div>
                             <h3 class="text-lg sm:text-xl font-extrabold text-[#243c7a]">{{ modalTitle }}</h3>
@@ -1344,6 +1344,7 @@
                                         <thead>
                                             <tr class="bg-white text-gray-500 uppercase border-b">
                                                 <th class="p-3 text-left">Fecha</th>
+                                                <th class="p-3 text-left">Hora</th>
                                                 <th class="p-3 text-left">Concepto</th>
                                                 <th class="p-3 text-center">Bloques (30m)</th>
                                                 <th class="p-3 text-center">Tiempo</th>
@@ -1352,7 +1353,8 @@
                                         <tbody>
                                             <tr v-for="(reg, i) in asistenciaAlumno" :key="reg.id || i" class="border-b last:border-0 hover:bg-teal-50/30 transition">
                                                 <td class="p-3 font-semibold text-gray-700">{{ formatearFecha(reg.fecha) }}</td>
-                                                <td class="p-3 text-gray-600 font-medium">{{ reg.concepto || 'Registro de asistencia' }}</td>
+                                                <td class="p-3 font-semibold text-gray-600">{{ reg.hora_inicio || '-' }}</td>
+                                                <td class="p-3 text-gray-600 font-medium">{{ reg.tipo_falta || 'Registro de asistencia' }}</td>
                                                 <td class="p-3 text-center font-bold" :class="reg.bloques_30m > 0 ? 'text-green-600' : (reg.bloques_30m < 0 ? 'text-red-500' : 'text-gray-500')">
                                                     {{ reg.bloques_30m > 0 ? '+' : '' }}{{ reg.bloques_30m }}
                                                 </td>
@@ -1852,7 +1854,8 @@
                     const resPagos = await _supabase.from('pagos').select('*');
                     this.pagosList = resPagos.data || [];
 
-                    const resAsistencia = await _supabase.from('asistencia').select('*');
+                    // ACTUALIZADO PARA APUNTAR A LA TABLA CORRECTA
+                    const resAsistencia = await _supabase.from('registro_asistencia').select('*');
                     this.asistenciaList = resAsistencia.data || [];
                 } catch(e) { console.error("Error cargando desde Supabase:", e); }
             },
@@ -1979,10 +1982,9 @@
                 if (!celdaActual.nombre) return;
 
                 if (this.gridHorario[key].baja) {
-                    // Si ya estaba tachado, al hacer clic derecho simplemente lo destacha visualmente.
                     this.gridHorario[key].baja = false;
                 } else {
-                    // Abrir el nuevo modal para confirmar baja en asistencia
+                    // Ahora guardamos la hora de la celda tocada
                     this.celdaPendienteBaja = { tipo, hora, col, key, alumno: celdaActual.nombre };
                     this.asistenciaForm = {
                         concepto: 'Falta (Sin avisar)',
@@ -1995,21 +1997,22 @@
             async confirmarBajaAsistencia() {
                 this.savingAsistencia = true;
                 try {
-                    // 1. Guardar en Supabase tabla asistencia
+                    // ACTUALIZADO PARA APUNTAR A LAS COLUMNAS Y TABLA CORRECTAS
+                    const estadoRec = (this.asistenciaForm.concepto.includes('Recupera') || this.asistenciaForm.concepto.includes('justificada')) ? 'Pendiente' : 'No aplica';
+                    
                     const payload = {
                         alumno: this.celdaPendienteBaja.alumno,
                         fecha: this.fechaSeleccionada,
-                        concepto: this.asistenciaForm.concepto,
-                        bloques_30m: this.asistenciaForm.bloques
+                        hora_inicio: this.celdaPendienteBaja.hora,
+                        tipo_falta: this.asistenciaForm.concepto,
+                        bloques_30m: this.asistenciaForm.bloques,
+                        estado_recuperacion: estadoRec
                     };
                     
-                    const { error } = await _supabase.from('asistencia').insert([payload]);
+                    const { error } = await _supabase.from('registro_asistencia').insert([payload]);
                     if (error) throw error;
 
-                    // 2. Actualizar visualmente la celda en el cuadrante
                     this.gridHorario[this.celdaPendienteBaja.key].baja = true;
-                    
-                    // 3. Recargar datos para que se vea reflejado en la pestaña de Asistencia general
                     await this.cargarDatosSupabase();
 
                     this.showSuccess = true;
@@ -2640,7 +2643,7 @@
                                 _supabase.from('ingresos_fijos').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto),
                                 _supabase.from('horario_plantilla').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
                                 _supabase.from('horario_diario').update({ alumno_nombre: newNombreCompleto }).eq('alumno_nombre', oldNombreCompleto),
-                                _supabase.from('asistencia').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto)
+                                _supabase.from('registro_asistencia').update({ alumno: newNombreCompleto }).eq('alumno', oldNombreCompleto)
                             ];
                             
                             await Promise.allSettled(promesasCascada);
