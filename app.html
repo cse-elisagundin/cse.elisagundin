@@ -185,6 +185,51 @@
             </div>
         </transition>
 
+        <!-- MODAL DE REGISTRO DE ASISTENCIA / BAJA -->
+        <transition name="pop">
+            <div v-if="showAsistenciaModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
+                    <div class="flex items-center gap-3 border-b pb-3">
+                        <div class="bg-teal-100 text-teal-600 p-3 rounded-full text-xl"><i class="fas fa-clipboard-user"></i></div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-[#243c7a]">Registrar Falta / Asistencia</h3>
+                            <p class="text-xs text-gray-400 font-semibold">{{ celdaPendienteBaja?.alumno }}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Motivo / Concepto</label>
+                        <select v-model="asistenciaForm.concepto" class="w-full p-2.5 rounded-lg border bg-white outline-none font-bold text-gray-700">
+                            <option value="Falta (Sin avisar)">Falta (Sin avisar) - Pierde clase</option>
+                            <option value="Falta (Avisada)">Falta (Avisada) - Recupera</option>
+                            <option value="Enfermedad">Enfermedad justificada</option>
+                            <option value="Falta justificada (Otros)">Falta justificada (Otros)</option>
+                            <option value="Consumo de recuperación">Consumo de recuperación</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Impacto en saldo (Bloques de 30m)</label>
+                        <select v-model="asistenciaForm.bloques" class="w-full p-2.5 rounded-lg border bg-white outline-none font-bold text-gray-700">
+                            <option :value="0">0 (No afecta el saldo / Aviso previo)</option>
+                            <option :value="-1">-1 Bloque (30 min)</option>
+                            <option :value="-2">-2 Bloques (1 hora)</option>
+                            <option :value="-3">-3 Bloques (1.5 horas)</option>
+                            <option :value="-4">-4 Bloques (2 horas)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-3 border-t">
+                        <button @click="showAsistenciaModal = false" class="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>
+                        <button @click="confirmarBajaAsistencia" :disabled="savingAsistencia" class="flex-1 py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-lg transition flex justify-center items-center gap-2">
+                            <i v-if="savingAsistencia" class="fas fa-spinner fa-spin"></i>
+                            <span>Registrar Baja</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <transition name="pop">
             <div v-if="showUnsavedHorarioModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-5">
@@ -1403,7 +1448,12 @@
                 searchAlumnoPincel: '',
                 alumnoActivoPincel: '',
                 hoverAlumnoPincel: '',
-                savingHorario: false
+                savingHorario: false,
+
+                showAsistenciaModal: false,
+                savingAsistencia: false,
+                celdaPendienteBaja: null,
+                asistenciaForm: { concepto: 'Falta (Sin avisar)', bloques: -2 }
             }
         },
         watch: {
@@ -1921,13 +1971,61 @@
                     }
                 }
             },
+            
             toggleBajaCelda(tipo, hora, col) {
                 const key = this.getCeldaKey(tipo, hora, col);
                 const celdaActual = this.getCelda(tipo, hora, col);
-                if (celdaActual.nombre) {
-                    this.gridHorario[key].baja = !this.gridHorario[key].baja;
+                
+                if (!celdaActual.nombre) return;
+
+                if (this.gridHorario[key].baja) {
+                    // Si ya estaba tachado, al hacer clic derecho simplemente lo destacha visualmente.
+                    this.gridHorario[key].baja = false;
+                } else {
+                    // Abrir el nuevo modal para confirmar baja en asistencia
+                    this.celdaPendienteBaja = { tipo, hora, col, key, alumno: celdaActual.nombre };
+                    this.asistenciaForm = {
+                        concepto: 'Falta (Sin avisar)',
+                        bloques: -2
+                    };
+                    this.showAsistenciaModal = true;
                 }
             },
+
+            async confirmarBajaAsistencia() {
+                this.savingAsistencia = true;
+                try {
+                    // 1. Guardar en Supabase tabla asistencia
+                    const payload = {
+                        alumno: this.celdaPendienteBaja.alumno,
+                        fecha: this.fechaSeleccionada,
+                        concepto: this.asistenciaForm.concepto,
+                        bloques_30m: this.asistenciaForm.bloques
+                    };
+                    
+                    const { error } = await _supabase.from('asistencia').insert([payload]);
+                    if (error) throw error;
+
+                    // 2. Actualizar visualmente la celda en el cuadrante
+                    this.gridHorario[this.celdaPendienteBaja.key].baja = true;
+                    
+                    // 3. Recargar datos para que se vea reflejado en la pestaña de Asistencia general
+                    await this.cargarDatosSupabase();
+
+                    this.showSuccess = true;
+                    this.successMessage = 'Falta registrada y saldo actualizado.';
+                    setTimeout(() => { this.showSuccess = false; }, 2500);
+
+                    this.showAsistenciaModal = false;
+                    this.celdaPendienteBaja = null;
+                } catch (e) {
+                    console.error("Error guardando asistencia:", e);
+                    alert("Error al guardar el registro de asistencia.");
+                } finally {
+                    this.savingAsistencia = false;
+                }
+            },
+
             contarOcupacion(tipo, hora) {
                 let count = 0;
                 for (let col = 1; col <= 7; col++) {
