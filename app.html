@@ -1354,7 +1354,7 @@
                 isSidebarPinned: true,
                 isSidebarHovered: false,
 
-                nuevoPago: this.pagoVacio(),
+                nuevoPago: { fecha: new Date().toISOString().split('T')[0], mes: '', tarifa: '', extras: '', importe: '', metodo: 'EFECTIVO' },
                 examenesList: [],
                 ingresosFijosList: [],
                 pagosList: [],
