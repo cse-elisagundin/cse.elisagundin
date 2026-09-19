@@ -213,7 +213,7 @@
             </div>
         </transition>
 
-        <!-- MODAL REGISTRO FALTAS -->
+        <!-- MODAL REGISTRO FALTAS (Actualizado con control manual) -->
         <transition name="pop">
             <div v-if="showFaltaModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 no-print">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-100 flex flex-col gap-4">
@@ -238,9 +238,19 @@
 
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">Bloques afectados (30 min c/u)</label>
-                        <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
-                            <span class="text-xl font-black text-[#243c7a] px-3">{{ faltaForm.bloques_30m }}</span>
-                            <span class="text-xs text-gray-500 font-semibold leading-tight">Calculado automáticamente según ocupación contigua.</span>
+                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded-lg border">
+                            <div class="flex items-center gap-3">
+                                <button type="button" @click="if(faltaForm.bloques_30m > 1) faltaForm.bloques_30m--" class="w-8 h-8 rounded-full bg-white border shadow-sm text-[#243c7a] hover:bg-gray-200 flex items-center justify-center font-bold transition">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="text-xl font-black text-[#243c7a] w-6 text-center">{{ faltaForm.bloques_30m }}</span>
+                                <button type="button" @click="faltaForm.bloques_30m++" class="w-8 h-8 rounded-full bg-white border shadow-sm text-[#243c7a] hover:bg-gray-200 flex items-center justify-center font-bold transition">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <span class="text-[11px] text-gray-400 font-semibold leading-tight text-right w-1/2">
+                                Ajusta manualmente si el alumno no falta a toda la clase.
+                            </span>
                         </div>
                     </div>
 
@@ -1885,14 +1895,13 @@
                     }
                 }
             },
-            // FUNCIÓN FASE 2: Abrir modal e interpretar la ocupación contigua
+            
             abrirModalFalta(tipo, hora, col) {
                 const key = this.getCeldaKey(tipo, hora, col);
                 const celdaActual = this.getCelda(tipo, hora, col);
                 
                 if (!celdaActual.nombre) return;
 
-                // Si ya está marcada como baja en el cuadrante, click derecho simplemente la desmarca visualmente (comportamiento previo de deshacer)
                 if (celdaActual.baja) {
                     this.gridHorario[key].baja = false;
                     return;
@@ -1901,7 +1910,6 @@
                 const normNombre = this.normalizeName(celdaActual.nombre);
                 let bloques = 1;
                 
-                // Inspeccionar tramos hacia abajo para ver si el alumno empalma clases
                 let startIndex = this.tramosHorarios.indexOf(hora);
                 for (let i = startIndex + 1; i < this.tramosHorarios.length; i++) {
                     let nextHora = this.tramosHorarios[i];
@@ -1933,7 +1941,6 @@
                 try {
                     const estadoRec = this.faltaForm.tipo_falta === 'recuperable' ? 'pendiente' : 'no_aplica';
                     
-                    // 1. Guardar en tabla registro_asistencia (Supabase)
                     await _supabase.from('registro_asistencia').insert([{
                         alumno: this.faltaForm.alumno,
                         fecha: this.faltaForm.fecha,
@@ -1943,17 +1950,16 @@
                         estado_recuperacion: estadoRec
                     }]);
 
-                    // 2. Marcar localmente como baja (tachado) todos los bloques involucrados
                     let startIndex = this.tramosHorarios.indexOf(this.faltaForm.hora_inicio);
                     for (let i = 0; i < this.faltaForm.bloques_30m; i++) {
                         let h = this.tramosHorarios[startIndex + i];
+                        if (!h) break; 
                         let key = this.getCeldaKey(this.faltaForm.tipo_cuadrante, h, this.faltaForm.col);
                         if (this.gridHorario[key]) {
                             this.gridHorario[key].baja = true;
                         }
                     }
 
-                    // 3. Forzar un autoguardado silencioso del cuadrante si estamos en Diario para preservar el cambio visual [B]
                     if (this.modoVistaHorario === 'diario') {
                         await this.guardarHorarioEnSupabaseSilencioso();
                     }
@@ -2074,7 +2080,6 @@
                 this.preparingPrint = true;
 
                 try {
-                    // 1. Guardar en Base de Datos
                     const idFinal = this.generarIdFactura(this.form.nombre, this.form.apellidos, this.nuevoPago.fecha, this.nuevoPago.mes);
                     const metodoUpper = String(this.nuevoPago.metodo || 'EFECTIVO').toUpperCase();
                     const alumnoNombre = `${this.form.nombre} ${this.form.apellidos}`;
@@ -2085,7 +2090,6 @@
                         fecha_pago: this.nuevoPago.fecha, mes: this.nuevoPago.mes, metodo_pago: metodoUpper, registrado: true
                     }]);
 
-                    // 2. Generar el HTML del PDF para impresión
                     this.generarReciboHTML({ fecha: this.nuevoPago.fecha, metodo: metodoUpper, tarifa: this.nuevoPago.tarifa, extras: this.nuevoPago.extras, importe: this.importeCalculado, id: idFinal, mes: this.nuevoPago.mes }, alumnoNombre);
                     
                     const element = document.getElementById('zona-impresion');
@@ -2097,7 +2101,6 @@
                     this.preparingPrint = false;
                     this.savingPago = false;
 
-                    // 3. Iniciar impresión directamente
                     document.body.classList.add('is-printing-ticket');
                     setTimeout(() => {
                         window.print();
