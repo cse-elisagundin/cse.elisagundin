@@ -1,4 +1,3 @@
-<!-- portal_alumnos.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -92,7 +91,7 @@
                             <div class="bg-gray-200 text-gray-700 font-black text-xs p-2 text-center uppercase tracking-wider">{{ dia }}</div>
                             <div class="p-3 space-y-2">
                                 <div v-for="(clase, idx) in clases" :key="idx" class="flex justify-between items-center bg-white p-2.5 rounded-lg border shadow-sm">
-                                    <span class="font-bold text-[#243c7a] text-lg">{{ clase.hora }}</span>
+                                    <span class="font-bold text-[#243c7a] text-lg">{{ clase.horaInicio }} - {{ clase.horaFin }}</span>
                                     <span class="text-xs font-extrabold px-2 py-1 rounded" :class="clase.tipo === 'GENERAL' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'">
                                         {{ clase.tipo === 'GENERAL' ? 'Refuerzo General' : 'Inglés' }}
                                     </span>
@@ -148,7 +147,7 @@
                 </div>
                 <div class="p-4 sm:p-6">
                     <div v-if="pagosFiltrados.length === 0" class="text-center py-6 text-gray-400 font-semibold text-sm">
-                        No hay cuotas generadas para los meses recientes.
+                        No hay cuotas generadas para el mes actual ni el anterior.
                     </div>
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div v-for="(pago, index) in pagosFiltrados" :key="index" class="p-5 rounded-xl border flex flex-col gap-3 justify-between shadow-sm bg-white hover:border-[#fa65c3] transition">
@@ -197,36 +196,79 @@
             horarioAgrupado() {
                 const ordenDias = { 'LUNES': 1, 'MARTES': 2, 'MIERCOLES': 3, 'JUEVES': 4, 'VIERNES': 5 };
                 const agrupado = {};
-                this.horarioAlumno.sort((a, b) => {
+                
+                // Ordenar primero por día y luego por hora cronológicamente
+                const horarioOrdenado = [...this.horarioAlumno].sort((a, b) => {
                     if (ordenDias[a.dia] !== ordenDias[b.dia]) return ordenDias[a.dia] - ordenDias[b.dia];
                     return a.hora.localeCompare(b.hora);
-                }).forEach(clase => {
+                });
+
+                horarioOrdenado.forEach(clase => {
                     if (!agrupado[clase.dia]) agrupado[clase.dia] = [];
-                    agrupado[clase.dia].push(clase);
+                    
+                    const listaDia = agrupado[clase.dia];
+                    
+                    // Si ya hay una clase registrada para ese día, comprobamos si podemos fusionarla
+                    if (listaDia.length > 0) {
+                        const ultimaClase = listaDia[listaDia.length - 1];
+                        
+                        // Solo fusionamos si coinciden en el tipo de asignatura y el bloque anterior termina justo cuando empieza este
+                        if (ultimaClase.tipo === clase.tipo && ultimaClase.horaFin === clase.hora) {
+                            ultimaClase.horaFin = this.sumarMediaHora(clase.hora);
+                            return; // Terminamos aquí para no crear un bloque nuevo
+                        }
+                    }
+                    
+                    // Si no es contiguo, creamos un bloque horario nuevo
+                    listaDia.push({
+                        dia: clase.dia,
+                        tipo: clase.tipo,
+                        horaInicio: clase.hora,
+                        horaFin: this.sumarMediaHora(clase.hora)
+                    });
                 });
                 return agrupado;
             },
+            
             pagosFiltrados() {
-                const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                const now = new Date();
+                const mesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                const hoy = new Date();
                 
-                const currentMonth = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-                const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const prevMonth = `${monthNames[lastMonthDate.getMonth()]} ${lastMonthDate.getFullYear()}`;
+                // Cálculo robusto del mes en curso y del mes anterior basándonos en la fecha de la máquina
+                const mesActualFiltro = `${mesNombres[hoy.getMonth()]} ${hoy.getFullYear()}`;
                 
-                const validMonths = [this.normalizeString(currentMonth), this.normalizeString(prevMonth)];
+                let idxMesAnterior = hoy.getMonth() - 1;
+                let anoAnterior = hoy.getFullYear();
+                if (idxMesAnterior < 0) {
+                    idxMesAnterior = 11;
+                    anoAnterior--;
+                }
+                const mesAnteriorFiltro = `${mesNombres[idxMesAnterior]} ${anoAnterior}`;
+                
+                const mesesValidos = [mesActualFiltro, mesAnteriorFiltro];
 
                 return this.todosLosPagos.filter(pago => {
-                    const normalizedPagoMes = this.normalizeString(pago.mes);
-                    return validMonths.includes(normalizedPagoMes);
+                    const mesNormalizado = this.normalizeString(pago.mes);
+                    return mesesValidos.includes(mesNormalizado);
                 }).sort((a, b) => {
-                    return validMonths.indexOf(this.normalizeString(a.mes)) - validMonths.indexOf(this.normalizeString(b.mes));
+                    // Ordenamos para que se muestre primero el mes actual y luego el anterior
+                    return mesesValidos.indexOf(this.normalizeString(a.mes)) - mesesValidos.indexOf(this.normalizeString(b.mes));
                 });
             }
         },
         methods: {
             normalizeString(str) {
                 return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ");
+            },
+            sumarMediaHora(horaStr) {
+                if (!horaStr) return '';
+                let [h, m] = horaStr.split(':').map(Number);
+                m += 30;
+                if (m >= 60) {
+                    m -= 60;
+                    h += 1;
+                }
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
             },
             formatearFecha(f) {
                 if (!f) return '';
