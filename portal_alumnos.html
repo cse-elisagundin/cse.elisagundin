@@ -142,7 +142,7 @@
                     <div class="bg-[#fa65c3] text-white p-2 rounded-lg"><i class="fas fa-receipt text-lg"></i></div>
                     <div>
                         <h2 class="text-xl font-extrabold text-[#243c7a]">Mis Recibos</h2>
-                        <p class="text-[11px] text-gray-500 font-semibold">Mostrando estado del mes en curso y el mes anterior</p>
+                        <p class="text-[11px] text-gray-500 font-semibold uppercase tracking-wide">Historial de cuotas</p>
                     </div>
                 </div>
                 <div class="p-4 sm:p-6">
@@ -150,16 +150,16 @@
                         No hay cuotas generadas para el mes actual ni el anterior.
                     </div>
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div v-for="(pago, index) in pagosFiltrados" :key="index" class="p-5 rounded-xl border flex flex-col gap-3 justify-between shadow-sm bg-white hover:border-[#fa65c3] transition">
-                            <div class="flex justify-between items-center">
-                                <span class="font-black text-lg text-[#243c7a] uppercase">{{ pago.mes }}</span>
-                                <span :class="pago.pagado ? 'pill-pagado' : 'pill-pendiente'" class="pill-status">
+                        <div v-for="(pago, index) in pagosFiltrados" :key="index" class="p-5 rounded-xl border flex flex-col gap-4 justify-between shadow-sm bg-white hover:border-[#fa65c3] transition">
+                            <div class="flex justify-between items-start gap-2">
+                                <span class="font-black text-base text-[#243c7a] leading-tight">{{ formatMesTitulo(pago.mes) }}</span>
+                                <span :class="pago.pagado ? 'pill-pagado' : 'pill-pendiente'" class="pill-status shrink-0 mt-0.5">
                                     <i :class="pago.pagado ? 'fas fa-check-circle' : 'fas fa-clock'"></i> 
                                     {{ pago.pagado ? 'Pagado' : 'Pendiente' }}
                                 </span>
                             </div>
-                            <div class="text-xs font-semibold text-gray-500">
-                                Cuota asociada a cursos escolares.
+                            <div class="text-xs font-semibold text-gray-500 bg-gray-50 p-2.5 rounded-lg border inline-block">
+                                <i class="fas fa-calendar-alt text-gray-400 mr-1.5"></i> Periodo: {{ formatMesPeriodo(pago.mes) }}
                             </div>
                         </div>
                     </div>
@@ -230,7 +230,6 @@
                 const mesNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
                 const hoy = new Date();
                 
-                // Formato exacto base de datos: MES YY' (ej: SEPTIEMBRE 26')
                 const anoActualCorto = String(hoy.getFullYear()).slice(-2);
                 const mesActualFiltro = `${mesNombres[hoy.getMonth()]} ${anoActualCorto}'`;
                 
@@ -246,7 +245,6 @@
                 const mesesValidos = [mesActualFiltro, mesAnteriorFiltro];
 
                 return this.todosLosPagos.filter(pago => {
-                    // Convertimos la base de datos a mayúsculas para comparar exacto
                     const mesDB = String(pago.mes || "").toUpperCase().trim();
                     return mesesValidos.includes(mesDB);
                 }).sort((a, b) => {
@@ -275,6 +273,36 @@
                 const parts = f.split('-');
                 if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 return f;
+            },
+            parseMesData(mesDB) {
+                if (!mesDB) return { mes: '', ano: '', curso: '' };
+                const limpio = mesDB.replace(/'/g, '').trim();
+                const partes = limpio.split(' ');
+                if (partes.length < 2) return { mes: limpio, ano: '', curso: '' };
+                
+                const mesUpper = partes[0].toUpperCase();
+                const mesCap = mesUpper.charAt(0) + mesUpper.slice(1).toLowerCase();
+                const anoNum = 2000 + parseInt(partes[1]);
+                
+                const mesesInicio = ['SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+                let curso = '';
+                if (mesesInicio.includes(mesUpper)) {
+                    curso = `${anoNum}-${anoNum + 1}`;
+                } else {
+                    curso = `${anoNum - 1}-${anoNum}`;
+                }
+                
+                return { mes: mesCap, ano: anoNum, curso: curso };
+            },
+            formatMesTitulo(mesDB) {
+                const data = this.parseMesData(mesDB);
+                if (!data.ano) return mesDB; // Fallback por si hay un formato inesperado
+                return `Cuota de ${data.mes} | Curso ${data.curso}`;
+            },
+            formatMesPeriodo(mesDB) {
+                const data = this.parseMesData(mesDB);
+                if (!data.ano) return mesDB; 
+                return `${data.mes} ${data.ano}`;
             },
             async login() {
                 this.loading = true;
@@ -375,292 +403,6 @@
                 } catch(e) {
                     localStorage.removeItem('cse_student_session');
                 }
-            }
-        }
-    }).mount('#app');
-</script>
-</body>
-</html>                <img src="https://raw.githubusercontent.com/cse-elisagundin/horarios_alumnos/main/image.png" class="h-10 bg-white rounded-full p-1 object-contain">
-                <div>
-                    <h1 class="font-extrabold text-lg leading-tight truncate max-w-[200px] sm:max-w-md">Hola, {{ userData.nombre }}</h1>
-                    <p class="text-[10px] text-gray-300 uppercase tracking-widest">Portal del Alumno</p>
-                </div>
-            </div>
-            <button @click="logout" class="bg-white/10 hover:bg-white/20 p-2 px-4 rounded-lg text-xs font-bold transition flex items-center gap-2">
-                <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Cerrar Sesión</span>
-            </button>
-        </header>
-
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 max-w-5xl mx-auto w-full">
-
-            <!-- HORARIO -->
-            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="bg-blue-50 border-b border-blue-100 p-4 flex items-center gap-3">
-                    <div class="bg-[#2b94cc] text-white p-2 rounded-lg"><i class="fas fa-clock text-lg"></i></div>
-                    <h2 class="text-xl font-extrabold text-[#243c7a]">Mi Horario</h2>
-                </div>
-                <div class="p-4 sm:p-6">
-                    <div v-if="horarioAlumno.length === 0" class="text-center py-6 text-gray-400 font-semibold text-sm">
-                        No hay clases programadas en tu horario.
-                    </div>
-                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div v-for="(clases, dia) in horarioAgrupado" :key="dia" class="border rounded-xl bg-gray-50 overflow-hidden">
-                            <div class="bg-gray-200 text-gray-700 font-black text-xs p-2 text-center uppercase tracking-wider">{{ dia }}</div>
-                            <div class="p-3 space-y-2">
-                                <div v-for="(clase, idx) in clases" :key="idx" class="flex justify-between items-center bg-white p-2.5 rounded-lg border shadow-sm">
-                                    <span class="font-bold text-[#243c7a] text-lg">{{ clase.horaInicio }} - {{ clase.horaFin }}</span>
-                                    <span class="text-xs font-extrabold px-2 py-1 rounded" :class="clase.tipo === 'GENERAL' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'">
-                                        {{ clase.tipo === 'GENERAL' ? 'Refuerzo General' : 'Inglés' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- EXAMENES Y NOTAS -->
-            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex items-center gap-3">
-                    <div class="bg-indigo-600 text-white p-2 rounded-lg"><i class="fas fa-graduation-cap text-lg"></i></div>
-                    <h2 class="text-xl font-extrabold text-[#243c7a]">Mis Exámenes y Notas</h2>
-                </div>
-                <div class="p-4 sm:p-6">
-                    <div v-if="examenesAlumno.length === 0" class="text-center py-6 text-gray-400 font-semibold text-sm">
-                        No tienes exámenes registrados.
-                    </div>
-                    <div v-else class="overflow-x-auto">
-                        <table class="w-full border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
-                                    <th class="p-3 border-b text-left">Fecha</th>
-                                    <th class="p-3 border-b text-left">Asignatura</th>
-                                    <th class="p-3 border-b text-center">Nota</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(ex, index) in examenesAlumno" :key="index" class="hover:bg-gray-50 border-b last:border-0">
-                                    <td class="p-3 font-semibold text-gray-700">{{ formatearFecha(ex.fecha) }}</td>
-                                    <td class="p-3 font-bold text-[#243c7a]">{{ ex.asignatura }}</td>
-                                    <td class="p-3 text-center">
-                                        <span v-if="ex.nota" class="bg-green-100 text-green-800 px-3 py-1 rounded-lg font-black text-sm border border-green-200">{{ ex.nota }}</span>
-                                        <span v-else class="text-xs font-bold text-gray-400 italic">Pendiente</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- PAGOS (SOLO MES ACTUAL Y ANTERIOR) -->
-            <section class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="bg-pink-50 border-b border-pink-100 p-4 flex items-center gap-3">
-                    <div class="bg-[#fa65c3] text-white p-2 rounded-lg"><i class="fas fa-receipt text-lg"></i></div>
-                    <div>
-                        <h2 class="text-xl font-extrabold text-[#243c7a]">Mis Recibos</h2>
-                        <p class="text-[11px] text-gray-500 font-semibold">Mostrando estado del mes en curso y el mes anterior</p>
-                    </div>
-                </div>
-                <div class="p-4 sm:p-6">
-                    <div v-if="pagosFiltrados.length === 0" class="text-center py-6 text-gray-400 font-semibold text-sm">
-                        No hay cuotas generadas para el mes actual ni el anterior.
-                    </div>
-                    <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div v-for="(pago, index) in pagosFiltrados" :key="index" class="p-5 rounded-xl border flex flex-col gap-3 justify-between shadow-sm bg-white hover:border-[#fa65c3] transition">
-                            <div class="flex justify-between items-center">
-                                <span class="font-black text-lg text-[#243c7a] uppercase">{{ pago.mes }}</span>
-                                <span :class="pago.pagado ? 'pill-pagado' : 'pill-pendiente'" class="pill-status">
-                                    <i :class="pago.pagado ? 'fas fa-check-circle' : 'fas fa-clock'"></i> 
-                                    {{ pago.pagado ? 'Pagado' : 'Pendiente' }}
-                                </span>
-                            </div>
-                            <div class="text-xs font-semibold text-gray-500">
-                                Cuota asociada a cursos escolares.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-    </div>
-</div>
-
-<script>
-    const { createApp } = Vue;
-    const SUPABASE_URL = 'https://wfdfykrkngsdwtkpamrz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGZ5a3JrbmdzZHd0a3BhbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDk0MDEsImV4cCI6MjEwMzMyNTQwMX0.ggAJv2kyU7t0UZDeuWzPzg-pwVSG33l3kMXHWBKkhok';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    createApp({
-        data() {
-            return {
-                authenticated: false,
-                loading: false,
-                loginUser: '',
-                loginPass: '',
-                loginError: false,
-                errorMsg: '',
-                userData: null,
-                nombreCompletoFiltro: '',
-                horarioAlumno: [],
-                examenesAlumno: [],
-                todosLosPagos: [],
-            }
-        },
-        computed: {
-            horarioAgrupado() {
-                const ordenDias = { 'LUNES': 1, 'MARTES': 2, 'MIERCOLES': 3, 'JUEVES': 4, 'VIERNES': 5 };
-                const agrupado = {};
-                
-                // Ordenar primero por día y luego por hora cronológicamente
-                const horarioOrdenado = [...this.horarioAlumno].sort((a, b) => {
-                    if (ordenDias[a.dia] !== ordenDias[b.dia]) return ordenDias[a.dia] - ordenDias[b.dia];
-                    return a.hora.localeCompare(b.hora);
-                });
-
-                horarioOrdenado.forEach(clase => {
-                    if (!agrupado[clase.dia]) agrupado[clase.dia] = [];
-                    
-                    const listaDia = agrupado[clase.dia];
-                    
-                    // Si ya hay una clase registrada para ese día, comprobamos si podemos fusionarla
-                    if (listaDia.length > 0) {
-                        const ultimaClase = listaDia[listaDia.length - 1];
-                        
-                        // Solo fusionamos si coinciden en el tipo de asignatura y el bloque anterior termina justo cuando empieza este
-                        if (ultimaClase.tipo === clase.tipo && ultimaClase.horaFin === clase.hora) {
-                            ultimaClase.horaFin = this.sumarMediaHora(clase.hora);
-                            return; // Terminamos aquí para no crear un bloque nuevo
-                        }
-                    }
-                    
-                    // Si no es contiguo, creamos un bloque horario nuevo
-                    listaDia.push({
-                        dia: clase.dia,
-                        tipo: clase.tipo,
-                        horaInicio: clase.hora,
-                        horaFin: this.sumarMediaHora(clase.hora)
-                    });
-                });
-                return agrupado;
-            },
-            
-            pagosFiltrados() {
-                const mesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-                const hoy = new Date();
-                
-                // Cálculo robusto del mes en curso y del mes anterior basándonos en la fecha de la máquina
-                const mesActualFiltro = `${mesNombres[hoy.getMonth()]} ${hoy.getFullYear()}`;
-                
-                let idxMesAnterior = hoy.getMonth() - 1;
-                let anoAnterior = hoy.getFullYear();
-                if (idxMesAnterior < 0) {
-                    idxMesAnterior = 11;
-                    anoAnterior--;
-                }
-                const mesAnteriorFiltro = `${mesNombres[idxMesAnterior]} ${anoAnterior}`;
-                
-                const mesesValidos = [mesActualFiltro, mesAnteriorFiltro];
-
-                return this.todosLosPagos.filter(pago => {
-                    const mesNormalizado = this.normalizeString(pago.mes);
-                    return mesesValidos.includes(mesNormalizado);
-                }).sort((a, b) => {
-                    // Ordenamos para que se muestre primero el mes actual y luego el anterior
-                    return mesesValidos.indexOf(this.normalizeString(a.mes)) - mesesValidos.indexOf(this.normalizeString(b.mes));
-                });
-            }
-        },
-        methods: {
-            normalizeString(str) {
-                return String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ");
-            },
-            sumarMediaHora(horaStr) {
-                if (!horaStr) return '';
-                let [h, m] = horaStr.split(':').map(Number);
-                m += 30;
-                if (m >= 60) {
-                    m -= 60;
-                    h += 1;
-                }
-                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-            },
-            formatearFecha(f) {
-                if (!f) return '';
-                const parts = f.split('-');
-                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                return f;
-            },
-            async login() {
-                this.loading = true;
-                this.loginError = false;
-                try {
-                    const { data, error } = await _supabase
-                        .from('listado_alumnos')
-                        .select('*')
-                        .eq('usuario_web', this.loginUser.trim())
-                        .eq('pass_web', this.loginPass.trim())
-                        .eq('acceso_web', true);
-
-                    if (error || !data || data.length === 0) {
-                        this.loginError = true;
-                        this.errorMsg = 'Usuario, contraseña incorrectos o acceso inactivo.';
-                    } else {
-                        this.userData = data[0];
-                        this.nombreCompletoFiltro = this.normalizeString(`${this.userData.nombre} ${this.userData.apellidos}`);
-                        await this.cargarDatosAlumno();
-                        this.authenticated = true;
-                    }
-                } catch(e) {
-                    this.loginError = true;
-                    this.errorMsg = 'Error al conectar con el servidor.';
-                } finally {
-                    this.loading = false;
-                }
-            },
-            async cargarDatosAlumno() {
-                const [resHorario, resExamenes, resPagos] = await Promise.all([
-                    _supabase.from('horario_plantilla').select('*'),
-                    _supabase.from('examenes').select('*'),
-                    _supabase.from('ingresos_fijos').select('*')
-                ]);
-
-                if (resHorario.data) {
-                    this.horarioAlumno = resHorario.data.filter(h => 
-                        this.normalizeString(h.alumno_nombre) === this.nombreCompletoFiltro
-                    ).map(h => ({
-                        dia: h.dia_semana,
-                        hora: h.hora,
-                        tipo: h.tipo
-                    }));
-                }
-
-                if (resExamenes.data) {
-                    this.examenesAlumno = resExamenes.data.filter(e => 
-                        this.normalizeString(e.alumno) === this.nombreCompletoFiltro
-                    ).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                }
-
-                if (resPagos.data) {
-                    this.todosLosPagos = resPagos.data.filter(p => 
-                        this.normalizeString(p.alumno) === this.nombreCompletoFiltro
-                    ).map(p => ({
-                        mes: p.mes,
-                        pagado: p.pagado
-                    }));
-                }
-            },
-            logout() {
-                this.authenticated = false;
-                this.userData = null;
-                this.loginUser = '';
-                this.loginPass = '';
-                this.horarioAlumno = [];
-                this.examenesAlumno = [];
-                this.todosLosPagos = [];
             }
         }
     }).mount('#app');
